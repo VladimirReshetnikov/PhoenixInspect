@@ -1,0 +1,248 @@
+{
+  "schemaVersion": 1,
+  "candidateId": "interpreter-w8-static-field-portfolio-decision-candidate-v1",
+  "evidenceKind": "derived-designed-synthetic-decision-candidate",
+  "declaredPurpose": "Record a deterministic W8.9 synthetic-portfolio decision candidate over the immutable v1 predeclaration and immutable v2 produced-outcome reconciliation. Invalid or unrealized v1 counterfactual premises receive proposed dispositions and no decision-changing credit. The candidate proposes future work only; it carries no owner authority, implements no successor action, makes no representative-observation claim, and does not claim W8.9 or W8.10 closure.",
+  "evidenceInputs": [
+    {
+      "role": "frozen-predeclaration",
+      "path": "tests/corpus/w8-static-field-incidents-v1.json",
+      "corpusId": "interpreter-w8-static-field-incidents-v1",
+      "sha256": "64bd03319c774b16a4e49dca0c85c43059f8f7d220873ecc8f31c6774842ff37"
+    },
+    {
+      "role": "produced-outcome-reconciliation",
+      "path": "tests/corpus/w8-static-field-incidents-v2.json",
+      "corpusId": "interpreter-w8-static-field-incidents-v2",
+      "sha256": "468c78076bf3e149b395647fc1557c234d25399d48d42b425824b70bd413d35a"
+    }
+  ],
+  "metricRules": [
+    "all-thirty-five-v2-baselines-enter-the-measured-portfolio",
+    "usefulness-is-retained-only-when-the-produced-result-still-answers-the-v1-investigator-question",
+    "decision-changing-credit-requires-executed-changing-counterfactual-evidence-and-excludes-retirement-or-deferral",
+    "retired-or-deferred-counterfactuals-receive-no-decision-changing-credit",
+    "attributable-evidence-is-recomputed-from-the-produced-outcome-at-the-v1-named-stage",
+    "first-boundary-is-derived-deterministically-from-the-first-non-success-produced-axis",
+    "frozen-successor-category-assignments-are-not-retuned-after-measurement",
+    "qualification-reuses-the-v1-four-incident-three-shape-three-decision-changing-threshold",
+    "qualified-categories-are-compared-lexicographically-by-incident-shape-decision-and-attributable-count",
+    "an-exact-substantive-key-tie-defers-and-no-manifest-or-enum-order-breaks-it"
+  ],
+  "proposedCounterfactualDispositions": [
+    {
+      "id": "workflow-competing-aliases-ambiguous",
+      "ordinal": 20,
+      "disposition": "retired-disproved-premise",
+      "useful": true,
+      "decisionChanging": false,
+      "reason": "The selected frame physically has one surviving alias and reaches an exact value, so narrowing an already exact alias cannot validate the predeclared ambiguity claim."
+    },
+    {
+      "id": "request-malformed-typespec-invalid",
+      "ordinal": 21,
+      "disposition": "retired-disproved-premise",
+      "useful": true,
+      "decisionChanging": false,
+      "reason": "The malformed TypeSpec is retained physical evidence but this fully qualified route never consults it; repairing unconsulted bytes changes neither axes nor value."
+    },
+    {
+      "id": "batch-typespec-depth-cap-plus-one",
+      "ordinal": 22,
+      "disposition": "retired-disproved-premise",
+      "useful": false,
+      "decisionChanging": false,
+      "reason": "The four-level spelling is below the landed cap, so neither its baseline nor a lowered spelling can validate a cap-plus-one decision."
+    },
+    {
+      "id": "batch-runtime-candidate-cap-plus-one",
+      "ordinal": 26,
+      "disposition": "retired-disproved-premise",
+      "useful": false,
+      "decisionChanging": false,
+      "reason": "The dump contains fewer candidates than the cap; inventing candidates would fabricate evidence and raising an unreached cap changes nothing."
+    },
+    {
+      "id": "coordinator-unavailable-static-slot",
+      "ordinal": 27,
+      "disposition": "retired-disproved-premise",
+      "useful": true,
+      "decisionChanging": false,
+      "reason": "The target initializes the slot before the frozen pause and the value is exact, so restore-static-slot has no missing storage to restore."
+    },
+    {
+      "id": "request-active-local-shadows-bare-import",
+      "ordinal": 29,
+      "disposition": "deferred-unrealized-physical-counterfactual",
+      "useful": true,
+      "decisionChanging": false,
+      "reason": "The real baseline proves the active shadow, but removing that local requires another program point or an independently admitted derived lexical envelope; neither is fabricated for W8.9."
+    },
+    {
+      "id": "batch-module-rva-storage",
+      "ordinal": 34,
+      "disposition": "deferred-unrealized-physical-counterfactual",
+      "useful": true,
+      "decisionChanging": false,
+      "reason": "The real baseline proves the RVA-backed exact value, but mapped-image geometry has no caller-owned withholding seam in this runner; W8.9 does not fabricate its absence."
+    }
+  ],
+  "verifiedCorrectedCounterfactuals": [
+    {
+      "id": "workflow-derived-unsupported-member-hides-base",
+      "ordinal": 12,
+      "acquisition": "current-artifact-declared-field-spelling",
+      "evidenceTest": "W8MeaningfulSyntheticCorpusTests.Contextual_and_bare_incidents_stop_at_their_landed_scope_boundaries",
+      "decisionChanging": true
+    },
+    {
+      "id": "coordinator-generic-head-arity-disagreement",
+      "ordinal": 23,
+      "acquisition": "same-dump-derived-arity-aligned-spelling",
+      "evidenceTest": "W8PortfolioDecisionCandidateTests.Derived_arity_and_complete_pdb_counterfactuals_change_their_measured_answers",
+      "decisionChanging": true
+    },
+    {
+      "id": "workflow-substituted-reference-target-conflict",
+      "ordinal": 28,
+      "acquisition": "same-dump-declared-reference-target-alignment",
+      "evidenceTest": "W8MeaningfulSyntheticCorpusTests.Reference_target_conflict_row_blocks_its_suffix_and_records_the_read_value",
+      "decisionChanging": true
+    },
+    {
+      "id": "batch-incomplete-local-catalogs",
+      "ordinal": 30,
+      "acquisition": "same-dump-complete-matching-portable-pdb",
+      "evidenceTest": "W8PortfolioDecisionCandidateTests.Derived_arity_and_complete_pdb_counterfactuals_change_their_measured_answers",
+      "decisionChanging": true
+    }
+  ],
+  "confirmedNonDecisionChangingCorrections": [
+    "request-inner-alias-shadows-outer-alias",
+    "coordinator-derived-owner-base-field"
+  ],
+  "candidatePortfolioMetrics": {
+    "calculationBasis": "conditional-on-unapproved-proposed-dispositions",
+    "incidentCount": 35,
+    "applicationShapeCount": 4,
+    "usefulCount": 33,
+    "decisionChangingCount": 19,
+    "attributableEvidenceCount": 25,
+    "exactOrNoBoundaryCount": 24,
+    "firstBoundaryCount": 11,
+    "representativeObservationCount": 0,
+    "executedBaselineCount": 35,
+    "manifestOnlyBaselineCount": 0,
+    "retiredCounterfactualCount": 5,
+    "deferredCounterfactualCount": 2
+  },
+  "firstBoundaryCounts": {
+    "context-conflict": 1,
+    "context-partial": 2,
+    "context-unavailable": 1,
+    "lexical-shadowed": 1,
+    "member-hidden-by-unsupported-member": 2,
+    "none": 24,
+    "runtime-construction-absent": 1,
+    "suffix-blocked": 1,
+    "type-binding-absent": 1,
+    "type-binding-ambiguous": 1
+  },
+  "candidateCategoryMetrics": [
+    {
+      "category": "additional-static-storage-family",
+      "incidentCount": 12,
+      "applicationShapeCount": 4,
+      "usefulCount": 11,
+      "decisionChangingCount": 6,
+      "attributableEvidenceCount": 11,
+      "firstBoundaryCount": 1,
+      "substantiveKey": "12:4:6:11",
+      "qualified": true
+    },
+    {
+      "category": "broader-frame-generic-context",
+      "incidentCount": 1,
+      "applicationShapeCount": 1,
+      "usefulCount": 1,
+      "decisionChangingCount": 0,
+      "attributableEvidenceCount": 1,
+      "firstBoundaryCount": 0,
+      "substantiveKey": "1:1:0:1",
+      "qualified": false
+    },
+    {
+      "category": "collection-and-indexing",
+      "incidentCount": 3,
+      "applicationShapeCount": 2,
+      "usefulCount": 3,
+      "decisionChangingCount": 2,
+      "attributableEvidenceCount": 3,
+      "firstBoundaryCount": 1,
+      "substantiveKey": "3:2:2:3",
+      "qualified": false
+    },
+    {
+      "category": "evidence-backed-stack-value-root",
+      "incidentCount": 3,
+      "applicationShapeCount": 3,
+      "usefulCount": 3,
+      "decisionChangingCount": 2,
+      "attributableEvidenceCount": 1,
+      "firstBoundaryCount": 2,
+      "substantiveKey": "3:3:2:1",
+      "qualified": false
+    },
+    {
+      "category": "observed-boundary-hardening",
+      "incidentCount": 14,
+      "applicationShapeCount": 4,
+      "usefulCount": 13,
+      "decisionChangingCount": 7,
+      "attributableEvidenceCount": 9,
+      "firstBoundaryCount": 5,
+      "substantiveKey": "14:4:7:9",
+      "qualified": true
+    },
+    {
+      "category": "static-property-or-method-execution",
+      "incidentCount": 2,
+      "applicationShapeCount": 2,
+      "usefulCount": 2,
+      "decisionChangingCount": 2,
+      "attributableEvidenceCount": 0,
+      "firstBoundaryCount": 2,
+      "substantiveKey": "2:2:2:0",
+      "qualified": false
+    }
+  ],
+  "qualification": {
+    "minimumIncidents": 4,
+    "minimumApplicationShapes": 3,
+    "minimumDecisionChangingIncidents": 3,
+    "qualifiedCategories": [
+      "additional-static-storage-family",
+      "observed-boundary-hardening"
+    ]
+  },
+  "candidateSelection": {
+    "status": "computed-under-proposals-pending-owner-approval",
+    "tieDefers": false,
+    "proposedCategory": "observed-boundary-hardening",
+    "proposedAction": "Harden the observed first-boundary reporting surface without extending binding reach.",
+    "winningSubstantiveKey": "14:4:7:9",
+    "runnerUpCategory": "additional-static-storage-family",
+    "runnerUpSubstantiveKey": "12:4:6:11",
+    "decisiveKey": "incidentCount",
+    "implementationDisposition": "proposed-for-post-w8-planning-not-implemented-by-w8",
+    "rationale": "Both categories qualify, but observed-boundary-hardening is the unique lexicographic leader on the frozen substantive keys because fourteen measured incidents exceed twelve. No tie exists, so manifest order and enum order are irrelevant. This computation remains a proposal until the owner approves the seven dispositions and successor selection."
+  },
+  "scopeLimits": {
+    "ownerAuthorityClaimed": false,
+    "w8_9ClosureClaimed": false,
+    "representativeEvidenceClaimed": false,
+    "proposedSuccessorImplementedByW8": false,
+    "w8_10ClosureClaimed": false,
+    "promotionPolicy": "no-generated-row-may-be-promoted-to-representative-observation"
+  }
+}

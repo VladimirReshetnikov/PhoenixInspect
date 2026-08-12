@@ -46,7 +46,7 @@ jobs:
             throw 'The W8 local release-validation plan is not deterministic.'
           }
           $plan = $first | ConvertFrom-Json
-          if ($plan.commandCount -ne 22 -or $plan.requiredInputs.Count -ne 3 -or
+          if ($plan.commandCount -ne 22 -or $plan.requiredInputs.Count -ne 4 -or
               -not $plan.localOnly -or $plan.hostedEvidence -cne 'NotRun' -or $plan.closureClaim) {
             throw 'The W8 local release-validation plan has an unexpected scope or command inventory.'
           }

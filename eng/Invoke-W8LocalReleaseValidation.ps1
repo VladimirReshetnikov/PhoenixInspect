@@ -22,8 +22,8 @@ Replaces only the validated OutputDirectory. Reparse-point paths and paths outsi
 Prints the deterministic command plan as JSON without changing the workspace or running any command.
 
 .PARAMETER SelfTest
-Exercises the TRX validator and W8.9 owner-authority gate against passing and fail-closed synthetic inputs without
-running the matrix.
+Exercises the TRX validator and W8.9 decision-candidate/owner-authority gate against passing and fail-closed synthetic
+inputs without running the matrix.
 
 .PARAMETER ValidateTrxPath
 Validates one existing TRX file with the same fail-closed parser used by the release matrix.
@@ -74,7 +74,10 @@ $w8FrozenV1RelativePath = 'tests/corpus/w8-static-field-incidents-v1.json'
 $w8FrozenV1Sha256 = '64bd03319c774b16a4e49dca0c85c43059f8f7d220873ecc8f31c6774842ff37'
 $w8ReconciledV2RelativePath = 'tests/corpus/w8-static-field-incidents-v2.json'
 $w8ReconciledV2Sha256 = '468c78076bf3e149b395647fc1557c234d25399d48d42b425824b70bd413d35a'
-$w8FinalDecisionRelativePath = 'tests/corpus/w8-static-field-portfolio-decision-v1.json'
+$w8DecisionCandidateRelativePath = 'tests/corpus/w8-static-field-portfolio-decision-candidate-v1.json'
+$w8DecisionCandidateId = 'interpreter-w8-static-field-portfolio-decision-candidate-v1'
+$w8DecisionAuthorityRelativePath = 'tests/corpus/w8-static-field-portfolio-decision-authority-v1.json'
+$w8DecisionAuthorityId = 'interpreter-w8-static-field-portfolio-decision-authority-v1'
 [int[]] $w8OwnerDispositionOrdinals = @(20, 21, 22, 26, 27, 29, 34)
 [string[]] $w8OwnerDispositionActions = @(
     'retired-disproved-premise',
@@ -84,10 +87,8 @@ $w8FinalDecisionRelativePath = 'tests/corpus/w8-static-field-portfolio-decision-
     'retired-disproved-premise',
     'deferred-unrealized-physical-counterfactual',
     'deferred-unrealized-physical-counterfactual')
-$w8OwnerApprovalDate = '2026-08-11'
-$w8OwnerApprovalScope = 'Approves the five retired-disproved-premise and two deferred-unrealized-physical-counterfactual dispositions recorded by this decision.'
-$w8SelectedCategory = 'observed-boundary-hardening'
-$w8SelectedAction = 'Harden the observed first-boundary reporting surface without extending binding reach.'
+$w8ProposedCategory = 'observed-boundary-hardening'
+$w8ProposedAction = 'Harden the observed first-boundary reporting surface without extending binding reach.'
 
 function ConvertTo-RepositoryRelativePath {
     param([Parameter(Mandatory)][string] $Path)
@@ -278,9 +279,15 @@ function Get-RequiredReleaseInputSpecs {
             Sha256 = $w8ReconciledV2Sha256
         }
         [pscustomobject][ordered]@{
-            Role = 'OwnerAuthorizedFinalDecision'
-            Path = $w8FinalDecisionRelativePath
-            Requirement = 'OwnerApprovedDecision'
+            Role = 'DecisionCandidate'
+            Path = $w8DecisionCandidateRelativePath
+            Requirement = 'ProposedDecisionCandidate'
+            Sha256 = $null
+        }
+        [pscustomobject][ordered]@{
+            Role = 'OwnerAuthorityEnvelope'
+            Path = $w8DecisionAuthorityRelativePath
+            Requirement = 'CandidateBoundOwnerApproval'
             Sha256 = $null
         }
     )
@@ -300,80 +307,187 @@ function Get-Sha256Hex {
     }
 }
 
-function Assert-OwnerAuthorizedDecisionRecord {
+function Assert-NoDuplicateJsonProperties {
     param(
-        [Parameter(Mandatory)][System.Collections.IDictionary] $Decision,
+        [Parameter(Mandatory)][string] $Json,
         [Parameter(Mandatory)][string] $DisplayPath
     )
 
-    if (-not $Decision.Contains('schemaVersion') -or
-        $Decision['schemaVersion'] -isnot [long] -or
-        [long]$Decision['schemaVersion'] -ne 1 -or
-        -not $Decision.Contains('decisionId') -or
-        [string]$Decision['decisionId'] -cne 'interpreter-w8-static-field-portfolio-decision-v1' -or
-        -not $Decision.Contains('evidenceKind') -or
-        [string]$Decision['evidenceKind'] -cne 'derived-designed-synthetic-decision') {
-        throw "W8.9 final-decision input has the wrong frozen identity: '$DisplayPath'."
+    try {
+        $root = [System.Text.Json.Nodes.JsonNode]::Parse($Json)
+    }
+    catch [System.Text.Json.JsonException] {
+        throw "W8.9 JSON input is malformed: '$DisplayPath'. $($_.Exception.Message)"
     }
 
-    if (-not $Decision.Contains('decisionAuthority') -or
-        $Decision['decisionAuthority'] -isnot [System.Collections.IDictionary]) {
-        throw "W8.9 final-decision input is not owner-authorized: '$DisplayPath' has no decisionAuthority record."
-    }
-    $authority = [System.Collections.IDictionary]$Decision['decisionAuthority']
-    if (-not $authority.Contains('status') -or
-        [string]$authority['status'] -cne 'owner-approved' -or
-        -not $authority.Contains('approvedBy') -or
-        [string]$authority['approvedBy'] -cne 'Vladimir Reshetnikov' -or
-        -not $authority.Contains('approvedOn') -or
-        $authority['approvedOn'] -isnot [string] -or
-        -not $authority.Contains('approvedDispositionOrdinals') -or
-        -not $authority.Contains('scope') -or
-        $authority['scope'] -isnot [string] -or
-        [string]$authority['scope'] -cne $w8OwnerApprovalScope) {
-        throw "W8.9 final-decision authority is incomplete or is not an approval by Vladimir Reshetnikov: '$DisplayPath'."
-    }
+    $visit = $null
+    $visit = {
+        param([System.Text.Json.Nodes.JsonNode] $Node)
 
-    [datetime] $approvalDate = [datetime]::MinValue
-    $approvalDateText = [string]$authority['approvedOn']
-    if (-not [datetime]::TryParseExact(
-            $approvalDateText,
-            'yyyy-MM-dd',
-            [System.Globalization.CultureInfo]::InvariantCulture,
-            [System.Globalization.DateTimeStyles]::None,
-            [ref]$approvalDate) -or
-        $approvalDate.ToString('yyyy-MM-dd', [System.Globalization.CultureInfo]::InvariantCulture) -cne $approvalDateText -or
-        $approvalDateText -cne $w8OwnerApprovalDate) {
-        throw "W8.9 final-decision approval date must be exactly ${w8OwnerApprovalDate}: '$DisplayPath'."
-    }
-
-    $approvedOrdinalValues = @($authority['approvedDispositionOrdinals'])
-    if ($approvedOrdinalValues.Count -ne $w8OwnerDispositionOrdinals.Count) {
-        throw "W8.9 final-decision authority must approve exactly seven dispositions: '$DisplayPath'."
-    }
-    [int[]] $approvedOrdinals = @()
-    for ($index = 0; $index -lt $w8OwnerDispositionOrdinals.Count; $index++) {
-        if ($approvedOrdinalValues[$index] -isnot [long] -or
-            [long]$approvedOrdinalValues[$index] -ne $w8OwnerDispositionOrdinals[$index]) {
-            throw "W8.9 final-decision authority must approve sorted ordinals 20,21,22,26,27,29,34: '$DisplayPath'."
+        if ($null -eq $Node) {
+            return
         }
-        $approvedOrdinals += [int]$approvedOrdinalValues[$index]
+        if ($Node -is [System.Text.Json.Nodes.JsonObject]) {
+            try {
+                foreach ($property in $Node) {
+                    & $visit $property.Value
+                }
+            }
+            catch {
+                throw "Duplicate JSON object properties are forbidden in '$DisplayPath'. $($_.Exception.Message)"
+            }
+        }
+        elseif ($Node -is [System.Text.Json.Nodes.JsonArray]) {
+            foreach ($element in $Node) {
+                & $visit $element
+            }
+        }
+    }
+    & $visit $root
+}
+
+function ConvertFrom-StrictJsonObject {
+    param(
+        [Parameter(Mandatory)][string] $Json,
+        [Parameter(Mandatory)][string] $DisplayPath,
+        [Parameter(Mandatory)][string] $Description
+    )
+
+    Assert-NoDuplicateJsonProperties $Json $DisplayPath
+    try {
+        $result = $Json | ConvertFrom-Json -AsHashtable
+    }
+    catch {
+        throw "W8.9 $Description is not valid JSON: '$DisplayPath'. $($_.Exception.Message)"
+    }
+    if ($result -isnot [System.Collections.IDictionary]) {
+        throw "W8.9 $Description must be a JSON object: '$DisplayPath'."
+    }
+    $result
+}
+
+function Assert-ExactObjectKeys {
+    param(
+        [Parameter(Mandatory)][System.Collections.IDictionary] $Object,
+        [Parameter(Mandatory)][string[]] $ExpectedKeys,
+        [Parameter(Mandatory)][string] $Description,
+        [Parameter(Mandatory)][string] $DisplayPath
+    )
+
+    if ($Object.Count -ne $ExpectedKeys.Count) {
+        throw "W8.9 $Description must contain exactly $($ExpectedKeys.Count) fields: '$DisplayPath'."
+    }
+    foreach ($key in $ExpectedKeys) {
+        if (-not $Object.Contains($key)) {
+            throw "W8.9 $Description is missing required field '$key': '$DisplayPath'."
+        }
+    }
+}
+
+function Assert-DecisionCandidateRecord {
+    param(
+        [Parameter(Mandatory)][System.Collections.IDictionary] $Candidate,
+        [Parameter(Mandatory)][string] $DisplayPath,
+        [Parameter(Mandatory)][string] $Sha256
+    )
+
+    Assert-ExactObjectKeys $Candidate @(
+        'schemaVersion',
+        'candidateId',
+        'evidenceKind',
+        'declaredPurpose',
+        'evidenceInputs',
+        'metricRules',
+        'proposedCounterfactualDispositions',
+        'verifiedCorrectedCounterfactuals',
+        'confirmedNonDecisionChangingCorrections',
+        'candidatePortfolioMetrics',
+        'firstBoundaryCounts',
+        'candidateCategoryMetrics',
+        'qualification',
+        'candidateSelection',
+        'scopeLimits') 'decision-candidate root' $DisplayPath
+    if (-not $Candidate.Contains('schemaVersion') -or
+        $Candidate['schemaVersion'] -isnot [long] -or
+        [long]$Candidate['schemaVersion'] -ne 1 -or
+        -not $Candidate.Contains('candidateId') -or
+        $Candidate['candidateId'] -isnot [string] -or
+        [string]$Candidate['candidateId'] -cne $w8DecisionCandidateId -or
+        -not $Candidate.Contains('evidenceKind') -or
+        $Candidate['evidenceKind'] -isnot [string] -or
+        [string]$Candidate['evidenceKind'] -cne 'derived-designed-synthetic-decision-candidate') {
+        throw "W8.9 decision candidate has the wrong frozen identity: '$DisplayPath'."
+    }
+    if ($Sha256 -notmatch '^[0-9a-f]{64}$') {
+        throw "W8.9 decision candidate does not have a canonical computed SHA-256: '$DisplayPath'."
+    }
+    foreach ($prohibitedField in @(
+            'decisionAuthority',
+            'finalDecision',
+            'counterfactualOwnerDispositions',
+            'ownerDisposition',
+            'ownerDispositions')) {
+        if ($Candidate.Contains($prohibitedField)) {
+            throw "W8.9 decision candidate must not contain final or owner-authority field '$prohibitedField': '$DisplayPath'."
+        }
     }
 
-    if (-not $Decision.Contains('counterfactualOwnerDispositions')) {
-        throw "W8.9 final-decision input has no owner dispositions: '$DisplayPath'."
+    if (-not $Candidate.Contains('evidenceInputs')) {
+        throw "W8.9 decision candidate has no frozen evidence inputs: '$DisplayPath'."
     }
-    $dispositions = @($Decision['counterfactualOwnerDispositions'])
+    $evidenceInputs = @($Candidate['evidenceInputs'])
+    $expectedEvidenceInputs = @(
+        [pscustomobject]@{
+            Role = 'frozen-predeclaration'
+            Path = $w8FrozenV1RelativePath
+            CorpusId = 'interpreter-w8-static-field-incidents-v1'
+            Sha256 = $w8FrozenV1Sha256
+        },
+        [pscustomobject]@{
+            Role = 'produced-outcome-reconciliation'
+            Path = $w8ReconciledV2RelativePath
+            CorpusId = 'interpreter-w8-static-field-incidents-v2'
+            Sha256 = $w8ReconciledV2Sha256
+        })
+    if ($evidenceInputs.Count -ne $expectedEvidenceInputs.Count) {
+        throw "W8.9 decision candidate must bind exactly the frozen v1 and reconciled v2 inputs: '$DisplayPath'."
+    }
+    for ($index = 0; $index -lt $expectedEvidenceInputs.Count; $index++) {
+        if ($evidenceInputs[$index] -isnot [System.Collections.IDictionary]) {
+            throw "W8.9 decision candidate evidence input $index is malformed: '$DisplayPath'."
+        }
+        $input = [System.Collections.IDictionary]$evidenceInputs[$index]
+        $expected = $expectedEvidenceInputs[$index]
+        Assert-ExactObjectKeys $input @('role', 'path', 'corpusId', 'sha256') "decision-candidate evidence input $index" $DisplayPath
+        if ($input['role'] -isnot [string] -or [string]$input['role'] -cne $expected.Role -or
+            $input['path'] -isnot [string] -or [string]$input['path'] -cne $expected.Path -or
+            $input['corpusId'] -isnot [string] -or [string]$input['corpusId'] -cne $expected.CorpusId -or
+            $input['sha256'] -isnot [string] -or [string]$input['sha256'] -cne $expected.Sha256) {
+            throw "W8.9 decision candidate evidence input $index does not match its immutable source: '$DisplayPath'."
+        }
+    }
+
+    if (-not $Candidate.Contains('proposedCounterfactualDispositions')) {
+        throw "W8.9 decision candidate has no proposed counterfactual dispositions: '$DisplayPath'."
+    }
+    $dispositions = @($Candidate['proposedCounterfactualDispositions'])
     if ($dispositions.Count -ne $w8OwnerDispositionOrdinals.Count) {
-        throw "W8.9 final-decision input must contain exactly seven owner dispositions: '$DisplayPath'."
+        throw "W8.9 decision candidate must contain exactly seven proposed dispositions: '$DisplayPath'."
     }
     $retiredCount = 0
     $deferredCount = 0
     for ($index = 0; $index -lt $dispositions.Count; $index++) {
         if ($dispositions[$index] -isnot [System.Collections.IDictionary]) {
-            throw "W8.9 final-decision disposition $index is malformed: '$DisplayPath'."
+            throw "W8.9 decision candidate disposition $index is malformed: '$DisplayPath'."
         }
         $disposition = [System.Collections.IDictionary]$dispositions[$index]
+        Assert-ExactObjectKeys $disposition @(
+            'id',
+            'ordinal',
+            'disposition',
+            'useful',
+            'decisionChanging',
+            'reason') "decision-candidate disposition $index" $DisplayPath
         if (-not $disposition.Contains('ordinal') -or
             $disposition['ordinal'] -isnot [long] -or
             [long]$disposition['ordinal'] -ne $w8OwnerDispositionOrdinals[$index] -or
@@ -383,101 +497,260 @@ function Assert-OwnerAuthorizedDecisionRecord {
             -not $disposition.Contains('decisionChanging') -or
             $disposition['decisionChanging'] -isnot [bool] -or
             [bool]$disposition['decisionChanging']) {
-            throw "W8.9 final-decision dispositions must match the approved ordinal-to-action map and carry no decision-changing credit: '$DisplayPath'."
+            throw "W8.9 decision candidate dispositions must match the proposed ordinal-to-action map and carry no decision-changing credit: '$DisplayPath'."
         }
-
         switch ($w8OwnerDispositionActions[$index]) {
             'retired-disproved-premise' { $retiredCount++ }
             'deferred-unrealized-physical-counterfactual' { $deferredCount++ }
-            default { throw 'The validator contains an unsupported frozen owner action.' }
+            default { throw 'The validator contains an unsupported proposed owner action.' }
         }
     }
     if ($retiredCount -ne 5 -or $deferredCount -ne 2) {
-        throw "W8.9 final-decision authority must cover five retired and two deferred dispositions: '$DisplayPath'."
+        throw "W8.9 decision candidate must propose five retired and two deferred dispositions: '$DisplayPath'."
     }
 
-    if (-not $Decision.Contains('finalDecision') -or
-        $Decision['finalDecision'] -isnot [System.Collections.IDictionary]) {
-        throw "W8.9 final-decision input has no selected final decision: '$DisplayPath'."
+    if (-not $Candidate.Contains('candidateSelection') -or
+        $Candidate['candidateSelection'] -isnot [System.Collections.IDictionary]) {
+        throw "W8.9 decision candidate has no proposed successor selection: '$DisplayPath'."
     }
-    $finalDecision = [System.Collections.IDictionary]$Decision['finalDecision']
-    if (-not $finalDecision.Contains('status') -or
-        [string]$finalDecision['status'] -cne 'selected' -or
-        -not $finalDecision.Contains('tieDefers') -or
-        $finalDecision['tieDefers'] -isnot [bool] -or
-        [bool]$finalDecision['tieDefers'] -or
-        -not $finalDecision.Contains('selectedCategory') -or
-        [string]$finalDecision['selectedCategory'] -cne $w8SelectedCategory -or
-        -not $finalDecision.Contains('selectedAction') -or
-        [string]$finalDecision['selectedAction'] -cne $w8SelectedAction -or
-        -not $finalDecision.Contains('winningSubstantiveKey') -or
-        [string]$finalDecision['winningSubstantiveKey'] -cne '14:4:7:9' -or
-        -not $finalDecision.Contains('runnerUpCategory') -or
-        [string]$finalDecision['runnerUpCategory'] -cne 'additional-static-storage-family' -or
-        -not $finalDecision.Contains('runnerUpSubstantiveKey') -or
-        [string]$finalDecision['runnerUpSubstantiveKey'] -cne '12:4:6:11' -or
-        -not $finalDecision.Contains('decisiveKey') -or
-        [string]$finalDecision['decisiveKey'] -cne 'incidentCount' -or
-        -not $finalDecision.Contains('implementationDisposition') -or
-        [string]$finalDecision['implementationDisposition'] -cne 'selected-for-post-w8-planning-not-implemented-by-w8') {
-        throw "W8.9 final-decision input does not carry the exact owner-approved successor selection: '$DisplayPath'."
+    $selection = [System.Collections.IDictionary]$Candidate['candidateSelection']
+    Assert-ExactObjectKeys $selection @(
+        'status',
+        'tieDefers',
+        'proposedCategory',
+        'proposedAction',
+        'winningSubstantiveKey',
+        'runnerUpCategory',
+        'runnerUpSubstantiveKey',
+        'decisiveKey',
+        'implementationDisposition',
+        'rationale') 'decision-candidate selection' $DisplayPath
+    if ($selection['status'] -isnot [string] -or
+        [string]$selection['status'] -cne 'computed-under-proposals-pending-owner-approval' -or
+        $selection['tieDefers'] -isnot [bool] -or
+        [bool]$selection['tieDefers'] -or
+        $selection['proposedCategory'] -isnot [string] -or
+        [string]$selection['proposedCategory'] -cne $w8ProposedCategory -or
+        $selection['proposedAction'] -isnot [string] -or
+        [string]$selection['proposedAction'] -cne $w8ProposedAction -or
+        $selection['winningSubstantiveKey'] -isnot [string] -or
+        [string]$selection['winningSubstantiveKey'] -cne '14:4:7:9' -or
+        $selection['runnerUpCategory'] -isnot [string] -or
+        [string]$selection['runnerUpCategory'] -cne 'additional-static-storage-family' -or
+        $selection['runnerUpSubstantiveKey'] -isnot [string] -or
+        [string]$selection['runnerUpSubstantiveKey'] -cne '12:4:6:11' -or
+        $selection['decisiveKey'] -isnot [string] -or
+        [string]$selection['decisiveKey'] -cne 'incidentCount' -or
+        $selection['implementationDisposition'] -isnot [string] -or
+        [string]$selection['implementationDisposition'] -cne 'proposed-for-post-w8-planning-not-implemented-by-w8' -or
+        $selection['rationale'] -isnot [string] -or
+        [string]::IsNullOrWhiteSpace([string]$selection['rationale'])) {
+        throw "W8.9 decision candidate does not carry the exact pending successor selection: '$DisplayPath'."
     }
 
-    if (-not $Decision.Contains('scopeLimits') -or
-        $Decision['scopeLimits'] -isnot [System.Collections.IDictionary]) {
-        throw "W8.9 final-decision input has no scope limits: '$DisplayPath'."
+    if (-not $Candidate.Contains('candidatePortfolioMetrics') -or
+        $Candidate['candidatePortfolioMetrics'] -isnot [System.Collections.IDictionary]) {
+        throw "W8.9 decision candidate has no portfolio metrics: '$DisplayPath'."
     }
-    $scopeLimits = [System.Collections.IDictionary]$Decision['scopeLimits']
+    $portfolioMetrics = [System.Collections.IDictionary]$Candidate['candidatePortfolioMetrics']
+    $expectedMetrics = [ordered]@{
+        calculationBasis = 'conditional-on-unapproved-proposed-dispositions'
+        incidentCount = 35L
+        applicationShapeCount = 4L
+        usefulCount = 33L
+        decisionChangingCount = 19L
+        attributableEvidenceCount = 25L
+        exactOrNoBoundaryCount = 24L
+        firstBoundaryCount = 11L
+        representativeObservationCount = 0L
+        executedBaselineCount = 35L
+        manifestOnlyBaselineCount = 0L
+        retiredCounterfactualCount = 5L
+        deferredCounterfactualCount = 2L
+    }
+    Assert-ExactObjectKeys $portfolioMetrics ([string[]]$expectedMetrics.Keys) 'decision-candidate portfolio metrics' $DisplayPath
+    foreach ($metricName in $expectedMetrics.Keys) {
+        if ($metricName -ceq 'calculationBasis') {
+            if ($portfolioMetrics[$metricName] -isnot [string] -or
+                [string]$portfolioMetrics[$metricName] -cne [string]$expectedMetrics[$metricName]) {
+                throw "W8.9 decision-candidate metric basis must remain conditional on unapproved proposed dispositions: '$DisplayPath'."
+            }
+        }
+        elseif ($portfolioMetrics[$metricName] -isnot [long] -or
+            [long]$portfolioMetrics[$metricName] -ne [long]$expectedMetrics[$metricName]) {
+            throw "W8.9 decision-candidate metric '$metricName' must be exactly $($expectedMetrics[$metricName]): '$DisplayPath'."
+        }
+    }
+
+    if (-not $Candidate.Contains('scopeLimits') -or
+        $Candidate['scopeLimits'] -isnot [System.Collections.IDictionary]) {
+        throw "W8.9 decision candidate has no scope limits: '$DisplayPath'."
+    }
+    $scopeLimits = [System.Collections.IDictionary]$Candidate['scopeLimits']
+    Assert-ExactObjectKeys $scopeLimits @(
+        'ownerAuthorityClaimed',
+        'w8_9ClosureClaimed',
+        'representativeEvidenceClaimed',
+        'proposedSuccessorImplementedByW8',
+        'w8_10ClosureClaimed',
+        'promotionPolicy') 'decision-candidate scope limits' $DisplayPath
     foreach ($falseClaim in @(
+            'ownerAuthorityClaimed',
+            'w8_9ClosureClaimed',
             'representativeEvidenceClaimed',
-            'selectedSuccessorImplementedByW8',
+            'proposedSuccessorImplementedByW8',
             'w8_10ClosureClaimed')) {
-        if (-not $scopeLimits.Contains($falseClaim) -or
-            $scopeLimits[$falseClaim] -isnot [bool] -or
-            [bool]$scopeLimits[$falseClaim]) {
-            throw "W8.9 final-decision scope limit '$falseClaim' must be exactly false: '$DisplayPath'."
+        if ($scopeLimits[$falseClaim] -isnot [bool] -or [bool]$scopeLimits[$falseClaim]) {
+            throw "W8.9 decision-candidate scope limit '$falseClaim' must be exactly false: '$DisplayPath'."
         }
     }
-    if (-not $scopeLimits.Contains('promotionPolicy') -or
+    if ($scopeLimits['promotionPolicy'] -isnot [string] -or
         [string]$scopeLimits['promotionPolicy'] -cne 'no-generated-row-may-be-promoted-to-representative-observation') {
-        throw "W8.9 final-decision input has the wrong representative-evidence promotion policy: '$DisplayPath'."
-    }
-
-    if (-not $Decision.Contains('portfolioMetrics') -or
-        $Decision['portfolioMetrics'] -isnot [System.Collections.IDictionary]) {
-        throw "W8.9 final-decision input has no portfolio metrics: '$DisplayPath'."
-    }
-    $portfolioMetrics = [System.Collections.IDictionary]$Decision['portfolioMetrics']
-    foreach ($metric in @(
-            [pscustomobject]@{ Name = 'representativeObservationCount'; Value = 0L },
-            [pscustomobject]@{ Name = 'executedBaselineCount'; Value = 35L },
-            [pscustomobject]@{ Name = 'manifestOnlyBaselineCount'; Value = 0L })) {
-        if (-not $portfolioMetrics.Contains($metric.Name) -or
-            $portfolioMetrics[$metric.Name] -isnot [long] -or
-            [long]$portfolioMetrics[$metric.Name] -ne $metric.Value) {
-            throw "W8.9 final-decision metric '$($metric.Name)' must be exactly $($metric.Value): '$DisplayPath'."
-        }
+        throw "W8.9 decision candidate has the wrong representative-evidence promotion policy: '$DisplayPath'."
     }
 
     [ordered]@{
-        status = [string]$authority['status']
-        approvedBy = [string]$authority['approvedBy']
-        approvedOn = $approvalDateText
-        approvedDispositionOrdinals = [int[]]$approvedOrdinals
+        candidateId = $w8DecisionCandidateId
+        path = $DisplayPath
+        sha256 = $Sha256
+        status = [string]$selection['status']
+        proposedDispositionOrdinals = [int[]]$w8OwnerDispositionOrdinals
+        proposedDispositionActions = [string[]]$w8OwnerDispositionActions
         retiredDispositionCount = $retiredCount
         deferredDispositionCount = $deferredCount
-        selectedCategory = $w8SelectedCategory
-        selectedAction = $w8SelectedAction
+        proposedCategory = $w8ProposedCategory
+        proposedAction = $w8ProposedAction
+    }
+}
+
+function Assert-OwnerAuthorityEnvelope {
+    param(
+        [Parameter(Mandatory)][System.Collections.IDictionary] $Authority,
+        [Parameter(Mandatory)][System.Collections.IDictionary] $CandidateEvidence,
+        [Parameter(Mandatory)][string] $DisplayPath
+    )
+
+    Assert-ExactObjectKeys $Authority @(
+        'schemaVersion',
+        'authorityId',
+        'evidenceKind',
+        'status',
+        'approvedBy',
+        'approvedOn',
+        'candidateBinding',
+        'approvedCounterfactualDispositions',
+        'approvedSelection',
+        'scopeLimits') 'owner-authority envelope' $DisplayPath
+    if ($Authority['schemaVersion'] -isnot [long] -or
+        [long]$Authority['schemaVersion'] -ne 1 -or
+        $Authority['authorityId'] -isnot [string] -or
+        [string]$Authority['authorityId'] -cne $w8DecisionAuthorityId -or
+        $Authority['evidenceKind'] -isnot [string] -or
+        [string]$Authority['evidenceKind'] -cne 'owner-authority-envelope' -or
+        [string]$Authority['authorityId'] -ceq [string]$CandidateEvidence['candidateId'] -or
+        [string]$Authority['evidenceKind'] -ceq 'derived-designed-synthetic-decision-candidate' -or
+        $Authority['status'] -isnot [string] -or
+        [string]$Authority['status'] -cne 'owner-approved' -or
+        $Authority['approvedBy'] -isnot [string] -or
+        [string]$Authority['approvedBy'] -cne 'Vladimir Reshetnikov' -or
+        $Authority['approvedOn'] -isnot [string]) {
+        throw "W8.9 owner-authority envelope has the wrong identity, kind, status, approver, or approval-date type: '$DisplayPath'."
+    }
+
+    [datetime] $approvalDate = [datetime]::MinValue
+    $approvalDateText = [string]$Authority['approvedOn']
+    if (-not [datetime]::TryParseExact(
+            $approvalDateText,
+            'yyyy-MM-dd',
+            [System.Globalization.CultureInfo]::InvariantCulture,
+            [System.Globalization.DateTimeStyles]::None,
+            [ref]$approvalDate) -or
+        $approvalDate.ToString('yyyy-MM-dd', [System.Globalization.CultureInfo]::InvariantCulture) -cne $approvalDateText) {
+        throw "W8.9 owner-authority approval date must be a real calendar date in exact yyyy-MM-dd form: '$DisplayPath'."
+    }
+
+    if ($Authority['candidateBinding'] -isnot [System.Collections.IDictionary]) {
+        throw "W8.9 owner-authority envelope has no candidate binding: '$DisplayPath'."
+    }
+    $binding = [System.Collections.IDictionary]$Authority['candidateBinding']
+    Assert-ExactObjectKeys $binding @('path', 'candidateId', 'sha256') 'owner-authority candidate binding' $DisplayPath
+    if ($binding['path'] -isnot [string] -or
+        [string]$binding['path'] -cne [string]$CandidateEvidence['path'] -or
+        $binding['candidateId'] -isnot [string] -or
+        [string]$binding['candidateId'] -cne [string]$CandidateEvidence['candidateId'] -or
+        $binding['sha256'] -isnot [string] -or
+        [string]$binding['sha256'] -notmatch '^[0-9a-f]{64}$' -or
+        [string]$binding['sha256'] -cne [string]$CandidateEvidence['sha256']) {
+        throw "W8.9 owner-authority envelope does not bind the exact tracked candidate path, id, and computed SHA-256: '$DisplayPath'."
+    }
+
+    $approvedDispositions = @($Authority['approvedCounterfactualDispositions'])
+    if ($approvedDispositions.Count -ne $w8OwnerDispositionOrdinals.Count) {
+        throw "W8.9 owner-authority envelope must approve exactly seven ordinal-to-action pairs: '$DisplayPath'."
+    }
+    for ($index = 0; $index -lt $approvedDispositions.Count; $index++) {
+        if ($approvedDispositions[$index] -isnot [System.Collections.IDictionary]) {
+            throw "W8.9 owner-authority disposition approval $index is malformed: '$DisplayPath'."
+        }
+        $approvedDisposition = [System.Collections.IDictionary]$approvedDispositions[$index]
+        Assert-ExactObjectKeys $approvedDisposition @('ordinal', 'action') "owner-authority disposition approval $index" $DisplayPath
+        if ($approvedDisposition['ordinal'] -isnot [long] -or
+            [long]$approvedDisposition['ordinal'] -ne $w8OwnerDispositionOrdinals[$index] -or
+            $approvedDisposition['action'] -isnot [string] -or
+            [string]$approvedDisposition['action'] -cne $w8OwnerDispositionActions[$index] -or
+            [long]$approvedDisposition['ordinal'] -ne [long]$CandidateEvidence['proposedDispositionOrdinals'][$index] -or
+            [string]$approvedDisposition['action'] -cne [string]$CandidateEvidence['proposedDispositionActions'][$index]) {
+            throw "W8.9 owner-authority envelope does not approve the exact candidate ordinal-to-action map: '$DisplayPath'."
+        }
+    }
+
+    if ($Authority['approvedSelection'] -isnot [System.Collections.IDictionary]) {
+        throw "W8.9 owner-authority envelope has no approved candidate selection: '$DisplayPath'."
+    }
+    $approvedSelection = [System.Collections.IDictionary]$Authority['approvedSelection']
+    Assert-ExactObjectKeys $approvedSelection @('category', 'action') 'owner-authority approved selection' $DisplayPath
+    if ($approvedSelection['category'] -isnot [string] -or
+        [string]$approvedSelection['category'] -cne [string]$CandidateEvidence['proposedCategory'] -or
+        $approvedSelection['action'] -isnot [string] -or
+        [string]$approvedSelection['action'] -cne [string]$CandidateEvidence['proposedAction']) {
+        throw "W8.9 owner-authority envelope does not approve the exact candidate category and action: '$DisplayPath'."
+    }
+
+    if ($Authority['scopeLimits'] -isnot [System.Collections.IDictionary]) {
+        throw "W8.9 owner-authority envelope has no scope limits: '$DisplayPath'."
+    }
+    $scopeLimits = [System.Collections.IDictionary]$Authority['scopeLimits']
+    Assert-ExactObjectKeys $scopeLimits @('w8_10ClosureClaimed') 'owner-authority scope limits' $DisplayPath
+    if ($scopeLimits['w8_10ClosureClaimed'] -isnot [bool] -or
+        [bool]$scopeLimits['w8_10ClosureClaimed']) {
+        throw "W8.9 owner-authority envelope must not claim W8.10 closure: '$DisplayPath'."
+    }
+
+    [ordered]@{
+        authorityId = $w8DecisionAuthorityId
+        status = [string]$Authority['status']
+        approvedBy = [string]$Authority['approvedBy']
+        approvedOn = $approvalDateText
+        candidatePath = [string]$binding['path']
+        candidateId = [string]$binding['candidateId']
+        candidateSha256 = [string]$binding['sha256']
+        approvedDispositionOrdinals = [int[]]$w8OwnerDispositionOrdinals
+        retiredDispositionCount = [int]$CandidateEvidence['retiredDispositionCount']
+        deferredDispositionCount = [int]$CandidateEvidence['deferredDispositionCount']
+        approvedCategory = [string]$approvedSelection['category']
+        approvedAction = [string]$approvedSelection['action']
+        w8_10ClosureClaimed = $false
     }
 }
 
 function Assert-RequiredReleaseInputs {
     $validatedInputs = [System.Collections.Generic.List[object]]::new()
+    $candidateEvidence = $null
     foreach ($spec in Get-RequiredReleaseInputSpecs) {
         $fullPath = [System.IO.Path]::GetFullPath((Join-Path $repositoryRoot $spec.Path))
         if (-not [System.IO.File]::Exists($fullPath)) {
-            if ($spec.Role -ceq 'OwnerAuthorizedFinalDecision') {
-                throw "W8.9 owner-authorized final-decision artifact is missing: '$($spec.Path)'. Complete the owner disposition gate before W8.10 validation."
+            if ($spec.Role -ceq 'OwnerAuthorityEnvelope') {
+                throw "W8.9 owner-authority envelope is missing: '$($spec.Path)'. Owner approval remains absent; no W8.10 validation output was changed."
             }
             throw "Required immutable W8.9 release input is missing: '$($spec.Path)'."
         }
@@ -490,23 +763,25 @@ function Assert-RequiredReleaseInputs {
 
         $headBlob = Assert-TrackedHeadFile $spec.Path
         $sha256 = Get-Sha256Hex $fullPath
-        $authorityEvidence = $null
+        $semanticEvidence = $null
         if ($spec.Requirement -ceq 'ExactSha256') {
             if ($sha256 -cne $spec.Sha256) {
                 throw "Immutable W8.9 release input hash mismatch for '$($spec.Path)': expected $($spec.Sha256), observed $sha256."
             }
         }
-        elseif ($spec.Requirement -ceq 'OwnerApprovedDecision') {
-            try {
-                $decision = [System.IO.File]::ReadAllText($fullPath) | ConvertFrom-Json -AsHashtable
+        elseif ($spec.Requirement -ceq 'ProposedDecisionCandidate') {
+            $candidateJson = [System.IO.File]::ReadAllText($fullPath)
+            $candidate = ConvertFrom-StrictJsonObject $candidateJson $spec.Path 'decision-candidate input'
+            $candidateEvidence = Assert-DecisionCandidateRecord $candidate $spec.Path $sha256
+            $semanticEvidence = $candidateEvidence
+        }
+        elseif ($spec.Requirement -ceq 'CandidateBoundOwnerApproval') {
+            if ($null -eq $candidateEvidence) {
+                throw 'The validator release-input plan must validate the decision candidate before its owner-authority envelope.'
             }
-            catch {
-                throw "W8.9 final-decision input is not valid JSON: '$($spec.Path)'. $($_.Exception.Message)"
-            }
-            if ($decision -isnot [System.Collections.IDictionary]) {
-                throw "W8.9 final-decision input must be a JSON object: '$($spec.Path)'."
-            }
-            $authorityEvidence = Assert-OwnerAuthorizedDecisionRecord $decision $spec.Path
+            $authorityJson = [System.IO.File]::ReadAllText($fullPath)
+            $authority = ConvertFrom-StrictJsonObject $authorityJson $spec.Path 'owner-authority envelope'
+            $semanticEvidence = Assert-OwnerAuthorityEnvelope $authority $candidateEvidence $spec.Path
         }
         else {
             throw "Unknown W8.9 release-input requirement '$($spec.Requirement)'."
@@ -517,7 +792,7 @@ function Assert-RequiredReleaseInputs {
             path = $spec.Path
             headBlob = $headBlob
             sha256 = $sha256
-            authority = $authorityEvidence
+            semanticValidation = $semanticEvidence
         })
     }
 
@@ -790,130 +1065,299 @@ function Invoke-TrxParserSelfTest {
     }
 }
 
-function New-OwnerAuthoritySelfTestRecord {
+function New-DecisionCandidateSelfTestRecord {
     $dispositions = @(
         for ($index = 0; $index -lt $w8OwnerDispositionOrdinals.Count; $index++) {
             [ordered]@{
+                id = "self-test-$index"
                 ordinal = $w8OwnerDispositionOrdinals[$index]
                 disposition = $w8OwnerDispositionActions[$index]
+                useful = $true
                 decisionChanging = $false
+                reason = 'Synthetic validator self-test proposal.'
             }
         }
     )
 
     $record = [ordered]@{
         schemaVersion = 1
-        decisionId = 'interpreter-w8-static-field-portfolio-decision-v1'
-        evidenceKind = 'derived-designed-synthetic-decision'
-        decisionAuthority = [ordered]@{
-            status = 'owner-approved'
-            approvedBy = 'Vladimir Reshetnikov'
-            approvedOn = $w8OwnerApprovalDate
-            approvedDispositionOrdinals = [int[]]$w8OwnerDispositionOrdinals
-            scope = $w8OwnerApprovalScope
-        }
-        counterfactualOwnerDispositions = $dispositions
-        finalDecision = [ordered]@{
-            status = 'selected'
+        candidateId = $w8DecisionCandidateId
+        evidenceKind = 'derived-designed-synthetic-decision-candidate'
+        declaredPurpose = 'Synthetic validator self-test candidate; no owner authority or closure is claimed.'
+        evidenceInputs = @(
+            [ordered]@{
+                role = 'frozen-predeclaration'
+                path = $w8FrozenV1RelativePath
+                corpusId = 'interpreter-w8-static-field-incidents-v1'
+                sha256 = $w8FrozenV1Sha256
+            },
+            [ordered]@{
+                role = 'produced-outcome-reconciliation'
+                path = $w8ReconciledV2RelativePath
+                corpusId = 'interpreter-w8-static-field-incidents-v2'
+                sha256 = $w8ReconciledV2Sha256
+            })
+        metricRules = @('synthetic-self-test-rule')
+        proposedCounterfactualDispositions = $dispositions
+        verifiedCorrectedCounterfactuals = @()
+        confirmedNonDecisionChangingCorrections = @()
+        candidateSelection = [ordered]@{
+            status = 'computed-under-proposals-pending-owner-approval'
             tieDefers = $false
-            selectedCategory = $w8SelectedCategory
-            selectedAction = $w8SelectedAction
+            proposedCategory = $w8ProposedCategory
+            proposedAction = $w8ProposedAction
             winningSubstantiveKey = '14:4:7:9'
             runnerUpCategory = 'additional-static-storage-family'
             runnerUpSubstantiveKey = '12:4:6:11'
             decisiveKey = 'incidentCount'
-            implementationDisposition = 'selected-for-post-w8-planning-not-implemented-by-w8'
+            implementationDisposition = 'proposed-for-post-w8-planning-not-implemented-by-w8'
+            rationale = 'Synthetic self-test candidate remains pending owner approval.'
         }
         scopeLimits = [ordered]@{
+            ownerAuthorityClaimed = $false
+            w8_9ClosureClaimed = $false
             representativeEvidenceClaimed = $false
-            selectedSuccessorImplementedByW8 = $false
+            proposedSuccessorImplementedByW8 = $false
             w8_10ClosureClaimed = $false
             promotionPolicy = 'no-generated-row-may-be-promoted-to-representative-observation'
         }
-        portfolioMetrics = [ordered]@{
+        candidatePortfolioMetrics = [ordered]@{
+            calculationBasis = 'conditional-on-unapproved-proposed-dispositions'
+            incidentCount = 35
+            applicationShapeCount = 4
+            usefulCount = 33
+            decisionChangingCount = 19
+            attributableEvidenceCount = 25
+            exactOrNoBoundaryCount = 24
+            firstBoundaryCount = 11
             representativeObservationCount = 0
             executedBaselineCount = 35
             manifestOnlyBaselineCount = 0
+            retiredCounterfactualCount = 5
+            deferredCounterfactualCount = 2
+        }
+        firstBoundaryCounts = [ordered]@{ none = 35 }
+        candidateCategoryMetrics = @()
+        qualification = [ordered]@{ qualifiedCategories = @($w8ProposedCategory) }
+    }
+
+    $record | ConvertTo-Json -Depth 8 | ConvertFrom-Json -AsHashtable
+}
+
+function New-OwnerAuthoritySelfTestEnvelope {
+    param([Parameter(Mandatory)][string] $CandidateSha256)
+
+    $approvedDispositions = @(
+        for ($index = 0; $index -lt $w8OwnerDispositionOrdinals.Count; $index++) {
+            [ordered]@{
+                ordinal = $w8OwnerDispositionOrdinals[$index]
+                action = $w8OwnerDispositionActions[$index]
+            }
+        }
+    )
+    $record = [ordered]@{
+        schemaVersion = 1
+        authorityId = $w8DecisionAuthorityId
+        evidenceKind = 'owner-authority-envelope'
+        status = 'owner-approved'
+        approvedBy = 'Vladimir Reshetnikov'
+        approvedOn = '2024-02-29'
+        candidateBinding = [ordered]@{
+            path = $w8DecisionCandidateRelativePath
+            candidateId = $w8DecisionCandidateId
+            sha256 = $CandidateSha256
+        }
+        approvedCounterfactualDispositions = $approvedDispositions
+        approvedSelection = [ordered]@{
+            category = $w8ProposedCategory
+            action = $w8ProposedAction
+        }
+        scopeLimits = [ordered]@{
+            w8_10ClosureClaimed = $false
         }
     }
 
     $record | ConvertTo-Json -Depth 8 | ConvertFrom-Json -AsHashtable
 }
 
-function Assert-RejectedOwnerAuthorityRecord {
+function Assert-RejectedDecisionCandidateRecord {
     param(
-        [Parameter(Mandatory)][System.Collections.IDictionary] $Decision,
+        [Parameter(Mandatory)][System.Collections.IDictionary] $Candidate,
+        [Parameter(Mandatory)][string] $Sha256,
         [Parameter(Mandatory)][string] $CaseName
     )
 
     try {
-        $null = Assert-OwnerAuthorizedDecisionRecord $Decision $CaseName
+        $null = Assert-DecisionCandidateRecord $Candidate $CaseName $Sha256
     }
     catch {
         return
     }
 
-    throw "The owner-authority self-test '$CaseName' was expected to be rejected."
+    throw "The decision-candidate self-test '$CaseName' was expected to be rejected."
+}
+
+function Assert-RejectedOwnerAuthorityEnvelope {
+    param(
+        [Parameter(Mandatory)][System.Collections.IDictionary] $Authority,
+        [Parameter(Mandatory)][System.Collections.IDictionary] $CandidateEvidence,
+        [Parameter(Mandatory)][string] $CaseName
+    )
+
+    try {
+        $null = Assert-OwnerAuthorityEnvelope $Authority $CandidateEvidence $CaseName
+    }
+    catch {
+        return
+    }
+
+    throw "The owner-authority-envelope self-test '$CaseName' was expected to be rejected."
 }
 
 function Invoke-OwnerAuthoritySelfTest {
-    $valid = New-OwnerAuthoritySelfTestRecord
-    $evidence = Assert-OwnerAuthorizedDecisionRecord $valid 'valid-owner-authority'
-    if ($evidence.status -cne 'owner-approved' -or
-        $evidence.retiredDispositionCount -ne 5 -or
-        $evidence.deferredDispositionCount -ne 2) {
-        throw 'The valid owner-authority self-test returned incorrect evidence.'
+    $candidateSha256 = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+    $candidate = New-DecisionCandidateSelfTestRecord
+    $candidateEvidence = Assert-DecisionCandidateRecord $candidate $w8DecisionCandidateRelativePath $candidateSha256
+    if ($candidateEvidence.status -cne 'computed-under-proposals-pending-owner-approval' -or
+        $candidateEvidence.retiredDispositionCount -ne 5 -or
+        $candidateEvidence.deferredDispositionCount -ne 2) {
+        throw 'The valid decision-candidate self-test returned incorrect evidence.'
     }
 
-    $pending = New-OwnerAuthoritySelfTestRecord
-    $pending['decisionAuthority']['status'] = 'pending-owner-approval'
-    Assert-RejectedOwnerAuthorityRecord $pending 'pending-owner-authority'
+    $valid = New-OwnerAuthoritySelfTestEnvelope $candidateSha256
+    $evidence = Assert-OwnerAuthorityEnvelope $valid $candidateEvidence 'valid-owner-authority-envelope'
+    if ($evidence.status -cne 'owner-approved' -or
+        $evidence.candidateSha256 -cne $candidateSha256 -or
+        $evidence.retiredDispositionCount -ne 5 -or
+        $evidence.deferredDispositionCount -ne 2 -or
+        $evidence.w8_10ClosureClaimed) {
+        throw 'The valid owner-authority-envelope self-test returned incorrect evidence.'
+    }
 
-    $wrongOrdinals = New-OwnerAuthoritySelfTestRecord
-    $wrongOrdinals['decisionAuthority']['approvedDispositionOrdinals'] = @(20, 21, 22, 26, 27, 29, 35)
-    Assert-RejectedOwnerAuthorityRecord $wrongOrdinals 'wrong-owner-ordinals'
+    $candidateWithAuthority = New-DecisionCandidateSelfTestRecord
+    $candidateWithAuthority['decisionAuthority'] = [ordered]@{ status = 'owner-approved' }
+    Assert-RejectedDecisionCandidateRecord $candidateWithAuthority $candidateSha256 'candidate-contains-decision-authority'
 
-    $creditedDisposition = New-OwnerAuthoritySelfTestRecord
-    $creditedDisposition['counterfactualOwnerDispositions'][0]['decisionChanging'] = $true
-    Assert-RejectedOwnerAuthorityRecord $creditedDisposition 'credited-owner-disposition'
+    $candidateWithFinal = New-DecisionCandidateSelfTestRecord
+    $candidateWithFinal['finalDecision'] = [ordered]@{ status = 'selected' }
+    Assert-RejectedDecisionCandidateRecord $candidateWithFinal $candidateSha256 'candidate-contains-final-decision'
 
-    $swappedActions = New-OwnerAuthoritySelfTestRecord
-    $swappedActions['counterfactualOwnerDispositions'][4]['disposition'] = 'deferred-unrealized-physical-counterfactual'
-    $swappedActions['counterfactualOwnerDispositions'][5]['disposition'] = 'retired-disproved-premise'
-    Assert-RejectedOwnerAuthorityRecord $swappedActions 'swapped-owner-actions'
+    $wrongCandidateStatus = New-DecisionCandidateSelfTestRecord
+    $wrongCandidateStatus['candidateSelection']['status'] = 'selected'
+    Assert-RejectedDecisionCandidateRecord $wrongCandidateStatus $candidateSha256 'candidate-selected-status'
 
-    $wrongCategory = New-OwnerAuthoritySelfTestRecord
-    $wrongCategory['finalDecision']['selectedCategory'] = 'additional-static-storage-family'
-    Assert-RejectedOwnerAuthorityRecord $wrongCategory 'wrong-selected-category'
+    $wrongCandidateAction = New-DecisionCandidateSelfTestRecord
+    $wrongCandidateAction['proposedCounterfactualDispositions'][0]['disposition'] = 'deferred-unrealized-physical-counterfactual'
+    Assert-RejectedDecisionCandidateRecord $wrongCandidateAction $candidateSha256 'candidate-wrong-proposed-action'
 
-    $wrongAction = New-OwnerAuthoritySelfTestRecord
-    $wrongAction['finalDecision']['selectedAction'] = 'Extend binding reach.'
-    Assert-RejectedOwnerAuthorityRecord $wrongAction 'wrong-selected-action'
+    $stringCandidateOrdinal = New-DecisionCandidateSelfTestRecord
+    $stringCandidateOrdinal['proposedCounterfactualDispositions'][0]['ordinal'] = '20'
+    Assert-RejectedDecisionCandidateRecord $stringCandidateOrdinal $candidateSha256 'candidate-string-ordinal'
 
-    $wrongDate = New-OwnerAuthoritySelfTestRecord
-    $wrongDate['decisionAuthority']['approvedOn'] = '2026-08-12'
-    Assert-RejectedOwnerAuthorityRecord $wrongDate 'wrong-approval-date'
+    $creditedCandidateDisposition = New-DecisionCandidateSelfTestRecord
+    $creditedCandidateDisposition['proposedCounterfactualDispositions'][0]['decisionChanging'] = $true
+    Assert-RejectedDecisionCandidateRecord $creditedCandidateDisposition $candidateSha256 'candidate-credited-disposition'
 
-    $malformedScope = New-OwnerAuthoritySelfTestRecord
-    $malformedScope['decisionAuthority']['scope'] = [ordered]@{ text = $w8OwnerApprovalScope }
-    Assert-RejectedOwnerAuthorityRecord $malformedScope 'malformed-approval-scope'
+    $wrongCandidateSelection = New-DecisionCandidateSelfTestRecord
+    $wrongCandidateSelection['candidateSelection']['proposedCategory'] = 'additional-static-storage-family'
+    Assert-RejectedDecisionCandidateRecord $wrongCandidateSelection $candidateSha256 'candidate-wrong-selection'
 
-    $tiedDecision = New-OwnerAuthoritySelfTestRecord
-    $tiedDecision['finalDecision']['tieDefers'] = $true
-    Assert-RejectedOwnerAuthorityRecord $tiedDecision 'tied-final-decision'
+    $wrongCandidateMetric = New-DecisionCandidateSelfTestRecord
+    $wrongCandidateMetric['candidatePortfolioMetrics']['executedBaselineCount'] = 34
+    Assert-RejectedDecisionCandidateRecord $wrongCandidateMetric $candidateSha256 'candidate-wrong-metric'
 
-    $claimedClosure = New-OwnerAuthoritySelfTestRecord
+    $claimedCandidateScope = New-DecisionCandidateSelfTestRecord
+    $claimedCandidateScope['scopeLimits']['w8_10ClosureClaimed'] = $true
+    Assert-RejectedDecisionCandidateRecord $claimedCandidateScope $candidateSha256 'candidate-claimed-w8-10-closure'
+
+    $duplicateCandidateRejected = $false
+    try {
+        $null = ConvertFrom-StrictJsonObject '{"candidateId":"first","candidateId":"second"}' 'duplicate-candidate-property' 'decision-candidate input'
+    }
+    catch {
+        $duplicateCandidateRejected = $true
+    }
+    if (-not $duplicateCandidateRejected) {
+        throw 'The duplicate candidate-property self-test was expected to be rejected.'
+    }
+
+    $pending = New-OwnerAuthoritySelfTestEnvelope $candidateSha256
+    $pending['status'] = 'pending-owner-approval'
+    Assert-RejectedOwnerAuthorityEnvelope $pending $candidateEvidence 'pending-owner-authority'
+
+    $wrongBindingPath = New-OwnerAuthoritySelfTestEnvelope $candidateSha256
+    $wrongBindingPath['candidateBinding']['path'] = 'tests/corpus/other.json'
+    Assert-RejectedOwnerAuthorityEnvelope $wrongBindingPath $candidateEvidence 'wrong-candidate-path-binding'
+
+    $wrongBindingId = New-OwnerAuthoritySelfTestEnvelope $candidateSha256
+    $wrongBindingId['candidateBinding']['candidateId'] = 'other-candidate'
+    Assert-RejectedOwnerAuthorityEnvelope $wrongBindingId $candidateEvidence 'wrong-candidate-id-binding'
+
+    $wrongBindingSha = New-OwnerAuthoritySelfTestEnvelope ('f' * 64)
+    Assert-RejectedOwnerAuthorityEnvelope $wrongBindingSha $candidateEvidence 'wrong-candidate-sha-binding'
+
+    $swappedActions = New-OwnerAuthoritySelfTestEnvelope $candidateSha256
+    $swappedActions['approvedCounterfactualDispositions'][4]['action'] = 'deferred-unrealized-physical-counterfactual'
+    $swappedActions['approvedCounterfactualDispositions'][5]['action'] = 'retired-disproved-premise'
+    Assert-RejectedOwnerAuthorityEnvelope $swappedActions $candidateEvidence 'swapped-owner-actions'
+
+    $wrongOrdinal = New-OwnerAuthoritySelfTestEnvelope $candidateSha256
+    $wrongOrdinal['approvedCounterfactualDispositions'][6]['ordinal'] = 35
+    Assert-RejectedOwnerAuthorityEnvelope $wrongOrdinal $candidateEvidence 'wrong-owner-ordinal'
+
+    $wrongCategory = New-OwnerAuthoritySelfTestEnvelope $candidateSha256
+    $wrongCategory['approvedSelection']['category'] = 'additional-static-storage-family'
+    Assert-RejectedOwnerAuthorityEnvelope $wrongCategory $candidateEvidence 'wrong-approved-category'
+
+    $wrongAction = New-OwnerAuthoritySelfTestEnvelope $candidateSha256
+    $wrongAction['approvedSelection']['action'] = 'Extend binding reach.'
+    Assert-RejectedOwnerAuthorityEnvelope $wrongAction $candidateEvidence 'wrong-approved-action'
+
+    $invalidDate = New-OwnerAuthoritySelfTestEnvelope $candidateSha256
+    $invalidDate['approvedOn'] = '2025-02-29'
+    Assert-RejectedOwnerAuthorityEnvelope $invalidDate $candidateEvidence 'invalid-calendar-date'
+
+    $wrongDateShape = New-OwnerAuthoritySelfTestEnvelope $candidateSha256
+    $wrongDateShape['approvedOn'] = '2024-2-29'
+    Assert-RejectedOwnerAuthorityEnvelope $wrongDateShape $candidateEvidence 'non-canonical-date'
+
+    $wrongDateType = New-OwnerAuthoritySelfTestEnvelope $candidateSha256
+    $wrongDateType['approvedOn'] = 20240229
+    Assert-RejectedOwnerAuthorityEnvelope $wrongDateType $candidateEvidence 'non-string-date'
+
+    $stringOrdinal = New-OwnerAuthoritySelfTestEnvelope $candidateSha256
+    $stringOrdinal['approvedCounterfactualDispositions'][0]['ordinal'] = '20'
+    Assert-RejectedOwnerAuthorityEnvelope $stringOrdinal $candidateEvidence 'string-approved-ordinal'
+
+    $wrongKind = New-OwnerAuthoritySelfTestEnvelope $candidateSha256
+    $wrongKind['evidenceKind'] = 'derived-designed-synthetic-decision-candidate'
+    Assert-RejectedOwnerAuthorityEnvelope $wrongKind $candidateEvidence 'candidate-kind-masquerade'
+
+    $extraField = New-OwnerAuthoritySelfTestEnvelope $candidateSha256
+    $extraField['finalDecision'] = [ordered]@{ status = 'selected' }
+    Assert-RejectedOwnerAuthorityEnvelope $extraField $candidateEvidence 'prohibited-final-field'
+
+    $claimedClosure = New-OwnerAuthoritySelfTestEnvelope $candidateSha256
     $claimedClosure['scopeLimits']['w8_10ClosureClaimed'] = $true
-    Assert-RejectedOwnerAuthorityRecord $claimedClosure 'claimed-w8-10-closure'
+    Assert-RejectedOwnerAuthorityEnvelope $claimedClosure $candidateEvidence 'claimed-w8-10-closure'
 
-    $stringOrdinal = New-OwnerAuthoritySelfTestRecord
-    $stringOrdinal['counterfactualOwnerDispositions'][0]['ordinal'] = '20'
-    Assert-RejectedOwnerAuthorityRecord $stringOrdinal 'string-disposition-ordinal'
+    $duplicateAuthorityRejected = $false
+    try {
+        $null = ConvertFrom-StrictJsonObject '{"status":"owner-approved","status":"pending-owner-approval"}' 'duplicate-authority-property' 'owner-authority envelope'
+    }
+    catch {
+        $duplicateAuthorityRejected = $true
+    }
+    if (-not $duplicateAuthorityRejected) {
+        throw 'The duplicate owner-authority-property self-test was expected to be rejected.'
+    }
 
     [ordered]@{
-        gate = 'W8.9-owner-authority-v1'
-        validCases = 1
-        rejectedCases = 11
+        gate = 'W8.9-candidate-bound-owner-authority-v1'
+        validCandidateCases = 1
+        rejectedCandidateCases = 10
+        validAuthorityCases = 1
+        rejectedAuthorityCases = 15
         status = 'Passed'
     }
 }
@@ -1118,10 +1562,10 @@ function Get-CommandSpecs {
         [ordered]@{ Id = 'ordinary-dump'; Project = $integrationProject; Filter = 'Category=Dump&Corpus!=ModeledIncidentContextV1'; Verbosity = 'normal' }
         [ordered]@{ Id = 'optimized-context'; Project = $integrationProject; Filter = 'Category=Dump&Corpus=ModeledIncidentContextV1'; Verbosity = 'normal' }
         [ordered]@{ Id = 'focused-v2'; Project = $integrationProject; Filter = 'FullyQualifiedName~PhoenixInspect.IntegrationTests.W8V2'; Verbosity = 'normal' }
-        [ordered]@{ Id = 'generated-conformance'; Project = $integrationProject; Filter = 'FullyQualifiedName~PhoenixInspect.IntegrationTests.W8&Corpus!=W8MeaningfulSyntheticV1&Corpus!=W8MeaningfulSyntheticV2&Corpus!=W8MeaningfulSyntheticFinalDecision'; Verbosity = 'normal' }
+        [ordered]@{ Id = 'generated-conformance'; Project = $integrationProject; Filter = 'FullyQualifiedName~PhoenixInspect.IntegrationTests.W8&Corpus!=W8MeaningfulSyntheticV1&Corpus!=W8MeaningfulSyntheticV2&Corpus!=W8MeaningfulSyntheticDecisionCandidate'; Verbosity = 'normal' }
         [ordered]@{ Id = 'w8-portfolio-v1'; Project = $integrationProject; Filter = 'Corpus=W8MeaningfulSyntheticV1'; Verbosity = 'normal' }
         [ordered]@{ Id = 'w8-portfolio-v2'; Project = $integrationProject; Filter = 'Corpus=W8MeaningfulSyntheticV2'; Verbosity = 'normal' }
-        [ordered]@{ Id = 'w8-final-decision'; Project = $integrationProject; Filter = 'Corpus=W8MeaningfulSyntheticFinalDecision'; Verbosity = 'normal' }
+        [ordered]@{ Id = 'w8-decision-candidate'; Project = $integrationProject; Filter = 'Corpus=W8MeaningfulSyntheticDecisionCandidate'; Verbosity = 'normal' }
         [ordered]@{ Id = 'public-surface'; Project = $integrationProject; Filter = 'FullyQualifiedName~PublicSurface|FullyQualifiedName~public_surface'; Verbosity = 'minimal' }
     )
     $testSelections = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
@@ -1211,7 +1655,7 @@ function Invoke-CommandPlanSelfTest {
         'generated-conformance',
         'w8-portfolio-v1',
         'w8-portfolio-v2',
-        'w8-final-decision',
+        'w8-decision-candidate',
         'public-surface',
         'preview-demo',
         'prerelease-payloads',
@@ -1261,10 +1705,10 @@ function Invoke-CommandPlanSelfTest {
         [pscustomobject]@{ Id = 'ordinary-dump'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'Category=Dump&Corpus!=ModeledIncidentContextV1'; Verbosity = 'normal' },
         [pscustomobject]@{ Id = 'optimized-context'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'Category=Dump&Corpus=ModeledIncidentContextV1'; Verbosity = 'normal' },
         [pscustomobject]@{ Id = 'focused-v2'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'FullyQualifiedName~PhoenixInspect.IntegrationTests.W8V2'; Verbosity = 'normal' },
-        [pscustomobject]@{ Id = 'generated-conformance'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'FullyQualifiedName~PhoenixInspect.IntegrationTests.W8&Corpus!=W8MeaningfulSyntheticV1&Corpus!=W8MeaningfulSyntheticV2&Corpus!=W8MeaningfulSyntheticFinalDecision'; Verbosity = 'normal' },
+        [pscustomobject]@{ Id = 'generated-conformance'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'FullyQualifiedName~PhoenixInspect.IntegrationTests.W8&Corpus!=W8MeaningfulSyntheticV1&Corpus!=W8MeaningfulSyntheticV2&Corpus!=W8MeaningfulSyntheticDecisionCandidate'; Verbosity = 'normal' },
         [pscustomobject]@{ Id = 'w8-portfolio-v1'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'Corpus=W8MeaningfulSyntheticV1'; Verbosity = 'normal' },
         [pscustomobject]@{ Id = 'w8-portfolio-v2'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'Corpus=W8MeaningfulSyntheticV2'; Verbosity = 'normal' },
-        [pscustomobject]@{ Id = 'w8-final-decision'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'Corpus=W8MeaningfulSyntheticFinalDecision'; Verbosity = 'normal' },
+        [pscustomobject]@{ Id = 'w8-decision-candidate'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'Corpus=W8MeaningfulSyntheticDecisionCandidate'; Verbosity = 'normal' },
         [pscustomobject]@{ Id = 'public-surface'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'FullyQualifiedName~PublicSurface|FullyQualifiedName~public_surface'; Verbosity = 'minimal' })
     foreach ($contract in $testContracts) {
         $command = $byId[$contract.Id]
