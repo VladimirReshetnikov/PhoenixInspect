@@ -216,7 +216,7 @@ public sealed class WatchChildRow : WatchRow
 /// rows, and all rows re-evaluate when the evaluation context changes.
 /// </summary>
 /// <remarks>
-/// Each expression routes through <see cref="ExpressionEvaluationService.EvaluateWatch"/>, and the children a row
+/// Each expression routes through <see cref="ExpressionEvaluationService"/>.EvaluateWatch, and the children a row
 /// expands into come from the report itself, so the pane decides nothing about values. The flattened-tree shape —
 /// child rows realized beneath their parent on expansion, released on collapse — adapts the watch-expression tree
 /// of the Helix IDE (used with permission) to this pane's immutable evidence reports.

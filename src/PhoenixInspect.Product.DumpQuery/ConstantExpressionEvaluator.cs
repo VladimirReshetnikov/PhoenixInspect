@@ -706,11 +706,37 @@ public static partial class ConstantExpressionEvaluator
             resolvers,
             recordDeferredSessionAuthority: false).Evaluation;
 
+    /// <summary>
+    /// Attempts to evaluate one raw expression as a constant, additionally resolving names through caller-referenced
+    /// assemblies.
+    /// </summary>
+    /// <param name="session">The open dump session, or null when only references and literals may resolve.</param>
+    /// <param name="expression">The raw expression text, submitted without normalization.</param>
+    /// <param name="resolvers">Bridges to the frozen dump pipelines, or null.</param>
+    /// <param name="references">
+    /// Caller-referenced assemblies whose literal fields, enum declarations, and type names participate in
+    /// resolution. An unaliased reference joins the global scope beside the session's modules; an aliased
+    /// reference is reachable only through its alias qualifier.
+    /// </param>
+    /// <returns>An exact value, a typed constant-domain error, or a not-constant disposition.</returns>
+    public static ConstantExpressionEvaluation Evaluate(
+        ClrmdDumpSession? session,
+        string? expression,
+        ConstantOperandResolvers? resolvers,
+        ImmutableArray<ConstantReferenceAssembly> references) =>
+        RunEvaluationPass(
+            session,
+            expression,
+            resolvers,
+            recordDeferredSessionAuthority: false,
+            references).Evaluation;
+
     private static EvaluationPassResult RunEvaluationPass(
         ClrmdDumpSession? session,
         string? expression,
         ConstantOperandResolvers? resolvers,
-        bool recordDeferredSessionAuthority)
+        bool recordDeferredSessionAuthority,
+        ImmutableArray<ConstantReferenceAssembly> references = default)
     {
         if (string.IsNullOrWhiteSpace(expression) ||
             expression.Length > CSharpExpressionFrontEnd.MaximumExpressionLength)
@@ -755,11 +781,14 @@ public static partial class ConstantExpressionEvaluator
             // Preserve the evidence-free subset (including its typed arithmetic/member errors) before consulting
             // session admission. The null-session probe cannot read metadata or invoke dump resolvers, and it records
             // when an otherwise-invalid fold reached the one resolver whose answer can change with module metadata.
+            // References are session-independent authority, so they participate in the probe: a reference-declared
+            // literal or enum answers before, and without, module-edit admission.
             var pure = RunEvaluationPass(
                 session: null,
                 expression,
                 resolvers: null,
-                recordDeferredSessionAuthority: true);
+                recordDeferredSessionAuthority: true,
+                references);
             if (!pure.DeferredSessionAuthority &&
                 pure.Evaluation.Status != ConstantExpressionStatus.NotConstant)
             {
@@ -780,19 +809,26 @@ public static partial class ConstantExpressionEvaluator
         // 'Guid.Empty.Version' — folds instead, because those members are type statics and their values, not
         // metadata literals declared in dump modules; and a chain ending in '.Length' folds so an array or
         // string field's length can answer.
-        if (TryReadQualifiedName(syntax, out var nameParts) &&
+        if (TryReadQualifiedName(syntax, out var nameParts, out var nameAlias) &&
             nameParts[^1] != "Length" &&
             !IsKnownTypeHead(nameParts) &&
             !(syntax is MemberAccessExpressionSyntax typeStaticCandidate &&
                 TryReadTypeReceiver(typeStaticCandidate.Expression, out _)))
         {
+            // An alias-qualified name resolves only through the references carrying that alias, never through the
+            // session's modules, exactly as extern-alias scoping works in source.
+            var applicableReferences = ApplicableReferences(references, nameAlias);
             return EvaluationPassResult.Completed(
-                session is null || nameParts.Length < 3
+                (session is null && applicableReferences.IsEmpty) || nameParts.Length < 3
                     ? ConstantExpressionEvaluation.NotConstantResult(expression)
-                    : ResolveLiteralField(session, expression, nameParts));
+                    : ResolveLiteralField(
+                        nameAlias is null ? session : null,
+                        applicableReferences,
+                        expression,
+                        nameParts));
         }
 
-        var context = new FoldContext(session, resolvers, recordDeferredSessionAuthority);
+        var context = new FoldContext(session, resolvers, recordDeferredSessionAuthority, references);
         var outcome = Fold(syntax, context);
         var evaluation = outcome.Disposition switch
         {
@@ -819,7 +855,8 @@ public static partial class ConstantExpressionEvaluator
     private sealed class FoldContext(
         ClrmdDumpSession? session,
         ConstantOperandResolvers? resolvers,
-        bool recordDeferredSessionAuthority)
+        bool recordDeferredSessionAuthority,
+        ImmutableArray<ConstantReferenceAssembly> references = default)
     {
         // Lambda-parameter bindings, innermost last. Folding is single-threaded recursive descent, so a simple
         // push/pop stack gives correct lexical scoping and shadowing without allocating per scope.
@@ -828,6 +865,9 @@ public static partial class ConstantExpressionEvaluator
         internal ClrmdDumpSession? Session { get; } = session;
 
         internal ConstantOperandResolvers? Resolvers { get; } = resolvers;
+
+        internal ImmutableArray<ConstantReferenceAssembly> References { get; } =
+            references.IsDefault ? [] : references;
 
         internal bool DeferredSessionAuthority { get; private set; }
 
@@ -1857,9 +1897,9 @@ public static partial class ConstantExpressionEvaluator
         // value. A chain neither path can value stays not-constant, so the frozen pipelines keep rejecting it
         // with their own vocabulary.
         FoldOutcome? qualifiedOutcome = null;
-        if (!leftmostBound && TryReadQualifiedName(memberAccess, out var parts))
+        if (!leftmostBound && TryReadQualifiedName(memberAccess, out var parts, out var chainAlias))
         {
-            var qualified = FoldQualifiedName(parts, context);
+            var qualified = FoldQualifiedName(parts, chainAlias, context);
             if (qualified.Disposition != FoldDisposition.NotArithmetic)
             {
                 return qualified;
@@ -1901,13 +1941,22 @@ public static partial class ConstantExpressionEvaluator
         };
     }
 
-    private static FoldOutcome FoldQualifiedName(ImmutableArray<string> parts, FoldContext context)
+    private static FoldOutcome FoldQualifiedName(
+        ImmutableArray<string> parts,
+        string? alias,
+        FoldContext context)
     {
         // A metadata literal wins when one declares the name; a stored static field then resolves through the
-        // caller's bridge to the frozen pipeline, so composed expressions can consume its exact value.
-        if (context.Session is not null && parts.Length >= 3)
+        // caller's bridge to the frozen pipeline, so composed expressions can consume its exact value. An
+        // alias-qualified name resolves only through the references carrying that alias.
+        var applicableReferences = ApplicableReferences(context.References, alias);
+        if ((context.Session is not null || !applicableReferences.IsEmpty) && parts.Length >= 3)
         {
-            var resolved = ResolveLiteralField(context.Session, string.Join('.', parts), parts);
+            var resolved = ResolveLiteralField(
+                alias is null ? context.Session : null,
+                applicableReferences,
+                string.Join('.', parts),
+                parts);
             switch (resolved.Status)
             {
                 case ConstantExpressionStatus.Exact:
@@ -1926,13 +1975,27 @@ public static partial class ConstantExpressionEvaluator
             }
         }
 
-        if (context.Resolvers?.StaticName is { } staticResolver)
+        // The dump's static-field bridge speaks the global scope only; an alias names a reference, not a module.
+        if (alias is null && context.Resolvers?.StaticName is { } staticResolver)
         {
             return ResolveDumpOperand(context, staticResolver(string.Join('.', parts)));
         }
 
         return FoldOutcome.NotArithmetic();
     }
+
+    /// <summary>Selects the references one name may resolve through, honoring extern-alias scoping.</summary>
+    private static ImmutableArray<ConstantReferenceAssembly> ApplicableReferences(
+        ImmutableArray<ConstantReferenceAssembly> references,
+        string? alias) =>
+        references.IsDefaultOrEmpty
+            ? []
+            :
+            [
+                .. references.Where(reference => alias is null
+                    ? reference.Alias is null
+                    : string.Equals(reference.Alias, alias, StringComparison.Ordinal)),
+            ];
 
     private static FoldOutcome FoldInvocation(InvocationExpressionSyntax invocation, FoldContext context)
     {
@@ -2377,8 +2440,12 @@ public static partial class ConstantExpressionEvaluator
         }
     }
 
-    private static bool TryReadQualifiedName(ExpressionSyntax syntax, out ImmutableArray<string> parts)
+    private static bool TryReadQualifiedName(
+        ExpressionSyntax syntax,
+        out ImmutableArray<string> parts,
+        out string? alias)
     {
+        alias = null;
         var builder = ImmutableArray.CreateBuilder<string>();
         var current = syntax;
         while (current is MemberAccessExpressionSyntax
@@ -2399,10 +2466,12 @@ public static partial class ConstantExpressionEvaluator
                 break;
             case AliasQualifiedNameSyntax
             {
-                Alias.Identifier.ValueText: "global",
+                Alias.Identifier.ValueText: var aliasText,
                 Name: IdentifierNameSyntax aliased,
             }:
                 builder.Insert(0, aliased.Identifier.ValueText);
+                // 'global' is the language's name for the default scope, not an extern alias.
+                alias = aliasText == "global" ? null : aliasText;
                 break;
             default:
                 parts = default;
@@ -2414,7 +2483,8 @@ public static partial class ConstantExpressionEvaluator
     }
 
     private static ConstantExpressionEvaluation ResolveLiteralField(
-        ClrmdDumpSession session,
+        ClrmdDumpSession? session,
+        ImmutableArray<ConstantReferenceAssembly> references,
         string expression,
         ImmutableArray<string> parts)
     {
@@ -2426,21 +2496,12 @@ public static partial class ConstantExpressionEvaluator
         string? invalidCode = null;
         string? invalidMessage = null;
 
-        foreach (var module in session.Modules)
+        void ScanImage(ImmutableArray<byte> metadataBytes, string sourceName, string contentSha256)
         {
-            var metadata = session.ReadModuleContentIdentity(module);
-            if (metadata.Status != ClrmdEvidenceStatus.Exact ||
-                metadata.Value is null ||
-                metadata.Evidence.Length != 1 ||
-                metadata.Evidence[0].Status != MemoryReadStatus.Exact)
-            {
-                continue;
-            }
-
             scanned++;
             try
             {
-                using var provider = MetadataReaderProvider.FromMetadataImage(metadata.Evidence[0].Bytes);
+                using var provider = MetadataReaderProvider.FromMetadataImage(metadataBytes);
                 var reader = provider.GetMetadataReader();
                 foreach (var handle in reader.TypeDefinitions)
                 {
@@ -2460,8 +2521,8 @@ public static partial class ConstantExpressionEvaluator
                         typeNamespace,
                         typeName,
                         memberName,
-                        module.Name,
-                        metadata.Value.MetadataSha256,
+                        sourceName,
+                        contentSha256,
                         out var projectionCode,
                         out var projectionMessage);
                     if (projected is not null)
@@ -2477,10 +2538,35 @@ public static partial class ConstantExpressionEvaluator
             }
             catch (BadImageFormatException)
             {
-                // A malformed metadata image cannot contribute a declaration; other modules still can.
+                // A malformed metadata image cannot contribute a declaration; other sources still can.
             }
         }
 
+        if (session is not null)
+        {
+            foreach (var module in session.Modules)
+            {
+                var metadata = session.ReadModuleContentIdentity(module);
+                if (metadata.Status != ClrmdEvidenceStatus.Exact ||
+                    metadata.Value is null ||
+                    metadata.Evidence.Length != 1 ||
+                    metadata.Evidence[0].Status != MemoryReadStatus.Exact)
+                {
+                    continue;
+                }
+
+                ScanImage(metadata.Evidence[0].Bytes, module.Name, metadata.Value.MetadataSha256);
+            }
+        }
+
+        // Caller-referenced assemblies join the scan beside the session's modules; alias scoping already selected
+        // which references apply, so a declaration here carries the reference's own name and content digest.
+        foreach (var reference in references)
+        {
+            ScanImage(reference.MetadataBytesCore, reference.DisplayName, reference.MetadataSha256);
+        }
+
+        var totalSources = (session?.Modules.Length ?? 0) + references.Length;
         if (matches.Count == 1)
         {
             var single = matches[0];
@@ -2500,7 +2586,7 @@ public static partial class ConstantExpressionEvaluator
                 single.TypeToken,
                 single.FieldToken,
                 scanned,
-                session.Modules.Length,
+                totalSources,
                 metadataLiteralsConsumed: 1,
                 diagnosticCode: null,
                 diagnosticMessage: null);
@@ -2514,7 +2600,7 @@ public static partial class ConstantExpressionEvaluator
                 $"{matches.Count} module instances declare literal '{typeNamespace}.{typeName}.{memberName}'; "
                 + "no instance is selected by enumeration order.",
                 scanned,
-                session.Modules.Length);
+                totalSources);
         }
 
         if (invalidCode is not null)
@@ -2524,7 +2610,7 @@ public static partial class ConstantExpressionEvaluator
                 invalidCode,
                 invalidMessage!,
                 scanned,
-                session.Modules.Length);
+                totalSources);
         }
 
         return ConstantExpressionEvaluation.NotConstantResult(expression);

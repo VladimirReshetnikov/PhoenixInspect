@@ -1,5 +1,7 @@
+using System.Collections.Immutable;
 using System.Text;
 using PhoenixInspect.Inspection;
+using PhoenixInspect.Product.DumpQuery;
 
 namespace PhoenixInspect.Desktop.ViewModels;
 
@@ -18,6 +20,7 @@ public sealed class ImmediateViewModel : ObservableObject
     private readonly List<string> history = [];
     private int historyIndex = -1;
     private string inputText = string.Empty;
+    private ImmutableArray<ConstantReferenceAssembly> references = [];
 
     /// <summary>Creates the immediate pane.</summary>
     /// <param name="shell">The shell services used for serialized session access.</param>
@@ -83,18 +86,41 @@ public sealed class ImmediateViewModel : ObservableObject
         }
 
         AppendLine("> " + text);
+
+        // A '#r' directive references an assembly for subsequent expressions rather than evaluating a value; its
+        // types, constants, and enums then resolve alongside the dump's own modules, or on their own with no dump.
+        if (ReferenceDirective.IsDirective(text))
+        {
+            var applied = ReferenceDirective.TryApply(text, references, out var updated, out var directiveMessage);
+            if (applied)
+            {
+                references = updated;
+            }
+
+            AppendLine($"// {directiveMessage}");
+            AppendLine(string.Empty);
+            shell.SetStatus($"Immediate: #r — {(applied ? "referenced" : "not referenced")}");
+            return;
+        }
+
         if (!shell.IsDumpOpen)
         {
             // The sessionless entry folds the evidence-free constant subset and refuses everything beyond it
-            // with the typed no-snapshot stop, so the prompt is useful before any dump opens.
-            RenderReport(ExpressionEvaluationService.EvaluateWithoutSnapshot(text));
+            // with the typed no-snapshot stop, so the prompt is useful before any dump opens. References
+            // contribute their literals, enums, and type names even with no snapshot.
+            RenderReport(ExpressionEvaluationService.EvaluateWithoutSnapshot(text, references));
             return;
         }
 
         var contextFactory = evaluate.CreateWatchContextFactory();
+        var pinnedReferences = references;
         var report = await shell.RunAsync(
             "Evaluating immediate expression…",
-            session => ExpressionEvaluationService.EvaluateWatch(session, text, contextFactory(session)))
+            session => ExpressionEvaluationService.EvaluateWatch(
+                session,
+                text,
+                contextFactory(session),
+                pinnedReferences))
             .ConfigureAwait(true);
         if (report is null)
         {

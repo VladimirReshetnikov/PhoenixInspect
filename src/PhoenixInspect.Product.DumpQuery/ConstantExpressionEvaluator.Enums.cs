@@ -193,33 +193,32 @@ public static partial class ConstantExpressionEvaluator
         string typeFullName,
         FoldContext context)
     {
-        if (context.Session is not { } session)
+        // An alias-qualified enum name (aliasSeparator > 0 below) resolves only through the references carrying that
+        // alias; an unqualified name resolves through the session's modules and the global-scope references.
+        var aliasSeparator = typeFullName.IndexOf("::", StringComparison.Ordinal);
+        var alias = aliasSeparator > 0 ? typeFullName[..aliasSeparator] : null;
+        var scopedName = aliasSeparator > 0 ? typeFullName[(aliasSeparator + 2)..] : typeFullName;
+        var applicableReferences = ApplicableReferences(context.References, alias);
+
+        if (alias is null && context.Session is null && applicableReferences.IsEmpty)
         {
-            // The evidence-free probe cannot distinguish an unsupported type from an enum declared in dump-module
-            // metadata. Retain that precise dependency so its provisional Invalid result cannot preempt admission and
-            // the authoritative session-backed pass.
+            // The evidence-free probe with no references cannot distinguish an unsupported type from an enum
+            // declared in dump-module metadata. Retain that precise dependency so its provisional result cannot
+            // preempt admission and the authoritative session-backed pass.
             context.DeferSessionAuthority();
             return (null, null);
         }
 
-        var separator = typeFullName.LastIndexOf('.');
-        var typeNamespace = separator < 0 ? string.Empty : typeFullName[..separator];
-        var typeName = separator < 0 ? typeFullName : typeFullName[(separator + 1)..];
+        var separator = scopedName.LastIndexOf('.');
+        var typeNamespace = separator < 0 ? string.Empty : scopedName[..separator];
+        var typeName = separator < 0 ? scopedName : scopedName[(separator + 1)..];
         var matches = new List<EnumShape>();
-        foreach (var module in session.Modules)
-        {
-            var metadata = session.ReadModuleContentIdentity(module);
-            if (metadata.Status != ClrmdEvidenceStatus.Exact ||
-                metadata.Value is null ||
-                metadata.Evidence.Length != 1 ||
-                metadata.Evidence[0].Status != MemoryReadStatus.Exact)
-            {
-                continue;
-            }
 
+        void ScanImage(ImmutableArray<byte> metadataBytes)
+        {
             try
             {
-                using var provider = MetadataReaderProvider.FromMetadataImage(metadata.Evidence[0].Bytes);
+                using var provider = MetadataReaderProvider.FromMetadataImage(metadataBytes);
                 var reader = provider.GetMetadataReader();
                 foreach (var handle in reader.TypeDefinitions)
                 {
@@ -232,7 +231,7 @@ public static partial class ConstantExpressionEvaluator
                         continue;
                     }
 
-                    if (ReadEnumShape(reader, typeDefinition, typeFullName) is { } read)
+                    if (ReadEnumShape(reader, typeDefinition, scopedName) is { } read)
                     {
                         matches.Add(read);
                     }
@@ -240,8 +239,30 @@ public static partial class ConstantExpressionEvaluator
             }
             catch (BadImageFormatException)
             {
-                // A malformed metadata image cannot contribute a declaration; other modules still can.
+                // A malformed metadata image cannot contribute a declaration; other sources still can.
             }
+        }
+
+        if (alias is null && context.Session is { } session)
+        {
+            foreach (var module in session.Modules)
+            {
+                var metadata = session.ReadModuleContentIdentity(module);
+                if (metadata.Status != ClrmdEvidenceStatus.Exact ||
+                    metadata.Value is null ||
+                    metadata.Evidence.Length != 1 ||
+                    metadata.Evidence[0].Status != MemoryReadStatus.Exact)
+                {
+                    continue;
+                }
+
+                ScanImage(metadata.Evidence[0].Bytes);
+            }
+        }
+
+        foreach (var reference in applicableReferences)
+        {
+            ScanImage(reference.MetadataBytesCore);
         }
 
         return matches.Count switch
@@ -516,8 +537,27 @@ public static partial class ConstantExpressionEvaluator
             return true;
         }
 
-        // Dotted names resolve as enums: the closed BCL table first, then dump-module metadata.
-        var fullName = type switch
+        // Dotted names resolve as enums: the closed BCL table first, then dump-module or referenced-assembly
+        // metadata. An extern-alias qualifier is preserved as an 'alias::' prefix, which enum-shape resolution
+        // reads to scope the lookup to that alias's references alone.
+        string? aliasQualifier = null;
+        var aliasQualifiedType = type;
+        if (type is AliasQualifiedNameSyntax { Alias.Identifier.ValueText: var directAlias, Name: { } directName }
+            && directAlias != "global")
+        {
+            aliasQualifier = directAlias;
+            aliasQualifiedType = directName;
+        }
+        else if (type is QualifiedNameSyntax
+            {
+                Left: AliasQualifiedNameSyntax { Alias.Identifier.ValueText: var chainAlias },
+            }
+            && chainAlias != "global")
+        {
+            aliasQualifier = chainAlias;
+        }
+
+        var fullName = aliasQualifiedType switch
         {
             IdentifierNameSyntax identifier => identifier.Identifier.ValueText,
             QualifiedNameSyntax qualified when TryReadDottedName(qualified, out var dotted) => dotted,
@@ -528,12 +568,14 @@ public static partial class ConstantExpressionEvaluator
             return false;
         }
 
-        if (TryResolveNamedTypeRef(fullName, out resolved))
+        // A global-scope name (no alias) still consults the BCL table; an alias names references only.
+        if (aliasQualifier is null && TryResolveNamedTypeRef(fullName, out resolved))
         {
             return true;
         }
 
-        error = TryResolveEnumShape(fullName, context, out var shape);
+        var scopedFullName = aliasQualifier is null ? fullName : $"{aliasQualifier}::{fullName}";
+        error = TryResolveEnumShape(scopedFullName, context, out var shape);
         if (error is not null)
         {
             return false;
@@ -570,6 +612,11 @@ public static partial class ConstantExpressionEvaluator
                     continue;
                 case IdentifierNameSyntax identifier:
                     parts.Insert(0, identifier.Identifier.ValueText);
+                    dotted = string.Join('.', parts);
+                    return true;
+                // The alias qualifier is read separately by the caller; here it contributes only its type name.
+                case AliasQualifiedNameSyntax { Name: IdentifierNameSyntax aliased }:
+                    parts.Insert(0, aliased.Identifier.ValueText);
                     dotted = string.Join('.', parts);
                     return true;
                 default:

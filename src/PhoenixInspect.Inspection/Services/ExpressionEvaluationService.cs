@@ -141,14 +141,33 @@ public static class ExpressionEvaluationService
     public static EvaluationReport EvaluateWatch(
         ClrmdDumpSession session,
         string expression,
-        WatchEvaluationContext context)
+        WatchEvaluationContext context) =>
+        EvaluateWatch(session, expression, context, references: default);
+
+    /// <summary>Evaluates a watch expression, additionally resolving names through caller-referenced assemblies.</summary>
+    /// <param name="session">The open dump session.</param>
+    /// <param name="expression">The raw expression text, submitted without normalization.</param>
+    /// <param name="context">The adopted root, context frame, and options.</param>
+    /// <param name="references">Caller-referenced assemblies, empty by default.</param>
+    /// <returns>A complete display report for whichever path the classifier selected.</returns>
+    /// <exception cref="ArgumentNullException">A required argument is null.</exception>
+    public static EvaluationReport EvaluateWatch(
+        ClrmdDumpSession session,
+        string expression,
+        WatchEvaluationContext context,
+        ImmutableArray<ConstantReferenceAssembly> references)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(context);
         var identifier = context.RootIdentifier.Trim();
         return context.Root is { } root && identifier.Length > 0 && ReferencesIdentifier(expression, identifier)
             ? EvaluateRootRelative(session, expression, root, identifier, context.Options)
-            : EvaluateStaticField(session, expression, context.ContextSelector, context.PortablePdbCandidates);
+            : EvaluateStaticField(
+                session,
+                expression,
+                context.ContextSelector,
+                context.PortablePdbCandidates,
+                references);
     }
 
     /// <summary>
@@ -197,13 +216,24 @@ public static class ExpressionEvaluationService
     /// surface at all.
     /// </remarks>
     /// <param name="expression">The raw expression text, submitted without normalization.</param>
+    /// <param name="references">
+    /// Caller-referenced assemblies whose literal fields, enums, and type names participate in resolution, empty by
+    /// default.
+    /// </param>
     /// <returns>A complete display report: an exact constant value or the typed no-snapshot stop.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="expression"/> is null.</exception>
-    public static EvaluationReport EvaluateWithoutSnapshot(string expression)
+    public static EvaluationReport EvaluateWithoutSnapshot(
+        string expression,
+        ImmutableArray<ConstantReferenceAssembly> references = default)
     {
         ArgumentNullException.ThrowIfNull(expression);
+        var effectiveReferences = references.IsDefault ? [] : references;
         var stopwatch = Stopwatch.StartNew();
-        var pureConstant = ConstantExpressionEvaluator.Evaluate(session: null, expression);
+        var pureConstant = ConstantExpressionEvaluator.Evaluate(
+            session: null,
+            expression,
+            resolvers: null,
+            effectiveReferences);
         stopwatch.Stop();
         if (pureConstant.Status != ConstantExpressionStatus.NotConstant)
         {
@@ -255,16 +285,38 @@ public static class ExpressionEvaluationService
         ClrmdDumpSession session,
         string expression,
         DumpSelectedFrameSelector? contextSelector,
-        ImmutableArray<string> portablePdbCandidates)
+        ImmutableArray<string> portablePdbCandidates) =>
+        EvaluateStaticField(session, expression, contextSelector, portablePdbCandidates, references: default);
+
+    /// <summary>Evaluates a static-field expression, additionally resolving through caller-referenced assemblies.</summary>
+    /// <param name="session">The open dump session.</param>
+    /// <param name="expression">The raw expression text, submitted without normalization.</param>
+    /// <param name="contextSelector">The selected frame supplying name context, or null.</param>
+    /// <param name="portablePdbCandidates">Caller-discovered Portable-PDB candidate paths, possibly empty.</param>
+    /// <param name="references">Caller-referenced assemblies, empty by default.</param>
+    /// <returns>A complete display report for the outcome.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="session"/> is null.</exception>
+    public static EvaluationReport EvaluateStaticField(
+        ClrmdDumpSession session,
+        string expression,
+        DumpSelectedFrameSelector? contextSelector,
+        ImmutableArray<string> portablePdbCandidates,
+        ImmutableArray<ConstantReferenceAssembly> references)
     {
         ArgumentNullException.ThrowIfNull(session);
         var candidates = portablePdbCandidates.IsDefault ? [] : portablePdbCandidates;
+        var effectiveReferences = references.IsDefault ? [] : references;
         var stopwatch = Stopwatch.StartNew();
 
         // Preserve the evidence-free subset even when this snapshot cannot establish base-image authority. The
         // null-session pass can fold only literals and the closed deterministic BCL surface; a qualified dump name,
         // metadata literal, or resolver-backed value remains NotConstant and must pass edit-state admission below.
-        var pureConstant = ConstantExpressionEvaluator.Evaluate(session: null, expression);
+        // References are session-independent, so a reference-declared literal or enum answers here too.
+        var pureConstant = ConstantExpressionEvaluator.Evaluate(
+            session: null,
+            expression,
+            resolvers: null,
+            effectiveReferences);
         if (pureConstant.Status != ConstantExpressionStatus.NotConstant)
         {
             stopwatch.Stop();
@@ -287,7 +339,11 @@ public static class ExpressionEvaluationService
                 ? StaticFieldExpressionEvaluator.Evaluate(session, name)
                 : StaticFieldExpressionEvaluator.Evaluate(session, name, contextSelector, candidates)),
         };
-        var constant = ConstantExpressionEvaluator.Evaluate(session, expression, resolvers);
+        var constant = ConstantExpressionEvaluator.Evaluate(
+            session,
+            expression,
+            resolvers,
+            effectiveReferences);
         if (constant.Status != ConstantExpressionStatus.NotConstant)
         {
             stopwatch.Stop();
