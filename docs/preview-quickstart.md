@@ -78,7 +78,8 @@ host locales. The publisher then derives and verifies a
 common third-party dependency/license-evidence bundle from the products' exact
 `.deps.json` graphs, verifies the isolated post-restore project graph and runtime-pack download sets, records the
 actual common runtime pack carried by the published products, retains the packaged CLI `--help` smoke, runs the
-Desktop's exact non-UI `--smoke-test`, and writes two ZIPs plus `SHA256SUMS.txt` under `artifacts/prerelease`. It also
+Desktop's exact non-UI `--smoke-test`, then runs its separate native `--native-window-smoke-test`, and writes two ZIPs
+plus `SHA256SUMS.txt` under `artifacts/prerelease`. It also
 locked-restores and Release-publishes `samples/Contoso.OrderService` as a framework-dependent disposable target under
 the fresh temporary work root. The hidden target must print exact `READY` within 30 seconds; then the extracted
 self-contained CLI must capture a nonempty dump and reopen it to evaluate
@@ -112,11 +113,14 @@ and policy-pinned license/notice materials are hash-checked. The separate payloa
 That evidence is deliberately not a legal-clearance assertion; human review of the bundled .NET runtime and NuGet
 dependencies is still required. An SBOM is inventory evidence, not legal clearance or permission to redistribute.
 CI builds and inspects the ZIPs only within the validation job; it does not upload or
-otherwise distribute them. The Desktop
-smoke verifies the packaged entry assembly and product version, loads a selected Avalonia/product dependency surface,
-checks every selected `.deps.json` asset for presence and managed-assembly metadata, and requires the exact fifteen
-compiled XAML registrations without initializing Avalonia or creating a window. It does **not** parse each view or
-prove that a visible UI can start. The embedded build identity is unsigned local evidence, not SLSA/in-toto
+otherwise distribute them. The first Desktop smoke verifies the packaged entry assembly and product version, loads a
+selected Avalonia/product dependency surface, checks every selected `.deps.json` asset for presence and
+managed-assembly metadata, and requires the exact fifteen compiled XAML registrations without initializing Avalonia.
+The second smoke starts the extracted production application on Avalonia's Win32/Skia stack, constructs the real main
+window and its initial active content, requires a nonzero `HWND`, completes native `Show` and a loaded-priority initial
+layout/render dispatcher turn, and then shuts down cleanly. It intentionally does **not** claim human-observed pixels,
+pixel fidelity, input, accessibility, file-picker behavior, every deferred pane, dump opening through the UI, or broad
+Windows/GPU/display compatibility. The embedded build identity is unsigned local evidence, not SLSA/in-toto
 provenance, a reproducible-build claim, an attestation, legal clearance, a signature, redistribution authorization,
 or evidence of W8.10 release closure. These are not NuGet packages. CI does not create a
 tag, artifact upload, or GitHub release from this lane.

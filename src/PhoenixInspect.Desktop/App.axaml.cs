@@ -16,8 +16,17 @@ public sealed class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var startupDump = desktop.Args is [{ Length: > 0 } path, ..] ? path : null;
-            desktop.MainWindow = new MainWindow(startupDump);
+            if (desktop.Args is [DesktopNativeWindowSmokeTest.Argument])
+            {
+                var mainWindow = new MainWindow(null);
+                DesktopNativeWindowSmokeTest.Configure(desktop, mainWindow);
+                desktop.MainWindow = mainWindow;
+            }
+            else
+            {
+                var startupDump = desktop.Args is [{ Length: > 0 } path, ..] ? path : null;
+                desktop.MainWindow = new MainWindow(startupDump);
+            }
         }
 
         base.OnFrameworkInitializationCompleted();

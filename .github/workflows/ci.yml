@@ -149,7 +149,8 @@ jobs:
           cache: true
           cache-dependency-path: '**/packages.lock.json'
       # This lane proves only that the two preview application payloads can be built, inventoried, hashed, archived,
-      # and that the extracted CLI and Desktop pass bounded headless/non-UI smokes. Generated third-party evidence is
+      # and that the extracted CLI and Desktop pass bounded headless/non-UI plus native main-window startup smokes.
+      # Generated third-party evidence is
       # included, but human legal review is still pending. It does not distribute, sign, publish, or claim W8.10 closure.
       - name: Build and smoke-test the bounded win-x64 artifact set
         shell: pwsh

@@ -11,9 +11,9 @@
     NuGet package root. Identical canonical local build-identity evidence and mechanically verified third-party
     dependency/notice evidence are embedded in both payloads. Each payload then receives product-specific SPDX 2.2
     inventory, a complete per-file SHA-256 manifest, and is archived with sorted entries and normalized timestamps.
-    The archives are re-extracted before the
-    CLI help smoke, a bounded CLI capture/open/static-field workflow against a disposable sample target, and the
-    non-UI Desktop load smoke run. The output directory contains exactly two ZIPs and SHA256SUMS.txt.
+    The archives are re-extracted before the CLI help smoke, a bounded CLI capture/open/static-field workflow against
+    a disposable sample target, the non-UI Desktop load smoke, and a bounded native Desktop main-window startup and
+    orderly-shutdown smoke. The output directory contains exactly two ZIPs and SHA256SUMS.txt.
 
     These are unsigned local-validation artifacts and must not be redistributed. This script does not create NuGet
     packages, a GitHub release, SLSA provenance, reproducibility evidence, a signature, redistribution authorization,
@@ -24,8 +24,9 @@
     stale files cannot be mistaken for current output.
 
 .PARAMETER SelfTest
-    Exercises new/legacy archive-ownership, build-evidence, and CLI workflow-output rejection cases in disposable
-    directories without restoring, publishing, staging, or replacing artifact output.
+    Exercises new/legacy archive ownership, build evidence, CLI workflow-output rejection, and hidden-by-default versus
+    native-window-opt-in Desktop launcher/result contracts in disposable directories without restoring, publishing,
+    staging, or replacing artifact output.
 
 .PARAMETER SbomToolPath
     Optional path to an already-downloaded Microsoft SBOM Tool 4.1.5 win-x64 executable. The same exact size,
@@ -1080,7 +1081,8 @@ function New-BoundedProcessStartInfo {
     param(
         [Parameter(Mandatory)][string] $FilePath,
         [Parameter(Mandatory)][AllowEmptyCollection()][string[]] $Arguments,
-        [Parameter(Mandatory)][string] $WorkingDirectory
+        [Parameter(Mandatory)][string] $WorkingDirectory,
+        [switch] $AllowNativeWindow
     )
 
     $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
@@ -1089,7 +1091,14 @@ function New-BoundedProcessStartInfo {
     $startInfo.UseShellExecute = $false
     $startInfo.CreateNoWindow = $true
     $startInfo.ErrorDialog = $false
-    $startInfo.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
+    # Keep every existing child hidden. Only the explicitly opted-in Desktop native-window smoke may exercise the
+    # production Win32 Show path; CreateNoWindow still suppresses a separate console window.
+    $startInfo.WindowStyle = if ($AllowNativeWindow) {
+        [System.Diagnostics.ProcessWindowStyle]::Normal
+    }
+    else {
+        [System.Diagnostics.ProcessWindowStyle]::Hidden
+    }
     $startInfo.RedirectStandardOutput = $true
     $startInfo.RedirectStandardError = $true
     $strictUtf8 = [System.Text.UTF8Encoding]::new($false, $true)
@@ -1186,13 +1195,15 @@ function Invoke-BoundedCapturedProcess {
         [Parameter(Mandatory)][string[]] $Arguments,
         [Parameter(Mandatory)][string] $WorkingDirectory,
         [Parameter(Mandatory)][ValidateRange(1, 60)][int] $TimeoutSeconds,
-        [Parameter(Mandatory)][string] $Description
+        [Parameter(Mandatory)][string] $Description,
+        [switch] $AllowNativeWindow
     )
 
     $startInfo = New-BoundedProcessStartInfo `
         -FilePath $FilePath `
         -Arguments $Arguments `
-        -WorkingDirectory $WorkingDirectory
+        -WorkingDirectory $WorkingDirectory `
+        -AllowNativeWindow:$AllowNativeWindow
     $process = [System.Diagnostics.Process]::new()
     $process.StartInfo = $startInfo
     $started = $false
@@ -1674,61 +1685,98 @@ function Invoke-BoundedCliSmoke {
     }
 }
 
+function Assert-DesktopSmokeResult {
+    param(
+        [Parameter(Mandatory)] $Result,
+        [Parameter(Mandatory)][string] $ExpectedVersion,
+        [Parameter(Mandatory)][ValidateSet('non-ui', 'win32-main-window')][string] $Mode,
+        [Parameter(Mandatory)][string] $Description
+    )
+
+    $contractPrefix = if ($Mode -ceq 'non-ui') {
+        'PHOENIXINSPECT_DESKTOP_SMOKE_OK'
+    }
+    else {
+        'PHOENIXINSPECT_DESKTOP_NATIVE_WINDOW_SMOKE_OK'
+    }
+    $failurePrefix = if ($Mode -ceq 'non-ui') {
+        'PHOENIXINSPECT_DESKTOP_SMOKE_FAILED'
+    }
+    else {
+        'PHOENIXINSPECT_DESKTOP_NATIVE_WINDOW_SMOKE_FAILED'
+    }
+    if ($Result.ExitCode -ne 0) {
+        $failurePattern = '^' + [regex]::Escape($failurePrefix) + ' (?<code>[A-Z][A-Z0-9_]{0,63})\r?\n$'
+        if ($Result.ExitCode -eq 70 -and
+            [string]::IsNullOrEmpty([string] $Result.StandardOutput) -and
+            [string] $Result.StandardError -cmatch $failurePattern) {
+            throw "$Description failed with stable code $($Matches.code)."
+        }
+        throw "$Description failed without its exact stable failure contract."
+    }
+    if (-not [string]::IsNullOrEmpty([string] $Result.StandardError)) {
+        throw "$Description wrote an unexpected diagnostic to standard error."
+    }
+
+    $expectedLine = "$contractPrefix version=$ExpectedVersion mode=$Mode"
+    $actualOutput = [string] $Result.StandardOutput
+    if ($actualOutput -cne ($expectedLine + "`n") -and $actualOutput -cne ($expectedLine + "`r`n")) {
+        throw "$Description did not print its exact one-line success contract."
+    }
+}
+
 function Invoke-BoundedDesktopSmoke {
     param(
         [Parameter(Mandatory)][string] $ExecutablePath,
-        [Parameter(Mandatory)][string] $ExpectedVersion,
-        [Parameter(Mandatory)][string] $ScratchDirectory
+        [Parameter(Mandatory)][string] $ExpectedVersion
     )
 
     if ((Get-PublishedProductVersion $ExecutablePath) -ne $ExpectedVersion) {
         throw "Extracted Desktop '$ExecutablePath' does not report expected version '$ExpectedVersion'."
     }
 
-    $stdoutPath = Join-Path $ScratchDirectory 'desktop-smoke.stdout.txt'
-    $stderrPath = Join-Path $ScratchDirectory 'desktop-smoke.stderr.txt'
-    $process = Start-Process `
+    $workingDirectory = Split-Path -Parent $ExecutablePath
+    $nonUi = Invoke-BoundedCapturedProcess `
         -FilePath $ExecutablePath `
-        -ArgumentList '--smoke-test' `
-        -WorkingDirectory (Split-Path -Parent $ExecutablePath) `
-        -RedirectStandardOutput $stdoutPath `
-        -RedirectStandardError $stderrPath `
-        -WindowStyle Hidden `
-        -PassThru
-    try {
-        if (-not $process.WaitForExit(30000)) {
-            $process.Kill($true)
-            $process.WaitForExit()
-            throw 'The extracted Desktop --smoke-test exceeded its 30-second wall-clock bound.'
-        }
-        if ($process.ExitCode -ne 0) {
-            $failureDiagnostic = [System.IO.File]::ReadAllText($stderrPath).Trim()
-            throw "The extracted Desktop --smoke-test failed with exit code $($process.ExitCode): $failureDiagnostic"
-        }
-    }
-    finally {
-        $process.Dispose()
-    }
+        -Arguments @('--smoke-test') `
+        -WorkingDirectory $workingDirectory `
+        -TimeoutSeconds 30 `
+        -Description 'The extracted Desktop non-UI smoke'
+    Assert-DesktopSmokeResult `
+        -Result $nonUi `
+        -ExpectedVersion $ExpectedVersion `
+        -Mode 'non-ui' `
+        -Description 'The extracted Desktop non-UI smoke'
 
-    $expectedOutput = "PHOENIXINSPECT_DESKTOP_SMOKE_OK version=$ExpectedVersion mode=non-ui"
-    $actualOutput = [System.IO.File]::ReadAllText($stdoutPath).Trim()
-    if ($actualOutput -ne $expectedOutput) {
-        throw "The extracted Desktop --smoke-test did not print its exact success contract."
-    }
-
-    $errorOutput = [System.IO.File]::ReadAllText($stderrPath)
-    if (-not [string]::IsNullOrWhiteSpace($errorOutput)) {
-        throw 'The extracted Desktop --smoke-test wrote an unexpected diagnostic to standard error.'
-    }
+    $nativeWindow = Invoke-BoundedCapturedProcess `
+        -FilePath $ExecutablePath `
+        -Arguments @('--native-window-smoke-test') `
+        -WorkingDirectory $workingDirectory `
+        -TimeoutSeconds 30 `
+        -Description 'The extracted Desktop native main-window smoke' `
+        -AllowNativeWindow
+    Assert-DesktopSmokeResult `
+        -Result $nativeWindow `
+        -ExpectedVersion $ExpectedVersion `
+        -Mode 'win32-main-window' `
+        -Description 'The extracted Desktop native main-window smoke'
 }
 
 function Invoke-PublisherArchiveContractSelfTest {
     function Assert-SelfTestThrows {
-        param([Parameter(Mandatory)][scriptblock] $Action, [Parameter(Mandatory)][string] $Name)
+        param(
+            [Parameter(Mandatory)][scriptblock] $Action,
+            [Parameter(Mandatory)][string] $Name,
+            [string] $ExpectedMessage
+        )
         try {
             & $Action
         }
         catch {
+            if ($PSBoundParameters.ContainsKey('ExpectedMessage') -and
+                $_.Exception.Message -cne $ExpectedMessage) {
+                throw "Publisher archive self-test '$Name' failed with unexpected message '$($_.Exception.Message)'."
+            }
             return
         }
         throw "Publisher archive self-test '$Name' unexpectedly succeeded."
@@ -2024,6 +2072,109 @@ function Invoke-PublisherArchiveContractSelfTest {
             Assert-SelfTestThrows {
                 Test-ArtifactOutputDirectory -Path $invalidOutput -ExpectedNames $expectedOutputNames
             } "$invalidFormat rejected"
+        }
+
+        $hiddenStartInfo = New-BoundedProcessStartInfo `
+            -FilePath ([Environment]::ProcessPath) `
+            -Arguments @() `
+            -WorkingDirectory $selfTestRoot
+        $nativeStartInfo = New-BoundedProcessStartInfo `
+            -FilePath ([Environment]::ProcessPath) `
+            -Arguments @('--native-window-smoke-test') `
+            -WorkingDirectory $selfTestRoot `
+            -AllowNativeWindow
+        if (-not $hiddenStartInfo.CreateNoWindow -or
+            $hiddenStartInfo.WindowStyle -ne [System.Diagnostics.ProcessWindowStyle]::Hidden -or
+            -not $nativeStartInfo.CreateNoWindow -or
+            $nativeStartInfo.WindowStyle -ne [System.Diagnostics.ProcessWindowStyle]::Normal) {
+            throw 'Bounded process start-info self-test did not preserve hidden-by-default/native-window-opt-in behavior.'
+        }
+
+        foreach ($desktopContract in @(
+            [pscustomobject]@{
+                Mode = 'non-ui'
+                Prefix = 'PHOENIXINSPECT_DESKTOP_SMOKE_OK'
+                Description = 'self-test Desktop non-UI smoke'
+            },
+            [pscustomobject]@{
+                Mode = 'win32-main-window'
+                Prefix = 'PHOENIXINSPECT_DESKTOP_NATIVE_WINDOW_SMOKE_OK'
+                Description = 'self-test Desktop native main-window smoke'
+            })) {
+            $desktopLine = "$($desktopContract.Prefix) version=$expectedVersion mode=$($desktopContract.Mode)"
+            foreach ($lineEnding in @("`n", "`r`n")) {
+                Assert-DesktopSmokeResult `
+                    -Result ([pscustomobject]@{
+                        ExitCode = 0
+                        StandardOutput = $desktopLine + $lineEnding
+                        StandardError = ''
+                    }) `
+                    -ExpectedVersion $expectedVersion `
+                    -Mode $desktopContract.Mode `
+                    -Description $desktopContract.Description
+            }
+            Assert-SelfTestThrows {
+                Assert-DesktopSmokeResult `
+                    -Result ([pscustomobject]@{
+                        ExitCode = 70
+                        StandardOutput = ''
+                        StandardError = "$($desktopContract.Prefix.Replace('_OK', '_FAILED')) EXPECTED_FAILURE`n"
+                    }) `
+                    -ExpectedVersion $expectedVersion `
+                    -Mode $desktopContract.Mode `
+                    -Description $desktopContract.Description
+            } `
+                -Name "$($desktopContract.Mode) exact stable failure surfaced" `
+                -ExpectedMessage "$($desktopContract.Description) failed with stable code EXPECTED_FAILURE."
+            foreach ($invalidResult in @(
+                [pscustomobject]@{
+                    Name = 'nonzero exit'
+                    Result = [pscustomobject]@{ ExitCode = 70; StandardOutput = ''; StandardError = '' }
+                },
+                [pscustomobject]@{
+                    Name = 'wrong failure exit'
+                    Result = [pscustomobject]@{
+                        ExitCode = 1
+                        StandardOutput = ''
+                        StandardError = "$($desktopContract.Prefix.Replace('_OK', '_FAILED')) EXPECTED_FAILURE`n"
+                    }
+                },
+                [pscustomobject]@{
+                    Name = 'wrong failure prefix'
+                    Result = [pscustomobject]@{ ExitCode = 70; StandardOutput = ''; StandardError = "WRONG_PREFIX EXPECTED_FAILURE`n" }
+                },
+                [pscustomobject]@{
+                    Name = 'extra failure diagnostic'
+                    Result = [pscustomobject]@{
+                        ExitCode = 70
+                        StandardOutput = ''
+                        StandardError = "$($desktopContract.Prefix.Replace('_OK', '_FAILED')) EXPECTED_FAILURE`nextra`n"
+                    }
+                },
+                [pscustomobject]@{
+                    Name = 'unexpected stderr'
+                    Result = [pscustomobject]@{ ExitCode = 0; StandardOutput = $desktopLine + "`n"; StandardError = 'unexpected' }
+                },
+                [pscustomobject]@{
+                    Name = 'extra stdout'
+                    Result = [pscustomobject]@{ ExitCode = 0; StandardOutput = $desktopLine + "`nextra`n"; StandardError = '' }
+                },
+                [pscustomobject]@{
+                    Name = 'wrong version'
+                    Result = [pscustomobject]@{ ExitCode = 0; StandardOutput = $desktopLine.Replace($expectedVersion, '0.0.0') + "`n"; StandardError = '' }
+                },
+                [pscustomobject]@{
+                    Name = 'wrong mode'
+                    Result = [pscustomobject]@{ ExitCode = 0; StandardOutput = $desktopLine.Replace($desktopContract.Mode, 'wrong-mode') + "`n"; StandardError = '' }
+                })) {
+                Assert-SelfTestThrows {
+                    Assert-DesktopSmokeResult `
+                        -Result $invalidResult.Result `
+                        -ExpectedVersion $expectedVersion `
+                        -Mode $desktopContract.Mode `
+                        -Description $desktopContract.Description
+                } "$($desktopContract.Mode) $($invalidResult.Name) rejected"
+            }
         }
 
         $validEvaluationOutput = @'
@@ -2395,7 +2546,7 @@ finally {
         }
     }
 
-    Write-Output 'Publisher self-test passed: SBOM-bound v2 output, v1/v0 migration-only ownership, adversarial archive rejection, exact CLI workflow semantics, and PID/path-bound createdump diagnostics.'
+    Write-Output 'Publisher self-test passed: SBOM-bound v2 output, v1/v0 migration-only ownership, adversarial archive rejection, exact CLI workflow semantics, PID/path-bound createdump diagnostics, and hidden-by-default/native-window-opt-in Desktop smoke contracts.'
 }
 
 $products = @(
@@ -2708,11 +2859,10 @@ try {
                 -ScratchDirectory $demoTargetScratchRoot
         }
         elseif ($product.Slug -eq 'phoenixinspect-desktop') {
-            Write-Host 'Smoke-loading the extracted Desktop payload without UI, with a 30-second bound…' -ForegroundColor Cyan
+            Write-Host 'Smoke-loading the extracted Desktop payload without UI, then starting its native main window, each with a 30-second bound…' -ForegroundColor Cyan
             Invoke-BoundedDesktopSmoke `
                 -ExecutablePath (Join-Path $extractedPayload $product.Executable) `
-                -ExpectedVersion $expectedVersion `
-                -ScratchDirectory $extractionRoot
+                -ExpectedVersion $expectedVersion
         }
     }
 
@@ -2809,7 +2959,7 @@ try {
     Write-Host 'Canonical unsigned local build identity and validated product-specific SPDX 2.2 inventory are embedded; no reproducibility, SLSA provenance, signature, package, tag, release, redistribution authorization, or W8.10 closure is claimed.'
     Write-Host 'Generated third-party inventory, SBOM, and notice evidence are embedded; human legal review remains a release-closure blocker.'
     Write-Host 'The extracted CLI workflow smoke proves one local capture/open/static-field evaluation path against a disposable sample dump; it is not general compatibility or release closure.'
-    Write-Host 'The Desktop smoke covers non-UI dependency presence, selected assembly loads, and compiled XAML registration; it does not claim visible UI startup.'
+    Write-Host 'The Desktop smokes cover non-UI payload/XAML integrity plus production Avalonia Win32/Skia initialization, real main-window construction, native Show/initial layout-render dispatch, and orderly shutdown; they do not claim pixels, interaction, broad hardware compatibility, or release closure.'
     $totalStopwatch.Stop()
     Write-Host "Completed in $([math]::Round($totalStopwatch.Elapsed.TotalSeconds, 1)) s."
 }

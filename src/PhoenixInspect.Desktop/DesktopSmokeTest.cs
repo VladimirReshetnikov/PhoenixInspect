@@ -94,6 +94,10 @@ internal static class DesktopSmokeTest
         }
     }
 
+    /// <summary>Verifies the packaged executable identity and returns its normalized product version.</summary>
+    /// <returns>The product version without build metadata.</returns>
+    internal static string VerifyProductVersion() => VerifyEntryAssembly().ProductVersion;
+
     private static void VerifyDependencyClosure()
     {
         var payloadRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(AppContext.BaseDirectory));
