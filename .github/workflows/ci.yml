@@ -31,6 +31,22 @@ jobs:
       - name: Enforce the prerelease non-distribution boundary
         shell: pwsh
         run: ./eng/verify-prerelease-nondistribution.ps1
+      - name: Verify the W8 local validator self-tests
+        shell: pwsh
+        run: ./eng/Invoke-W8LocalReleaseValidation.ps1 -SelfTest
+      - name: Verify the deterministic W8 local validator plan
+        shell: pwsh
+        run: |
+          $first = ./eng/Invoke-W8LocalReleaseValidation.ps1 -List | Out-String
+          $second = ./eng/Invoke-W8LocalReleaseValidation.ps1 -List | Out-String
+          if ($first -cne $second) {
+            throw 'The W8 local release-validation plan is not deterministic.'
+          }
+          $plan = $first | ConvertFrom-Json
+          if ($plan.commandCount -ne 21 -or $plan.requiredInputs.Count -ne 3 -or
+              -not $plan.localOnly -or $plan.hostedEvidence -cne 'NotRun' -or $plan.closureClaim) {
+            throw 'The W8 local release-validation plan has an unexpected scope or command inventory.'
+          }
 
   fast:
     name: Build and fast tests
@@ -48,9 +64,15 @@ jobs:
       - name: Build Release
         run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
       - name: Run semantic and differential tests
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore --verbosity minimal
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore --verbosity minimal --logger "trx;LogFileName=unit.trx" --results-directory artifacts/ci-results/unit
+      - name: Validate semantic and differential test evidence
+        shell: pwsh
+        run: ./eng/Invoke-W8LocalReleaseValidation.ps1 -ValidateTrxPath artifacts/ci-results/unit/unit.trx
       - name: Run non-dump adapter tests
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category!=Dump" --verbosity minimal
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category!=Dump" --verbosity minimal --logger "trx;LogFileName=non-dump.trx" --results-directory artifacts/ci-results/non-dump
+      - name: Validate non-dump adapter test evidence
+        shell: pwsh
+        run: ./eng/Invoke-W8LocalReleaseValidation.ps1 -ValidateTrxPath artifacts/ci-results/non-dump/non-dump.trx
 
   dump-evidence:
     name: Real dump evidence
@@ -69,7 +91,10 @@ jobs:
       - name: Build Release
         run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
       - name: Generate and inspect a real dump
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus!=ModeledIncidentContextV1" --verbosity normal
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus!=ModeledIncidentContextV1" --verbosity normal --logger "trx;LogFileName=ordinary-dump.trx" --results-directory artifacts/ci-results/ordinary-dump
+      - name: Validate real-dump test evidence
+        shell: pwsh
+        run: ./eng/Invoke-W8LocalReleaseValidation.ps1 -ValidateTrxPath artifacts/ci-results/ordinary-dump/ordinary-dump.trx
 
   preview-demo:
     name: Preview demo
@@ -135,4 +160,7 @@ jobs:
       - name: Build optimized context evidence
         run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
       - name: Measure the versioned optimized incident corpus
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1" --verbosity normal
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1" --verbosity normal --logger "trx;LogFileName=optimized-context.trx" --results-directory artifacts/ci-results/optimized-context
+      - name: Validate optimized-context test evidence
+        shell: pwsh
+        run: ./eng/Invoke-W8LocalReleaseValidation.ps1 -ValidateTrxPath artifacts/ci-results/optimized-context/optimized-context.trx

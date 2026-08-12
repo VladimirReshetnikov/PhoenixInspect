@@ -945,6 +945,7 @@ function Invoke-ValidatorSelfTest {
         trx = Invoke-TrxParserSelfTest
         ownerAuthority = Invoke-OwnerAuthoritySelfTest
         headProvenance = Invoke-HeadProvenanceSelfTest
+        commandPlan = Invoke-CommandPlanSelfTest
         status = 'Passed'
     } | ConvertTo-Json -Depth 8
 }
@@ -1173,6 +1174,184 @@ function Get-CommandSpecs {
     }
 
     @($commands)
+}
+
+function Assert-ExactStringArray {
+    param(
+        [Parameter(Mandatory)][string] $Name,
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]] $Actual,
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]] $Expected
+    )
+
+    if ($Actual.Count -ne $Expected.Count) {
+        throw "Command-plan '$Name' has $($Actual.Count) values instead of $($Expected.Count)."
+    }
+    for ($index = 0; $index -lt $Expected.Count; $index++) {
+        if ($Actual[$index] -cne $Expected[$index]) {
+            throw "Command-plan '$Name' differs at index ${index}: expected '$($Expected[$index])', observed '$($Actual[$index])'."
+        }
+    }
+}
+
+function Invoke-CommandPlanSelfTest {
+    $resultRoot = 'artifacts/w8-local-release-validation/test-results'
+    $commands = @(Get-CommandSpecs $resultRoot)
+    [string[]] $expectedIds = @(
+        'locked-restore',
+        'strict-release-build',
+        'unit-complete',
+        'integration-non-dump',
+        'integration-fast',
+        'ordinary-dump',
+        'optimized-context',
+        'focused-v2',
+        'generated-conformance',
+        'w8-portfolio-v1',
+        'w8-portfolio-v2',
+        'w8-final-decision',
+        'public-surface',
+        'preview-demo',
+        'prerelease-payloads',
+        'markdown-links',
+        'headless-workflows',
+        'prerelease-nondistribution',
+        'authored-vocabulary',
+        'one-parser-site',
+        'clean-tree')
+    Assert-ExactStringArray 'ordered command ids' @($commands | ForEach-Object { [string]$_.Id }) $expectedIds
+
+    $byId = @{}
+    foreach ($command in $commands) {
+        $byId.Add([string]$command.Id, $command)
+    }
+
+    $lockedRestore = $byId['locked-restore']
+    if ($lockedRestore.Kind -cne 'Build' -or $lockedRestore.Executable -cne 'dotnet') {
+        throw 'The locked-restore command must remain a dotnet Build command.'
+    }
+    Assert-ExactStringArray 'locked restore arguments' $lockedRestore.ArgumentList @(
+        'restore', 'PhoenixInspect.sln', '--locked-mode', '--verbosity', 'minimal')
+
+    $strictBuild = $byId['strict-release-build']
+    if ($strictBuild.Kind -cne 'Build' -or $strictBuild.Executable -cne 'dotnet') {
+        throw 'The strict-release-build command must remain a dotnet Build command.'
+    }
+    Assert-ExactStringArray 'strict Release build arguments' $strictBuild.ArgumentList @(
+        'build',
+        'PhoenixInspect.sln',
+        '--configuration',
+        'Release',
+        '--no-restore',
+        '--verbosity',
+        'minimal',
+        '--maxcpucount:1',
+        '--disable-build-servers',
+        '--property:UseSharedCompilation=false',
+        '--property:ContinuousIntegrationBuild=true',
+        '--property:TreatWarningsAsErrors=true')
+
+    $testContracts = @(
+        [pscustomobject]@{ Id = 'unit-complete'; Project = 'tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj'; Filter = ''; Verbosity = 'minimal' },
+        [pscustomobject]@{ Id = 'integration-non-dump'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'Category!=Dump'; Verbosity = 'minimal' },
+        [pscustomobject]@{ Id = 'integration-fast'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'Category=Fast'; Verbosity = 'minimal' },
+        [pscustomobject]@{ Id = 'ordinary-dump'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'Category=Dump&Corpus!=ModeledIncidentContextV1'; Verbosity = 'normal' },
+        [pscustomobject]@{ Id = 'optimized-context'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'Category=Dump&Corpus=ModeledIncidentContextV1'; Verbosity = 'normal' },
+        [pscustomobject]@{ Id = 'focused-v2'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'FullyQualifiedName~PhoenixInspect.IntegrationTests.W8V2'; Verbosity = 'normal' },
+        [pscustomobject]@{ Id = 'generated-conformance'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'FullyQualifiedName~PhoenixInspect.IntegrationTests.W8&Corpus!=W8MeaningfulSyntheticV1&Corpus!=W8MeaningfulSyntheticV2&Corpus!=W8MeaningfulSyntheticFinalDecision'; Verbosity = 'normal' },
+        [pscustomobject]@{ Id = 'w8-portfolio-v1'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'Corpus=W8MeaningfulSyntheticV1'; Verbosity = 'normal' },
+        [pscustomobject]@{ Id = 'w8-portfolio-v2'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'Corpus=W8MeaningfulSyntheticV2'; Verbosity = 'normal' },
+        [pscustomobject]@{ Id = 'w8-final-decision'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'Corpus=W8MeaningfulSyntheticFinalDecision'; Verbosity = 'normal' },
+        [pscustomobject]@{ Id = 'public-surface'; Project = 'tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj'; Filter = 'FullyQualifiedName~PublicSurface|FullyQualifiedName~public_surface'; Verbosity = 'minimal' })
+    foreach ($contract in $testContracts) {
+        $command = $byId[$contract.Id]
+        if ($command.Kind -cne 'Test' -or $command.Executable -cne 'dotnet') {
+            throw "The '$($contract.Id)' command must remain a dotnet Test command."
+        }
+
+        [string[]] $expectedArguments = @(
+            'test',
+            $contract.Project,
+            '--configuration',
+            'Release',
+            '--no-build',
+            '--no-restore')
+        if (-not [string]::IsNullOrWhiteSpace($contract.Filter)) {
+            $expectedArguments += @('--filter', $contract.Filter)
+        }
+        $laneDirectory = "$resultRoot/$($contract.Id)"
+        $expectedArguments += @(
+            '--verbosity',
+            $contract.Verbosity,
+            '--logger',
+            "trx;LogFileName=$($contract.Id).trx",
+            '--results-directory',
+            $laneDirectory)
+        Assert-ExactStringArray "$($contract.Id) arguments" $command.ArgumentList $expectedArguments
+        if ($command.TrxPath -cne "$laneDirectory/$($contract.Id).trx") {
+            throw "The '$($contract.Id)' command has the wrong isolated TRX path."
+        }
+    }
+
+    $preview = $byId['preview-demo']
+    if ($preview.Kind -cne 'Build' -or $preview.Executable -cne 'pwsh') {
+        throw 'The preview-demo command must remain a pwsh Build command.'
+    }
+    Assert-ExactStringArray 'preview demo arguments' $preview.ArgumentList @(
+        '-NoLogo', '-NoProfile', '-NonInteractive', '-File', 'eng/Invoke-PreviewDemo.ps1',
+        '-OutputDirectory', 'artifacts/preview-demo', '-SkipBuild')
+
+    $prerelease = $byId['prerelease-payloads']
+    if ($prerelease.Kind -cne 'Build' -or $prerelease.Executable -cne 'pwsh') {
+        throw 'The prerelease-payloads command must remain a pwsh Build command.'
+    }
+    Assert-ExactStringArray 'prerelease payload arguments' $prerelease.ArgumentList @(
+        '-NoLogo', '-NoProfile', '-NonInteractive', '-File', 'eng/Publish-PrereleaseArtifacts.ps1',
+        '-OutputDirectory', 'artifacts/prerelease')
+
+    $guardScripts = [ordered]@{
+        'markdown-links' = 'eng/verify-markdown-links.ps1'
+        'headless-workflows' = 'eng/verify-headless-workflows.ps1'
+        'prerelease-nondistribution' = 'eng/verify-prerelease-nondistribution.ps1'
+    }
+    foreach ($guardId in $guardScripts.Keys) {
+        $guard = $byId[$guardId]
+        if ($guard.Kind -cne 'RepositoryGuard' -or $guard.Executable -cne 'pwsh') {
+            throw "The '$guardId' command must remain a pwsh RepositoryGuard command."
+        }
+        Assert-ExactStringArray "$guardId arguments" $guard.ArgumentList @(
+            '-NoLogo', '-NoProfile', '-NonInteractive', '-File', $guardScripts[$guardId])
+    }
+
+    $internalGuards = [ordered]@{
+        'authored-vocabulary' = 'AuthoredVocabulary'
+        'one-parser-site' = 'OneParserSite'
+        'clean-tree' = 'CleanTree'
+    }
+    foreach ($guardId in $internalGuards.Keys) {
+        $guard = $byId[$guardId]
+        if ($guard.Kind -cne 'RepositoryGuard' -or $guard.Executable -cne 'pwsh') {
+            throw "The '$guardId' command must remain a pwsh RepositoryGuard command."
+        }
+        Assert-ExactStringArray "$guardId arguments" $guard.ArgumentList @(
+            '-NoLogo', '-NoProfile', '-NonInteractive', '-File',
+            'eng/Invoke-W8LocalReleaseValidation.ps1', '-InternalGuard', $internalGuards[$guardId])
+    }
+
+    foreach ($command in @($commands | Where-Object { $_.Kind -cne 'Test' })) {
+        if ($null -ne $command.TrxPath) {
+            throw "The non-test command '$($command.Id)' must not claim a TRX result path."
+        }
+    }
+
+    [ordered]@{
+        plan = 'W8.10-local-v1'
+        commandCount = $commands.Count
+        testLaneCount = $testContracts.Count
+        localOnly = $true
+        hostedEvidence = 'NotRun'
+        closureClaim = $false
+        status = 'Passed'
+    }
 }
 
 function Format-Command {
