@@ -53,7 +53,7 @@ public sealed class ImmediateViewModel : ObservableObject
     /// <summary>Gets a statement of the context immediate expressions currently evaluate under.</summary>
     public string Summary => shell.IsDumpOpen
         ? evaluate.WatchContextSummary
-        : "No dump is open. Open one to evaluate expressions here.";
+        : "No dump is open. Literals and deterministic expressions evaluate now; dump values need an open snapshot.";
 
     /// <summary>Updates the context statement to match a newly opened or closed dump.</summary>
     public void Reset() => Raise(nameof(Summary));
@@ -85,8 +85,9 @@ public sealed class ImmediateViewModel : ObservableObject
         AppendLine("> " + text);
         if (!shell.IsDumpOpen)
         {
-            AppendLine("// No dump is open.");
-            AppendLine(string.Empty);
+            // The sessionless entry folds the evidence-free constant subset and refuses everything beyond it
+            // with the typed no-snapshot stop, so the prompt is useful before any dump opens.
+            RenderReport(ExpressionEvaluationService.EvaluateWithoutSnapshot(text));
             return;
         }
 
@@ -102,6 +103,11 @@ public sealed class ImmediateViewModel : ObservableObject
             return;
         }
 
+        RenderReport(report);
+    }
+
+    private void RenderReport(EvaluationReport report)
+    {
         if (report.Severity is EvaluationSeverity.Exact or EvaluationSeverity.Absent)
         {
             AppendLine(report.ValueKind is { } kind ? $"{report.Value}  // {kind}" : report.Value);

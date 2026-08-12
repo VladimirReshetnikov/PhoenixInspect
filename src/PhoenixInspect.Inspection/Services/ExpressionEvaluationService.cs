@@ -186,6 +186,57 @@ public static class ExpressionEvaluationService
         return false;
     }
 
+    /// <summary>Evaluates one expression with no snapshot loaded: the evidence-free constant subset alone.</summary>
+    /// <remarks>
+    /// This is the same null-session pure pass every loaded-session evaluation already runs first, exposed as its
+    /// own entry so an immediate window works before any dump opens. Literals, deterministic arithmetic with the
+    /// typed constant-domain errors, and the closed deterministic library surface fold exactly as they do with a
+    /// snapshot; anything beyond that subset — a qualified name, a metadata literal, a stored value — refuses with
+    /// one typed stop naming the missing snapshot, because there is no target state to read and nothing may be
+    /// guessed in its place. Loaded-session behavior is untouched by construction: this entry consults no session
+    /// surface at all.
+    /// </remarks>
+    /// <param name="expression">The raw expression text, submitted without normalization.</param>
+    /// <returns>A complete display report: an exact constant value or the typed no-snapshot stop.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="expression"/> is null.</exception>
+    public static EvaluationReport EvaluateWithoutSnapshot(string expression)
+    {
+        ArgumentNullException.ThrowIfNull(expression);
+        var stopwatch = Stopwatch.StartNew();
+        var pureConstant = ConstantExpressionEvaluator.Evaluate(session: null, expression);
+        stopwatch.Stop();
+        if (pureConstant.Status != ConstantExpressionStatus.NotConstant)
+        {
+            return BuildConstantReport(expression, pureConstant, stopwatch.Elapsed);
+        }
+
+        return new EvaluationReport
+        {
+            Expression = expression,
+            Path = "No-snapshot evaluation",
+            Severity = EvaluationSeverity.Stopped,
+            Status = "Unavailable",
+            Stage = "Evaluation refused before any snapshot evidence was consulted",
+            Value = "No value was produced.",
+            Facts =
+            [
+                new PropertyRow("Routing", "Entry point", "ExpressionEvaluationService"),
+                new PropertyRow(
+                    "Admission",
+                    "Policy",
+                    "Without a loaded snapshot, only the evidence-free constant subset can fold"),
+            ],
+            Diagnostics =
+            [
+                new DiagnosticRow(
+                    "EXPLORER_EVALUATION_REQUIRES_LOADED_SNAPSHOT",
+                    "The expression reaches beyond literals and the closed deterministic library surface, and no "
+                    + "snapshot is loaded to supply the target state it names."),
+            ],
+            Duration = stopwatch.Elapsed,
+        };
+    }
+
     /// <summary>Evaluates a static-field expression, optionally consulting one selected frame for name context.</summary>
     /// <param name="session">The open dump session.</param>
     /// <param name="expression">The raw expression text, submitted without normalization.</param>

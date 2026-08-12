@@ -571,9 +571,17 @@ public sealed class EvaluateViewModel : ObservableObject
 
     private bool CanEvaluate()
     {
-        if (!shell.IsDumpOpen || string.IsNullOrWhiteSpace(expression))
+        if (string.IsNullOrWhiteSpace(expression))
         {
             return false;
+        }
+
+        // The static-field path stays available before any dump opens: the evidence-free constant subset folds
+        // without a snapshot, and everything beyond it produces the typed no-snapshot stop rather than a disabled
+        // button. The root-relative path needs a selected heap object, which only a loaded dump can supply.
+        if (!shell.IsDumpOpen)
+        {
+            return path == ExpressionPath.StaticField;
         }
 
         return path != ExpressionPath.RootRelative
@@ -584,7 +592,13 @@ public sealed class EvaluateViewModel : ObservableObject
     {
         var submitted = expression;
         EvaluationReport? produced;
-        if (path == ExpressionPath.StaticField)
+        if (!shell.IsDumpOpen)
+        {
+            // The sessionless entry consults no session surface: pure constants fold, and anything beyond the
+            // evidence-free subset reports the typed no-snapshot stop.
+            produced = ExpressionEvaluationService.EvaluateWithoutSnapshot(submitted);
+        }
+        else if (path == ExpressionPath.StaticField)
         {
             var selector = contextFrame?.Selector;
             // The shell probes hint-derived Portable-PDB candidates automatically, exactly as the source view does;
