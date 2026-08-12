@@ -11,8 +11,8 @@
     NuGet package root. Identical canonical local build-identity evidence and mechanically verified third-party
     dependency/notice evidence are embedded in both payloads. Each payload then receives a complete per-file SHA-256
     manifest and is archived with sorted entries and normalized timestamps. The archives are re-extracted before the
-    CLI help and non-UI Desktop load smokes run with 30-second process bounds. The output directory contains exactly
-    two ZIPs and SHA256SUMS.txt.
+    CLI help smoke, a bounded CLI capture/open/static-field workflow against a disposable sample target, and the
+    non-UI Desktop load smoke run. The output directory contains exactly two ZIPs and SHA256SUMS.txt.
 
     These are unsigned local-validation artifacts and must not be redistributed. This script does not create NuGet
     packages, a GitHub release, an SBOM, SLSA provenance, reproducibility evidence, a signature, redistribution
@@ -23,8 +23,8 @@
     stale files cannot be mistaken for current output.
 
 .PARAMETER SelfTest
-    Exercises new/legacy archive-ownership and build-evidence rejection cases in disposable directories without
-    restoring, publishing, staging, or replacing artifact output.
+    Exercises new/legacy archive-ownership, build-evidence, and CLI workflow-output rejection cases in disposable
+    directories without restoring, publishing, staging, or replacing artifact output.
 
 .EXAMPLE
     ./eng/Publish-PrereleaseArtifacts.ps1
@@ -77,6 +77,12 @@ $archiveRoot = Join-Path $workRoot 'archives'
 $noticeEvidenceRoot = Join-Path $workRoot 'third-party-notices-evidence'
 $sdkArtifactsRoot = Join-Path $workRoot 'sdk-artifacts'
 $nugetPackageRoot = Join-Path $workRoot 'packages'
+$cliWorkflowRoot = Join-Path $workRoot 'cli-workflow-smoke'
+$demoTargetArtifactsRoot = Join-Path $cliWorkflowRoot 'sdk-artifacts'
+$demoTargetPublishRoot = Join-Path $cliWorkflowRoot 'target-publish'
+$demoTargetScratchRoot = Join-Path $cliWorkflowRoot 'execution'
+$demoTargetProject = Join-Path $repositoryRoot 'samples/Contoso.OrderService/Contoso.OrderService.csproj'
+$demoTargetExecutable = Join-Path $demoTargetPublishRoot 'Contoso.OrderService.exe'
 
 $outputLockHashAlgorithm = [System.Security.Cryptography.SHA256]::Create()
 try {
@@ -888,6 +894,382 @@ function Test-ExtractedArchive {
     return $payloadDirectory
 }
 
+function New-BoundedProcessStartInfo {
+    param(
+        [Parameter(Mandatory)][string] $FilePath,
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]] $Arguments,
+        [Parameter(Mandatory)][string] $WorkingDirectory
+    )
+
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $FilePath
+    $startInfo.WorkingDirectory = $WorkingDirectory
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $true
+    $startInfo.ErrorDialog = $false
+    $startInfo.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    $strictUtf8 = [System.Text.UTF8Encoding]::new($false, $true)
+    $startInfo.StandardOutputEncoding = $strictUtf8
+    $startInfo.StandardErrorEncoding = $strictUtf8
+    $startInfo.Environment['DOTNET_DISABLE_GUI_ERRORS'] = '1'
+    foreach ($argument in $Arguments) {
+        $startInfo.ArgumentList.Add($argument)
+    }
+    return $startInfo
+}
+
+function Stop-PublisherOwnedProcess {
+    param(
+        [Parameter(Mandatory)][System.Diagnostics.Process] $Process,
+        [Parameter(Mandatory)][string] $Description
+    )
+
+    if (-not $Process.HasExited) {
+        try {
+            $Process.Kill($true)
+        }
+        catch {
+            if (-not $Process.HasExited) {
+                throw "Failed to kill the complete process tree for ${Description}: $($_.Exception.Message)"
+            }
+        }
+    }
+    if (-not $Process.WaitForExit(5000)) {
+        throw "The complete process tree for $Description did not terminate within the 5-second cleanup bound."
+    }
+}
+
+function Wait-PublisherTextTasks {
+    param(
+        [Parameter(Mandatory)][System.Threading.Tasks.Task[]] $Tasks,
+        [Parameter(Mandatory)][ValidateRange(0, 60000)][int] $TimeoutMilliseconds,
+        [Parameter(Mandatory)][string] $Description
+    )
+
+    if (-not [System.Threading.Tasks.Task]::WaitAll($Tasks, $TimeoutMilliseconds)) {
+        throw "$Description did not close its redirected output streams within the wall-clock bound."
+    }
+}
+
+function Invoke-BoundedCapturedProcess {
+    param(
+        [Parameter(Mandatory)][string] $FilePath,
+        [Parameter(Mandatory)][string[]] $Arguments,
+        [Parameter(Mandatory)][string] $WorkingDirectory,
+        [Parameter(Mandatory)][ValidateRange(1, 60)][int] $TimeoutSeconds,
+        [Parameter(Mandatory)][string] $Description
+    )
+
+    $startInfo = New-BoundedProcessStartInfo `
+        -FilePath $FilePath `
+        -Arguments $Arguments `
+        -WorkingDirectory $WorkingDirectory
+    $process = [System.Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    $started = $false
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    try {
+        if (-not $process.Start()) {
+            throw "Failed to start $Description."
+        }
+        $started = $true
+        $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+        $stderrTask = $process.StandardError.ReadToEndAsync()
+        $timeoutMilliseconds = $TimeoutSeconds * 1000
+        if (-not $process.WaitForExit($timeoutMilliseconds)) {
+            Stop-PublisherOwnedProcess -Process $process -Description $Description
+            try {
+                Wait-PublisherTextTasks `
+                    -Tasks ([System.Threading.Tasks.Task[]]@($stdoutTask, $stderrTask)) `
+                    -TimeoutMilliseconds 5000 `
+                    -Description "$Description cleanup"
+            }
+            catch {
+                # The timeout is already fatal. Process disposal below closes any remaining redirected handles.
+            }
+            throw "$Description exceeded its $TimeoutSeconds-second wall-clock bound."
+        }
+
+        $remainingMilliseconds = $timeoutMilliseconds - [int][math]::Ceiling($stopwatch.Elapsed.TotalMilliseconds)
+        if ($remainingMilliseconds -lt 0) {
+            $remainingMilliseconds = 0
+        }
+        Wait-PublisherTextTasks `
+            -Tasks ([System.Threading.Tasks.Task[]]@($stdoutTask, $stderrTask)) `
+            -TimeoutMilliseconds $remainingMilliseconds `
+            -Description $Description
+        return [pscustomobject]@{
+            ExitCode = $process.ExitCode
+            StandardOutput = $stdoutTask.GetAwaiter().GetResult()
+            StandardError = $stderrTask.GetAwaiter().GetResult()
+        }
+    }
+    finally {
+        $cleanupFailure = $null
+        if ($started) {
+            try {
+                if (-not $process.HasExited) {
+                    Stop-PublisherOwnedProcess -Process $process -Description $Description
+                }
+            }
+            catch {
+                $cleanupFailure = $_
+            }
+        }
+        $process.Dispose()
+        if ($null -ne $cleanupFailure) {
+            throw "Failed to clean up ${Description}: $($cleanupFailure.Exception.Message)"
+        }
+    }
+}
+
+function Start-BoundedDemoTarget {
+    param([Parameter(Mandatory)][string] $ExecutablePath)
+
+    $startInfo = New-BoundedProcessStartInfo `
+        -FilePath $ExecutablePath `
+        -Arguments @() `
+        -WorkingDirectory (Split-Path -Parent $ExecutablePath)
+    $startInfo.Environment['DOTNET_EnableDiagnostics'] = '1'
+    $startInfo.Environment['COMPlus_EnableDiagnostics'] = '1'
+    $startInfo.Environment['DOTNET_EnableDiagnostics_IPC'] = '1'
+    $null = $startInfo.Environment.Remove('DOTNET_DiagnosticPorts')
+    $null = $startInfo.Environment.Remove('DOTNET_DefaultDiagnosticPortSuspend')
+
+    $process = [System.Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    $started = $false
+    $ownershipTransferred = $false
+    try {
+        if (-not $process.Start()) {
+            throw 'Failed to start the disposable Contoso.OrderService smoke target.'
+        }
+        $started = $true
+        $stderrTask = $process.StandardError.ReadToEndAsync()
+        $readyTask = $process.StandardOutput.ReadLineAsync()
+        if (-not $readyTask.Wait(30000)) {
+            throw 'The disposable Contoso.OrderService smoke target did not report READY within 30 seconds.'
+        }
+        $readyLine = $readyTask.GetAwaiter().GetResult()
+        if ($readyLine -cne 'READY') {
+            throw "The disposable Contoso.OrderService smoke target reported '$readyLine' instead of exact READY."
+        }
+
+        $remainingStdoutTask = $process.StandardOutput.ReadToEndAsync()
+        $ownershipTransferred = $true
+        return [pscustomobject]@{
+            Process = $process
+            RemainingStandardOutputTask = $remainingStdoutTask
+            StandardErrorTask = $stderrTask
+        }
+    }
+    finally {
+        if (-not $ownershipTransferred) {
+            $cleanupFailure = $null
+            if ($started) {
+                try {
+                    Stop-PublisherOwnedProcess `
+                        -Process $process `
+                        -Description 'the disposable Contoso.OrderService smoke target'
+                }
+                catch {
+                    $cleanupFailure = $_
+                }
+            }
+            $process.Dispose()
+            if ($null -ne $cleanupFailure) {
+                throw "Failed to clean up the disposable Contoso.OrderService smoke target: $($cleanupFailure.Exception.Message)"
+            }
+        }
+    }
+}
+
+function Stop-BoundedDemoTarget {
+    param([Parameter(Mandatory)][pscustomobject] $Target)
+
+    $process = $Target.Process
+    try {
+        Stop-PublisherOwnedProcess `
+            -Process $process `
+            -Description 'the disposable Contoso.OrderService smoke target'
+        Wait-PublisherTextTasks `
+            -Tasks ([System.Threading.Tasks.Task[]]@(
+                $Target.RemainingStandardOutputTask,
+                $Target.StandardErrorTask)) `
+            -TimeoutMilliseconds 5000 `
+            -Description 'The disposable Contoso.OrderService smoke target cleanup'
+        $remainingOutput = $Target.RemainingStandardOutputTask.GetAwaiter().GetResult()
+        if (-not [string]::IsNullOrEmpty($remainingOutput)) {
+            throw 'The disposable Contoso.OrderService smoke target wrote unexpected output after exact READY.'
+        }
+        $errorOutput = $Target.StandardErrorTask.GetAwaiter().GetResult()
+        if (-not [string]::IsNullOrEmpty($errorOutput)) {
+            throw 'The disposable Contoso.OrderService smoke target wrote an unexpected diagnostic to standard error.'
+        }
+    }
+    finally {
+        $process.Dispose()
+    }
+}
+
+function Remove-BoundedSmokeFile {
+    param(
+        [Parameter(Mandatory)][string] $Path,
+        [Parameter(Mandatory)][string] $ExpectedParent
+    )
+
+    $fullPath = [System.IO.Path]::GetFullPath($Path)
+    $expectedParentFullPath = [System.IO.Path]::TrimEndingDirectorySeparator(
+        [System.IO.Path]::GetFullPath($ExpectedParent))
+    if (-not [string]::Equals(
+            [System.IO.Path]::GetDirectoryName($fullPath),
+            $expectedParentFullPath,
+            [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing cleanup of smoke file outside its exact scratch directory: '$fullPath'."
+    }
+
+    for ($attempt = 1; $attempt -le 20; $attempt++) {
+        if (-not (Test-Path -LiteralPath $fullPath)) {
+            return
+        }
+        $item = Get-Item -LiteralPath $fullPath -Force
+        if ($item.PSIsContainer -or
+            ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "Refusing cleanup of unexpected smoke item '$fullPath'."
+        }
+        try {
+            Remove-Item -LiteralPath $fullPath -Force
+        }
+        catch {
+            if ($attempt -eq 20) {
+                throw "Could not delete the temporary CLI workflow dump within the 5-second lock-cleanup bound: $($_.Exception.Message)"
+            }
+        }
+        if (-not (Test-Path -LiteralPath $fullPath)) {
+            return
+        }
+        if ($attempt -lt 20) {
+            Start-Sleep -Milliseconds 250
+        }
+    }
+    throw "Could not delete the temporary CLI workflow dump within the 5-second lock-cleanup bound: '$fullPath' remains."
+}
+
+function Assert-CliWorkflowEvaluationOutput {
+    param([Parameter(Mandatory)][AllowEmptyString()][string] $Output)
+
+    $contracts = @(
+        [pscustomobject]@{
+            Name = 'the exact fully-qualified expression headline'
+            Pattern = '^[ \t]*\[exact\][ \t]+Contoso\.OrderService\.Diagnostics\.ServiceState\.BuildLabel[ \t]*\r?$'
+        },
+        [pscustomobject]@{
+            Name = 'the exact string value'
+            Pattern = '^[ \t]*=[ \t]+"2026\.07\.30-preview"[ \t]+\[String \(length 18\)\][ \t]*\r?$'
+        },
+        [pscustomobject]@{
+            Name = 'the Exact Complete status'
+            Pattern = '^[ \t]*status[ \t]+Exact[ \t]+·[ \t]+Complete[ \t]*\r?$'
+        },
+        [pscustomobject]@{
+            Name = 'the one-expression summary'
+            Pattern = '^[ \t]*Expressions evaluated[ \t]+1[ \t]*\r?$'
+        },
+        [pscustomobject]@{
+            Name = 'the zero-nonexact summary'
+            Pattern = '^[ \t]*Answers that were not exact or exhaustively absent[ \t]+0[ \t]*\r?$'
+        })
+    foreach ($contract in $contracts) {
+        $matches = [System.Text.RegularExpressions.Regex]::Matches(
+            $Output,
+            $contract.Pattern,
+            [System.Text.RegularExpressions.RegexOptions]::Multiline)
+        if ($matches.Count -ne 1) {
+            throw "The extracted CLI workflow did not report exactly one line for $($contract.Name)."
+        }
+    }
+}
+
+function Invoke-BoundedCliWorkflowSmoke {
+    param(
+        [Parameter(Mandatory)][string] $ExecutablePath,
+        [Parameter(Mandatory)][string] $TargetExecutablePath,
+        [Parameter(Mandatory)][string] $ScratchDirectory
+    )
+
+    if (-not (Test-Path -LiteralPath $ExecutablePath -PathType Leaf)) {
+        throw "The extracted CLI workflow executable '$ExecutablePath' is missing."
+    }
+    if (-not (Test-Path -LiteralPath $TargetExecutablePath -PathType Leaf)) {
+        throw "The disposable CLI workflow target '$TargetExecutablePath' is missing."
+    }
+    if (Test-Path -LiteralPath $ScratchDirectory) {
+        throw "The CLI workflow scratch directory '$ScratchDirectory' unexpectedly already exists."
+    }
+    $null = New-Item -ItemType Directory -Path $ScratchDirectory
+    $dumpPath = Join-Path $ScratchDirectory 'Contoso.OrderService.dmp'
+    $target = $null
+    try {
+        $target = Start-BoundedDemoTarget -ExecutablePath $TargetExecutablePath
+        try {
+            $capture = Invoke-BoundedCapturedProcess `
+                -FilePath $ExecutablePath `
+                -Arguments @('capture', '--pid', $target.Process.Id.ToString(), '--output', $dumpPath) `
+                -WorkingDirectory (Split-Path -Parent $ExecutablePath) `
+                -TimeoutSeconds 60 `
+                -Description 'The extracted CLI capture smoke'
+            if ($capture.ExitCode -ne 0) {
+                throw "The extracted CLI capture smoke failed with exit code $($capture.ExitCode)."
+            }
+            if (-not [string]::IsNullOrEmpty($capture.StandardError)) {
+                throw 'The extracted CLI capture smoke wrote an unexpected diagnostic to standard error.'
+            }
+            if (-not (Test-Path -LiteralPath $dumpPath -PathType Leaf)) {
+                throw 'The extracted CLI capture smoke did not create its requested dump.'
+            }
+            $dumpItem = Get-Item -LiteralPath $dumpPath -Force
+            if (($dumpItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or
+                $dumpItem.Length -le 0) {
+                throw 'The extracted CLI capture smoke did not create a nonempty regular dump file.'
+            }
+        }
+        finally {
+            if ($null -ne $target) {
+                $ownedTarget = $target
+                $target = $null
+                Stop-BoundedDemoTarget -Target $ownedTarget
+            }
+        }
+
+        $evaluation = Invoke-BoundedCapturedProcess `
+            -FilePath $ExecutablePath `
+            -Arguments @(
+                $dumpPath,
+                '--eval', 'Contoso.OrderService.Diagnostics.ServiceState.BuildLabel',
+                '--no-color') `
+            -WorkingDirectory (Split-Path -Parent $ExecutablePath) `
+            -TimeoutSeconds 60 `
+            -Description 'The extracted CLI dump evaluation smoke'
+        if ($evaluation.ExitCode -ne 0) {
+            throw "The extracted CLI dump evaluation smoke failed with exit code $($evaluation.ExitCode)."
+        }
+        if (-not [string]::IsNullOrEmpty($evaluation.StandardError)) {
+            throw 'The extracted CLI dump evaluation smoke wrote an unexpected diagnostic to standard error.'
+        }
+        Assert-CliWorkflowEvaluationOutput -Output $evaluation.StandardOutput
+    }
+    finally {
+        if ($null -ne $target) {
+            $ownedTarget = $target
+            $target = $null
+            Stop-BoundedDemoTarget -Target $ownedTarget
+        }
+        Remove-BoundedSmokeFile -Path $dumpPath -ExpectedParent $ScratchDirectory
+    }
+}
+
 function Invoke-BoundedCliSmoke {
     param(
         [Parameter(Mandatory)][string] $ExecutablePath,
@@ -1151,6 +1533,45 @@ function Invoke-PublisherArchiveContractSelfTest {
                 Test-ArtifactOutputDirectory -Path $invalidOutput -ExpectedNames $expectedOutputNames
             } "$invalidFormat rejected"
         }
+
+        $validEvaluationOutput = @'
+PhoenixInspect nondeterministic overview is deliberately ignored by this contract.
+
+  [exact]    Contoso.OrderService.Diagnostics.ServiceState.BuildLabel
+    =   "2026.07.30-preview"   [String (length 18)]
+    status  Exact  ·  Complete
+    via     nondeterministic address and duration
+
+Session summary
+  Expressions evaluated     1
+  Answers that were not exact or exhaustively absent  0
+'@
+        Assert-CliWorkflowEvaluationOutput -Output $validEvaluationOutput
+        foreach ($invalidEvaluation in @(
+            [pscustomobject]@{
+                Name = 'wrong workflow value rejected'
+                Output = $validEvaluationOutput.Replace('"2026.07.30-preview"', '"wrong"')
+            },
+            [pscustomobject]@{
+                Name = 'non-complete workflow result rejected'
+                Output = $validEvaluationOutput.Replace('Exact  ·  Complete', 'Exact  ·  Storage')
+            },
+            [pscustomobject]@{
+                Name = 'wrong workflow expression count rejected'
+                Output = $validEvaluationOutput.Replace('Expressions evaluated     1', 'Expressions evaluated     2')
+            },
+            [pscustomobject]@{
+                Name = 'nonexact workflow answer rejected'
+                Output = $validEvaluationOutput.Replace('exhaustively absent  0', 'exhaustively absent  1')
+            },
+            [pscustomobject]@{
+                Name = 'duplicate workflow result rejected'
+                Output = $validEvaluationOutput + "`n  [exact]    Contoso.OrderService.Diagnostics.ServiceState.BuildLabel"
+            })) {
+            Assert-SelfTestThrows {
+                Assert-CliWorkflowEvaluationOutput -Output $invalidEvaluation.Output
+            } $invalidEvaluation.Name
+        }
     }
     finally {
         if (Test-Path -LiteralPath $selfTestRoot) {
@@ -1164,7 +1585,7 @@ function Invoke-PublisherArchiveContractSelfTest {
         }
     }
 
-    Write-Output 'Publisher archive self-test passed: new build evidence is required and legacy ownership is accepted only through the explicit replacement boundary.'
+    Write-Output 'Publisher self-test passed: build evidence, legacy ownership boundaries, and exact CLI workflow semantics reject adversarial fixtures.'
 }
 
 $products = @(
@@ -1279,6 +1700,44 @@ try {
         Write-Host "$($product.Name) publish completed in $([math]::Round($productStopwatch.Elapsed.TotalSeconds, 1)) s."
     }
 
+    if (-not (Test-Path -LiteralPath $demoTargetProject -PathType Leaf)) {
+        throw "CLI workflow sample target '$demoTargetProject' is missing."
+    }
+    $null = New-Item -ItemType Directory -Path $demoTargetArtifactsRoot -Force
+    $null = New-Item -ItemType Directory -Path $demoTargetPublishRoot -Force
+    Write-Host 'Locked-restoring the disposable Contoso.OrderService CLI workflow target…' -ForegroundColor Cyan
+    Invoke-Checked -Description "Restoring $demoTargetProject" -CommandArguments @(
+        'restore', $demoTargetProject,
+        '--locked-mode',
+        '--artifacts-path', $demoTargetArtifactsRoot,
+        '--packages', $nugetPackageRoot,
+        '--disable-build-servers',
+        '--verbosity', 'minimal')
+    Write-Host 'Publishing the disposable Contoso.OrderService CLI workflow target…' -ForegroundColor Cyan
+    Invoke-Checked -Description "Publishing $demoTargetProject" -CommandArguments @(
+        'publish', $demoTargetProject,
+        '--configuration', $configuration,
+        '--framework', $repositoryContract.TargetFramework,
+        '--self-contained', 'false',
+        '--no-restore',
+        '--artifacts-path', $demoTargetArtifactsRoot,
+        '--output', $demoTargetPublishRoot,
+        '--verbosity', 'minimal',
+        '--nologo',
+        '--disable-build-servers',
+        '/p:UseSharedCompilation=false')
+    foreach ($requiredTargetFile in @(
+        $demoTargetExecutable,
+        (Join-Path $demoTargetPublishRoot 'Contoso.OrderService.dll'),
+        (Join-Path $demoTargetPublishRoot 'Contoso.OrderService.runtimeconfig.json'))) {
+        if (-not (Test-Path -LiteralPath $requiredTargetFile -PathType Leaf)) {
+            throw "The disposable framework-dependent CLI workflow target is incomplete: '$requiredTargetFile' is missing."
+        }
+    }
+    if (Test-Path -LiteralPath (Join-Path $demoTargetPublishRoot 'coreclr.dll')) {
+        throw 'The disposable CLI workflow target unexpectedly contains coreclr.dll; its smoke-only publish must remain framework-dependent.'
+    }
+
     if (-not (Test-Path -LiteralPath $noticeGenerator -PathType Leaf)) {
         throw "Third-party notice generator '$noticeGenerator' is missing."
     }
@@ -1386,6 +1845,11 @@ try {
                 -ExecutablePath (Join-Path $extractedPayload $product.Executable) `
                 -ExpectedVersion $expectedVersion `
                 -ScratchDirectory $extractionRoot
+            Write-Host 'Capturing and inspecting a disposable Contoso.OrderService dump with the extracted CLI…' -ForegroundColor Cyan
+            Invoke-BoundedCliWorkflowSmoke `
+                -ExecutablePath (Join-Path $extractedPayload $product.Executable) `
+                -TargetExecutablePath $demoTargetExecutable `
+                -ScratchDirectory $demoTargetScratchRoot
         }
         elseif ($product.Slug -eq 'phoenixinspect-desktop') {
             Write-Host 'Smoke-loading the extracted Desktop payload without UI, with a 30-second bound…' -ForegroundColor Cyan
@@ -1488,6 +1952,7 @@ try {
     }
     Write-Host 'Canonical unsigned local build identity is embedded; no reproducibility, SLSA provenance, signature, SBOM, package, tag, release, redistribution authorization, or W8.10 closure is claimed.'
     Write-Host 'Generated third-party inventory and notice evidence is embedded; human legal review remains a release-closure blocker.'
+    Write-Host 'The extracted CLI workflow smoke proves one local capture/open/static-field evaluation path against a disposable sample dump; it is not general compatibility or release closure.'
     Write-Host 'The Desktop smoke covers non-UI dependency presence, selected assembly loads, and compiled XAML registration; it does not claim visible UI startup.'
     $totalStopwatch.Stop()
     Write-Host "Completed in $([math]::Round($totalStopwatch.Elapsed.TotalSeconds, 1)) s."

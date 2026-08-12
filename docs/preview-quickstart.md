@@ -71,13 +71,21 @@ and immediately before installing output.
 
 The publisher derives and verifies a common third-party dependency/license-evidence bundle from the products' exact
 `.deps.json` graphs, verifies the isolated post-restore project graph and runtime-pack download sets, records the
-actual common runtime pack carried by the published products, smoke-launches the packaged CLI, runs the Desktop's
-exact non-UI `--smoke-test`, and writes two ZIPs plus `SHA256SUMS.txt` under `artifacts/prerelease`. Every ZIP contains
-byte-identical canonical `BUILD-EVIDENCE.json`, the generated third-party evidence, and a complete per-file SHA-256
-manifest. The build-evidence record binds the initial/final Git commit and tree, canonical tracked repository URL,
-actual compatible stable .NET 10.0.4xx SDK, target/configuration/RID/self-contained settings, actual runtime pack,
-third-party evidence manifest, and an ordinal list of selected source/configuration inputs and their SHA-256 hashes.
-Entries are sorted and their timestamps are normalized to remove two incidental sources of variation.
+actual common runtime pack carried by the published products, retains the packaged CLI `--help` smoke, runs the
+Desktop's exact non-UI `--smoke-test`, and writes two ZIPs plus `SHA256SUMS.txt` under `artifacts/prerelease`. It also
+locked-restores and Release-publishes `samples/Contoso.OrderService` as a framework-dependent disposable target under
+the fresh temporary work root. The hidden target must print exact `READY` within 30 seconds; then the extracted
+self-contained CLI must capture a nonempty dump and reopen it to evaluate
+`Contoso.OrderService.Diagnostics.ServiceState.BuildLabel`, with a 60-second bound on each CLI operation. The target
+is stopped and disposed before inspection, and the smoke requires the exact value `"2026.07.30-preview"`, an
+`Exact`/`Complete` answer, one evaluated expression, and zero non-exact answers. The dump, target publish, and all
+smoke logs remain outside the ZIPs and are deleted with the temporary work root; CI does not retain or upload them.
+
+Every ZIP contains byte-identical canonical `BUILD-EVIDENCE.json`, the generated third-party evidence, and a complete
+per-file SHA-256 manifest. The build-evidence record binds the initial/final Git commit and tree, canonical tracked
+repository URL, actual compatible stable .NET 10.0.4xx SDK, target/configuration/RID/self-contained settings, actual
+runtime pack, third-party evidence manifest, and an ordinal list of selected source/configuration inputs and their
+SHA-256 hashes. Entries are sorted and their timestamps are normalized to remove two incidental sources of variation.
 Byte-for-byte reproducibility is not yet a supported or tested claim, even when the same toolchain is used.
 
 These files are unsigned local-validation outputs. **Do not redistribute them.** Each contains the repository
