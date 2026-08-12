@@ -7,17 +7,24 @@
 
 .DESCRIPTION
     Locked-restores and publishes exactly the CLI and desktop applications as win-x64, self-contained Release
-    directory layouts. A mechanically verified third-party dependency and notice-evidence bundle is embedded in
-    both payloads. Each payload then receives a complete per-file SHA-256 manifest and is archived with sorted entries
-    and normalized timestamps. The archives are re-extracted before the CLI help and non-UI Desktop load smokes run
-    with 30-second process bounds. The output directory contains exactly two ZIPs and SHA256SUMS.txt.
+    directory layouts from a raw-byte-verified clean Git source state, fresh isolated SDK intermediates, and a fresh
+    NuGet package root. Identical canonical local build-identity evidence and mechanically verified third-party
+    dependency/notice evidence are embedded in both payloads. Each payload then receives a complete per-file SHA-256
+    manifest and is archived with sorted entries and normalized timestamps. The archives are re-extracted before the
+    CLI help and non-UI Desktop load smokes run with 30-second process bounds. The output directory contains exactly
+    two ZIPs and SHA256SUMS.txt.
 
     These are unsigned local-validation artifacts and must not be redistributed. This script does not create NuGet
-    packages, a GitHub release, an SBOM, provenance, a signature, or evidence of W8.10 release closure.
+    packages, a GitHub release, an SBOM, SLSA provenance, reproducibility evidence, a signature, redistribution
+    authorization, or evidence of W8.10 release closure.
 
 .PARAMETER OutputDirectory
     Destination for the two ZIP files and SHA256SUMS.txt. A successful run replaces this directory's contents so
     stale files cannot be mistaken for current output.
+
+.PARAMETER SelfTest
+    Exercises new/legacy archive-ownership and build-evidence rejection cases in disposable directories without
+    restoring, publishing, staging, or replacing artifact output.
 
 .EXAMPLE
     ./eng/Publish-PrereleaseArtifacts.ps1
@@ -27,7 +34,8 @@
 #>
 [CmdletBinding()]
 param(
-    [string] $OutputDirectory
+    [string] $OutputDirectory,
+    [switch] $SelfTest
 )
 
 Set-StrictMode -Version Latest
@@ -60,12 +68,15 @@ if ([string]::IsNullOrWhiteSpace($versionPrefix) -or [string]::IsNullOrWhiteSpac
 $expectedVersion = "$versionPrefix-$versionSuffix"
 $headlessProcess = Join-Path $PSScriptRoot 'Invoke-HeadlessProcess.ps1'
 $noticeGenerator = Join-Path $PSScriptRoot 'Generate-ThirdPartyNotices.ps1'
+Import-Module (Join-Path $PSScriptRoot 'PrereleaseBuildEvidence.psm1') -Force
 . (Join-Path $PSScriptRoot 'Enable-HeadlessTestMode.ps1')
 $null = Enable-HeadlessTestMode
 $workRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("phoenixinspect-publish-" + [guid]::NewGuid().ToString('N'))
 $publishRoot = Join-Path $workRoot 'publish'
 $archiveRoot = Join-Path $workRoot 'archives'
 $noticeEvidenceRoot = Join-Path $workRoot 'third-party-notices-evidence'
+$sdkArtifactsRoot = Join-Path $workRoot 'sdk-artifacts'
+$nugetPackageRoot = Join-Path $workRoot 'packages'
 
 $outputLockHashAlgorithm = [System.Security.Cryptography.SHA256]::Create()
 try {
@@ -256,8 +267,9 @@ function Write-PayloadManifest {
     $lines.Add("# Runtime: $runtimeIdentifier")
     $lines.Add('# Payload: unsigned, self-contained preview application for local validation')
     $lines.Add('# Third-party evidence: generated inventory and hash-pinned license/notice materials included')
-    $lines.Add('# Redistribution blocked: human legal review, SBOM, provenance, and signatures are incomplete')
-    $lines.Add('# Not supplied: NuGet package, legal clearance, SBOM, provenance, signature, W8.10 closure')
+    $lines.Add('# Build identity: exact clean Git source and selected-input evidence included; unsigned and local only')
+    $lines.Add('# Redistribution blocked: human legal review, SBOM, SLSA provenance, and signatures are incomplete')
+    $lines.Add('# Not supplied: NuGet package, legal clearance, SBOM, SLSA provenance, reproducibility, signature, W8.10 closure')
     foreach ($relativePath in Get-CanonicalPayloadRelativePaths $PayloadDirectory) {
         $filePath = Resolve-ContainedRelativePath `
             -RootDirectory $PayloadDirectory `
@@ -288,13 +300,14 @@ function Test-PayloadManifest {
         "# Runtime: $runtimeIdentifier",
         '# Payload: unsigned, self-contained preview application for local validation',
         '# Third-party evidence: generated inventory and hash-pinned license/notice materials included',
-        '# Redistribution blocked: human legal review, SBOM, provenance, and signatures are incomplete',
-        '# Not supplied: NuGet package, legal clearance, SBOM, provenance, signature, W8.10 closure'
+        '# Build identity: exact clean Git source and selected-input evidence included; unsigned and local only',
+        '# Redistribution blocked: human legal review, SBOM, SLSA provenance, and signatures are incomplete',
+        '# Not supplied: NuGet package, legal clearance, SBOM, SLSA provenance, reproducibility, signature, W8.10 closure'
     )
     if ($lines.Count -lt $fixedHeaders.Count) {
         throw "Payload manifest '$ManifestPath' is missing its required header."
     }
-    foreach ($headerIndex in @(0, 3, 4, 5, 6, 7)) {
+    foreach ($headerIndex in @(0, 3, 4, 5, 6, 7, 8)) {
         if ($lines[$headerIndex] -ne $fixedHeaders[$headerIndex]) {
             throw "Payload manifest '$ManifestPath' has an invalid header at line $($headerIndex + 1)."
         }
@@ -490,10 +503,12 @@ function Test-PublisherOwnedArchiveIdentity {
         [Parameter(Mandatory)][string] $ArchivePath,
         [Parameter(Mandatory)][string] $ContentRoot,
         [Parameter(Mandatory)][string] $Product,
-        [Parameter(Mandatory)][string] $Version
+        [Parameter(Mandatory)][string] $Version,
+        [switch] $AllowLegacyPublisherFormat
     )
 
     Add-Type -AssemblyName System.IO.Compression
+    $identityResult = $null
     $readStream = [System.IO.File]::OpenRead($ArchivePath)
     try {
         $archive = [System.IO.Compression.ZipArchive]::new(
@@ -546,7 +561,18 @@ function Test-PublisherOwnedArchiveIdentity {
                 $manifestStream.Dispose()
             }
 
-            [string[]] $identityHeader = @(
+            [string[]] $newIdentityHeader = @(
+                '# PhoenixInspect prerelease payload manifest',
+                "# Product: $Product",
+                "# Version: $Version",
+                "# Runtime: $runtimeIdentifier",
+                '# Payload: unsigned, self-contained preview application for local validation',
+                '# Third-party evidence: generated inventory and hash-pinned license/notice materials included',
+                '# Build identity: exact clean Git source and selected-input evidence included; unsigned and local only',
+                '# Redistribution blocked: human legal review, SBOM, SLSA provenance, and signatures are incomplete',
+                '# Not supplied: NuGet package, legal clearance, SBOM, SLSA provenance, reproducibility, signature, W8.10 closure'
+            )
+            [string[]] $legacyIdentityHeader = @(
                 '# PhoenixInspect prerelease payload manifest',
                 "# Product: $Product",
                 "# Version: $Version",
@@ -556,10 +582,14 @@ function Test-PublisherOwnedArchiveIdentity {
                 '# Redistribution blocked: human legal review, SBOM, provenance, and signatures are incomplete',
                 '# Not supplied: NuGet package, legal clearance, SBOM, provenance, signature, W8.10 closure'
             )
-            $identityPrefix = ($identityHeader -join "`n") + "`n"
-            if (-not $manifestText.StartsWith($identityPrefix, [System.StringComparison]::Ordinal)) {
+            $isNewFormat = $manifestText.StartsWith(
+                (($newIdentityHeader -join "`n") + "`n"), [System.StringComparison]::Ordinal)
+            $isLegacyFormat = $manifestText.StartsWith(
+                (($legacyIdentityHeader -join "`n") + "`n"), [System.StringComparison]::Ordinal)
+            if (-not $isNewFormat -and (-not $AllowLegacyPublisherFormat -or -not $isLegacyFormat)) {
                 throw "Archive '$ArchivePath' does not carry the expected PhoenixInspect publisher identity."
             }
+            [string[]] $identityHeader = if ($isNewFormat) { $newIdentityHeader } else { $legacyIdentityHeader }
             if ($manifestText.StartsWith([char] 0xfeff) -or
                 $manifestText.Contains("`r") -or
                 -not $manifestText.EndsWith("`n")) {
@@ -568,6 +598,16 @@ function Test-PublisherOwnedArchiveIdentity {
 
             [string[]] $manifestLines = $manifestText.Substring(0, $manifestText.Length - 1).Split("`n")
             [object[]] $payloadEntries = @($entries | Where-Object { $_.FullName -ne $manifestEntryName })
+            $evidenceEntryName = "$ContentRoot/BUILD-EVIDENCE.json"
+            $evidenceEntry = $archive.GetEntry($evidenceEntryName)
+            if ($isNewFormat) {
+                if ($null -eq $evidenceEntry -or $evidenceEntry.Length -gt 1MB) {
+                    throw "Archive '$ArchivePath' has no bounded '$evidenceEntryName'."
+                }
+            }
+            elseif ($null -ne $evidenceEntry) {
+                throw "Legacy archive '$ArchivePath' unexpectedly contains BUILD-EVIDENCE.json."
+            }
             [string[]] $recordLines = @($manifestLines | Select-Object -Skip $identityHeader.Count)
             if ($recordLines.Count -ne $payloadEntries.Count) {
                 throw "Archive '$ArchivePath' manifest has $($recordLines.Count) records for $($payloadEntries.Count) payload entries."
@@ -610,6 +650,59 @@ function Test-PublisherOwnedArchiveIdentity {
                     throw "Archive '$ArchivePath' manifest hash mismatch for '$recordPath'."
                 }
             }
+
+            if ($isNewFormat) {
+                $evidenceStream = $evidenceEntry.Open()
+                try {
+                    $memory = [System.IO.MemoryStream]::new()
+                    try {
+                        $evidenceStream.CopyTo($memory)
+                        [byte[]] $evidenceBytes = $memory.ToArray()
+                    }
+                    finally {
+                        $memory.Dispose()
+                    }
+                }
+                finally {
+                    $evidenceStream.Dispose()
+                }
+                $validatedEvidence = Test-PrereleaseBuildEvidenceBytes -Bytes $evidenceBytes
+                $noticeManifestEntryName = "$ContentRoot/THIRD-PARTY-NOTICES/MANIFEST.sha256"
+                $noticeManifestEntry = $archive.GetEntry($noticeManifestEntryName)
+                if ($null -eq $noticeManifestEntry -or $noticeManifestEntry.Length -le 0 -or
+                    $noticeManifestEntry.Length -gt 1MB) {
+                    throw "Archive '$ArchivePath' has no bounded '$noticeManifestEntryName'."
+                }
+                $noticeManifestStream = $noticeManifestEntry.Open()
+                try {
+                    $noticeHashAlgorithm = [System.Security.Cryptography.SHA256]::Create()
+                    try {
+                        $actualNoticeManifestHash = ([System.BitConverter]::ToString(
+                            $noticeHashAlgorithm.ComputeHash($noticeManifestStream))).Replace('-', '').ToLowerInvariant()
+                    }
+                    finally {
+                        $noticeHashAlgorithm.Dispose()
+                    }
+                }
+                finally {
+                    $noticeManifestStream.Dispose()
+                }
+                if ($actualNoticeManifestHash -cne $validatedEvidence.ThirdPartyEvidenceManifestSha256) {
+                    throw "Archive '$ArchivePath' third-party evidence manifest does not match BUILD-EVIDENCE.json."
+                }
+                $identityResult = [pscustomobject]@{
+                    Format = 'BuildEvidenceV1'
+                    EvidenceBytes = $evidenceBytes
+                    EvidenceSha256 = $validatedEvidence.Sha256
+                }
+            }
+            else {
+                $identityResult = [pscustomobject]@{
+                    Format = 'LegacyV0'
+                    EvidenceBytes = $null
+                    EvidenceSha256 = $null
+                }
+            }
         }
         finally {
             $archive.Dispose()
@@ -618,13 +711,15 @@ function Test-PublisherOwnedArchiveIdentity {
     finally {
         $readStream.Dispose()
     }
+    return $identityResult
 }
 
 function Test-ArtifactOutputDirectory {
     param(
         [Parameter(Mandatory)][string] $Path,
         [Parameter(Mandatory)][string[]] $ExpectedNames,
-        [switch] $AllowPriorVersion
+        [switch] $AllowPriorVersion,
+        [switch] $AllowLegacyPublisherFormat
     )
 
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -686,14 +781,24 @@ function Test-ArtifactOutputDirectory {
         -Directory $Path `
         -ChecksumPath (Join-Path $Path 'SHA256SUMS.txt') `
         -ExpectedArchiveNames @($archiveIdentities | Select-Object -ExpandProperty Name)
+    $archiveResults = [System.Collections.Generic.List[object]]::new()
     foreach ($identity in $archiveIdentities) {
         $product = if ($identity.Slug -eq 'cli') { 'PhoenixInspect CLI' } else { 'PhoenixInspect Desktop' }
         $contentRoot = [System.IO.Path]::GetFileNameWithoutExtension($identity.Name)
-        Test-PublisherOwnedArchiveIdentity `
+        $archiveResults.Add((Test-PublisherOwnedArchiveIdentity `
             -ArchivePath (Join-Path $Path $identity.Name) `
             -ContentRoot $contentRoot `
             -Product $product `
-            -Version $identity.Version
+            -Version $identity.Version `
+            -AllowLegacyPublisherFormat:$AllowLegacyPublisherFormat))
+    }
+    if (@($archiveResults | Select-Object -ExpandProperty Format -Unique).Count -ne 1) {
+        throw "Artifact output '$Path' mixes legacy and build-evidence publisher formats."
+    }
+    if ($archiveResults[0].Format -eq 'BuildEvidenceV1') {
+        Assert-PrereleaseBuildEvidenceIdentity `
+            -First $archiveResults[0].EvidenceBytes `
+            -Second $archiveResults[1].EvidenceBytes
     }
 }
 
@@ -745,7 +850,8 @@ function Test-ExtractedArchive {
     param(
         [Parameter(Mandatory)][string] $ArchivePath,
         [Parameter(Mandatory)][string] $ContentRoot,
-        [Parameter(Mandatory)][string] $ExtractionParent
+        [Parameter(Mandatory)][string] $ExtractionParent,
+        [Parameter(Mandatory)][byte[]] $ExpectedBuildEvidenceBytes
     )
 
     $extractionDirectory = Join-Path $ExtractionParent $ContentRoot
@@ -762,6 +868,23 @@ function Test-ExtractedArchive {
         throw "Archive '$ArchivePath' has no embedded ARTIFACT-MANIFEST.txt."
     }
     Test-PayloadManifest -PayloadDirectory $payloadDirectory -ManifestPath $manifestPath
+    $evidencePath = Join-Path $payloadDirectory 'BUILD-EVIDENCE.json'
+    if (-not (Test-Path -LiteralPath $evidencePath -PathType Leaf)) {
+        throw "Archive '$ArchivePath' has no embedded BUILD-EVIDENCE.json."
+    }
+    [byte[]] $actualEvidenceBytes = [System.IO.File]::ReadAllBytes($evidencePath)
+    Assert-PrereleaseBuildEvidenceIdentity `
+        -First $ExpectedBuildEvidenceBytes `
+        -Second $actualEvidenceBytes
+    $validatedEvidence = Test-PrereleaseBuildEvidenceBytes -Bytes $actualEvidenceBytes
+    $noticeManifestPath = Join-Path $payloadDirectory 'THIRD-PARTY-NOTICES/MANIFEST.sha256'
+    if (-not (Test-Path -LiteralPath $noticeManifestPath -PathType Leaf)) {
+        throw "Archive '$ArchivePath' has no embedded third-party evidence manifest."
+    }
+    $actualNoticeManifestHash = (Get-FileHash -LiteralPath $noticeManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($actualNoticeManifestHash -cne $validatedEvidence.ThirdPartyEvidenceManifestSha256) {
+        throw "Archive '$ArchivePath' extracted third-party evidence manifest does not match BUILD-EVIDENCE.json."
+    }
     return $payloadDirectory
 }
 
@@ -858,6 +981,192 @@ function Invoke-BoundedDesktopSmoke {
     }
 }
 
+function Invoke-PublisherArchiveContractSelfTest {
+    function Assert-SelfTestThrows {
+        param([Parameter(Mandatory)][scriptblock] $Action, [Parameter(Mandatory)][string] $Name)
+        try {
+            & $Action
+        }
+        catch {
+            return
+        }
+        throw "Publisher archive self-test '$Name' unexpectedly succeeded."
+    }
+
+    function New-SelfTestEvidenceBytes {
+        param([Parameter(Mandatory)][string] $ThirdPartyEvidenceManifestSha256)
+
+        $source = [pscustomobject]@{ ObjectFormat = 'sha1'; Commit = '1' * 40; Tree = '2' * 40 }
+        $contract = [pscustomobject]@{
+            ConfiguredSdkMinimum = '10.0.400'
+            RollForward = 'latestPatch'
+            AllowPrerelease = $false
+            TargetFramework = 'net10.0'
+            RepositoryUrl = 'https://github.com/VladimirReshetnikov/PhoenixInspect'
+        }
+        $inputs = @(
+            foreach ($path in Get-PrereleaseSelectedInputPaths) {
+                [ordered]@{ path = $path; sha256 = '0' * 64 }
+            }
+        )
+        return ,(New-PrereleaseBuildEvidenceBytes `
+            -InitialSource $source `
+            -FinalSource $source `
+            -RepositoryContract $contract `
+            -SelectedSdk '10.0.401' `
+            -RuntimePacks @([ordered]@{
+                id = 'runtimepack.Microsoft.NETCore.App.Runtime.win-x64'
+                version = '10.0.11'
+            }) `
+            -ThirdPartyEvidenceManifestSha256 $ThirdPartyEvidenceManifestSha256 `
+            -SelectedInputs $inputs)
+    }
+
+    function New-SelfTestArtifactOutput {
+        param(
+            [Parameter(Mandatory)][string] $Path,
+            [Parameter(Mandatory)][ValidateSet('New', 'Legacy', 'MissingEvidence', 'InvalidEvidence', 'MismatchedNoticeEvidence')][string] $Format,
+            [Parameter(Mandatory)][byte[]] $EvidenceBytes,
+            [Parameter(Mandatory)][byte[]] $NoticeManifestBytes
+        )
+
+        $payloadRoot = Join-Path $Path 'payloads'
+        $archiveDirectory = Join-Path $Path 'output'
+        $null = New-Item -ItemType Directory -Path $payloadRoot -Force
+        $null = New-Item -ItemType Directory -Path $archiveDirectory -Force
+        foreach ($fixture in @(
+            [pscustomobject]@{ Slug = 'phoenixinspect-cli'; Product = 'PhoenixInspect CLI' },
+            [pscustomobject]@{ Slug = 'phoenixinspect-desktop'; Product = 'PhoenixInspect Desktop' })) {
+            $payload = Join-Path $payloadRoot $fixture.Slug
+            $null = New-Item -ItemType Directory -Path $payload
+            Write-Utf8Lines -Path (Join-Path $payload 'fixture.txt') -Lines @('publisher self-test')
+            if ($Format -ne 'Legacy') {
+                $noticeDirectory = Join-Path $payload 'THIRD-PARTY-NOTICES'
+                $null = New-Item -ItemType Directory -Path $noticeDirectory
+                [byte[]] $embeddedNoticeBytes = if ($Format -eq 'MismatchedNoticeEvidence') {
+                    [System.Text.UTF8Encoding]::new($false).GetBytes("mismatched publisher self-test notice manifest`n")
+                }
+                else {
+                    $NoticeManifestBytes
+                }
+                [System.IO.File]::WriteAllBytes(
+                    (Join-Path $noticeDirectory 'MANIFEST.sha256'),
+                    $embeddedNoticeBytes)
+            }
+            if ($Format -in @('New', 'MismatchedNoticeEvidence')) {
+                Write-PrereleaseBuildEvidence -Path (Join-Path $payload 'BUILD-EVIDENCE.json') -Bytes $EvidenceBytes
+                $null = Write-PayloadManifest -PayloadDirectory $payload -Product $fixture.Product -Version $expectedVersion
+            }
+            elseif ($Format -eq 'InvalidEvidence') {
+                $invalidText = [System.Text.Encoding]::UTF8.GetString($EvidenceBytes).Replace(
+                    '"localOnly": true', '"localOnly": false')
+                Write-PrereleaseBuildEvidence `
+                    -Path (Join-Path $payload 'BUILD-EVIDENCE.json') `
+                    -Bytes ([System.Text.Encoding]::UTF8.GetBytes($invalidText))
+                $null = Write-PayloadManifest -PayloadDirectory $payload -Product $fixture.Product -Version $expectedVersion
+            }
+            elseif ($Format -eq 'MissingEvidence') {
+                $null = Write-PayloadManifest -PayloadDirectory $payload -Product $fixture.Product -Version $expectedVersion
+            }
+            else {
+                $fixtureHash = (Get-FileHash -LiteralPath (Join-Path $payload 'fixture.txt') -Algorithm SHA256).Hash.ToLowerInvariant()
+                Write-Utf8Lines -Path (Join-Path $payload 'ARTIFACT-MANIFEST.txt') -Lines @(
+                    '# PhoenixInspect prerelease payload manifest',
+                    "# Product: $($fixture.Product)",
+                    "# Version: $expectedVersion",
+                    "# Runtime: $runtimeIdentifier",
+                    '# Payload: unsigned, self-contained preview application for local validation',
+                    '# Third-party evidence: generated inventory and hash-pinned license/notice materials included',
+                    '# Redistribution blocked: human legal review, SBOM, provenance, and signatures are incomplete',
+                    '# Not supplied: NuGet package, legal clearance, SBOM, provenance, signature, W8.10 closure',
+                    "$fixtureHash *fixture.txt")
+            }
+
+            $archiveBaseName = "$($fixture.Slug)-$expectedVersion-$runtimeIdentifier"
+            New-NormalizedZip `
+                -PayloadDirectory $payload `
+                -ArchivePath (Join-Path $archiveDirectory "$archiveBaseName.zip") `
+                -ContentRoot $archiveBaseName
+        }
+        $checksumLines = @(
+            Get-ChildItem -LiteralPath $archiveDirectory -File -Filter '*.zip' |
+                Sort-Object Name |
+                ForEach-Object {
+                    $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+                    "$hash *$($_.Name)"
+                }
+        )
+        Write-Utf8Lines -Path (Join-Path $archiveDirectory 'SHA256SUMS.txt') -Lines $checksumLines
+        return $archiveDirectory
+    }
+
+    $selfTestRoot = Join-Path ([System.IO.Path]::GetTempPath()) (
+        'phoenixinspect-publisher-selftest-' + [guid]::NewGuid().ToString('N'))
+    $null = New-Item -ItemType Directory -Path $selfTestRoot
+    try {
+        [byte[]] $noticeManifestBytes = [System.Text.UTF8Encoding]::new($false).GetBytes(
+            "publisher self-test notice manifest`n")
+        $noticeHashAlgorithm = [System.Security.Cryptography.SHA256]::Create()
+        try {
+            $noticeManifestHash = ([System.BitConverter]::ToString(
+                $noticeHashAlgorithm.ComputeHash($noticeManifestBytes))).Replace('-', '').ToLowerInvariant()
+        }
+        finally {
+            $noticeHashAlgorithm.Dispose()
+        }
+        [byte[]] $evidenceBytes = New-SelfTestEvidenceBytes `
+            -ThirdPartyEvidenceManifestSha256 $noticeManifestHash
+
+        $newOutput = New-SelfTestArtifactOutput `
+            -Path (Join-Path $selfTestRoot 'new') `
+            -Format New `
+            -EvidenceBytes $evidenceBytes `
+            -NoticeManifestBytes $noticeManifestBytes
+        Test-ArtifactOutputDirectory -Path $newOutput -ExpectedNames $expectedOutputNames
+
+        $legacyOutput = New-SelfTestArtifactOutput `
+            -Path (Join-Path $selfTestRoot 'legacy') `
+            -Format Legacy `
+            -EvidenceBytes $evidenceBytes `
+            -NoticeManifestBytes $noticeManifestBytes
+        Assert-SelfTestThrows {
+            Test-ArtifactOutputDirectory `
+                -Path $legacyOutput `
+                -ExpectedNames $expectedOutputNames `
+                -AllowPriorVersion
+        } 'legacy rejected as new output'
+        Test-ArtifactOutputDirectory `
+            -Path $legacyOutput `
+            -ExpectedNames $expectedOutputNames `
+            -AllowPriorVersion `
+            -AllowLegacyPublisherFormat
+
+        foreach ($invalidFormat in @('MissingEvidence', 'InvalidEvidence', 'MismatchedNoticeEvidence')) {
+            $invalidOutput = New-SelfTestArtifactOutput `
+                -Path (Join-Path $selfTestRoot $invalidFormat) `
+                -Format $invalidFormat `
+                -EvidenceBytes $evidenceBytes `
+                -NoticeManifestBytes $noticeManifestBytes
+            Assert-SelfTestThrows {
+                Test-ArtifactOutputDirectory -Path $invalidOutput -ExpectedNames $expectedOutputNames
+            } "$invalidFormat rejected"
+        }
+    }
+    finally {
+        if (Test-Path -LiteralPath $selfTestRoot) {
+            $selfTestFullPath = [System.IO.Path]::GetFullPath($selfTestRoot)
+            if ([System.IO.Path]::GetDirectoryName($selfTestFullPath) -cne
+                    [System.IO.Path]::TrimEndingDirectorySeparator([System.IO.Path]::GetTempPath()) -or
+                [System.IO.Path]::GetFileName($selfTestFullPath) -notmatch '^phoenixinspect-publisher-selftest-[0-9a-f]{32}$') {
+                throw "Refusing self-test cleanup of unexpected path '$selfTestFullPath'."
+            }
+            Remove-Item -LiteralPath $selfTestFullPath -Recurse -Force
+        }
+    }
+
+    Write-Output 'Publisher archive self-test passed: new build evidence is required and legacy ownership is accepted only through the explicit replacement boundary.'
+}
+
 $products = @(
     [pscustomobject]@{
         Name = 'PhoenixInspect CLI'
@@ -877,6 +1186,10 @@ $products = @(
     @($products | ForEach-Object { "$($_.Slug)-$expectedVersion-$runtimeIdentifier.zip" }) + 'SHA256SUMS.txt'
 )
 [System.Array]::Sort($expectedOutputNames, [System.StringComparer]::Ordinal)
+if ($SelfTest) {
+    Invoke-PublisherArchiveContractSelfTest
+    return
+}
 $totalStopwatch = $null
 $stagedOutput = $null
 $previousOutput = $null
@@ -898,17 +1211,41 @@ try {
         throw "Another PhoenixInspect publisher is already targeting '$outputFullPath'."
     }
 
-    Test-ArtifactOutputDirectory -Path $outputFullPath -ExpectedNames $expectedOutputNames -AllowPriorVersion
+    Test-ArtifactOutputDirectory -Path $outputFullPath -ExpectedNames $expectedOutputNames -AllowPriorVersion -AllowLegacyPublisherFormat
     $null = New-Item -ItemType Directory -Path $publishRoot -Force
     $null = New-Item -ItemType Directory -Path $archiveRoot -Force
+    $null = New-Item -ItemType Directory -Path $sdkArtifactsRoot -Force
+    $null = New-Item -ItemType Directory -Path $nugetPackageRoot -Force
     $totalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+    Write-Host 'Verifying clean raw Git source bytes and selected .NET SDK policy…' -ForegroundColor Cyan
+    $initialSourceState = Get-PrereleaseSourceState -RepositoryRoot $repositoryRoot
+    $repositoryContract = Get-PrereleaseRepositoryContract -RepositoryRoot $repositoryRoot
+    $selectedSdk = Get-SelectedDotNetSdkVersion `
+        -RepositoryRoot $repositoryRoot `
+        -ConfiguredMinimum $repositoryContract.ConfiguredSdkMinimum
+
+    foreach ($product in $products) {
+        Write-Host "Locked-restoring $($product.Name)…" -ForegroundColor Cyan
+        Invoke-Checked -Description "Restoring $($product.Project)" -CommandArguments @(
+            'restore', $product.Project,
+            '--locked-mode',
+            '--force-evaluate',
+            '--runtime', $runtimeIdentifier,
+            '--artifacts-path', $sdkArtifactsRoot,
+            '--packages', $nugetPackageRoot,
+            '--disable-build-servers',
+            '--verbosity', 'minimal')
+    }
+    $restoreGraphEvidence = Test-PrereleaseRestoreGraph `
+        -RepositoryRoot $repositoryRoot `
+        -ArtifactsRoot $sdkArtifactsRoot `
+        -RootProjects @(
+            'src/PhoenixInspect.Cli/PhoenixInspect.Cli.csproj',
+            'src/PhoenixInspect.Desktop/PhoenixInspect.Desktop.csproj')
 
     foreach ($product in $products) {
         $productStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-        Write-Host "Locked-restoring $($product.Name)…" -ForegroundColor Cyan
-        Invoke-Checked -Description "Restoring $($product.Project)" -CommandArguments @(
-            'restore', $product.Project, '--locked-mode', '--runtime', $runtimeIdentifier, '--verbosity', 'minimal')
-
         $productPublishDirectory = Join-Path $publishRoot $product.Slug
         Write-Host "Publishing $($product.Name) for $runtimeIdentifier…" -ForegroundColor Cyan
         Invoke-Checked -Description "Publishing $($product.Project)" -CommandArguments @(
@@ -917,6 +1254,7 @@ try {
             '--runtime', $runtimeIdentifier,
             '--self-contained', 'true',
             '--no-restore',
+            '--artifacts-path', $sdkArtifactsRoot,
             '--output', $productPublishDirectory,
             '--verbosity', 'minimal',
             '--nologo',
@@ -949,13 +1287,50 @@ try {
     & $noticeGenerator `
         -CliPayloadDirectory (Join-Path $publishRoot 'phoenixinspect-cli') `
         -DesktopPayloadDirectory (Join-Path $publishRoot 'phoenixinspect-desktop') `
-        -OutputDirectory $noticeEvidenceRoot
-    if (-not (Test-Path -LiteralPath (Join-Path $noticeEvidenceRoot 'MANIFEST.sha256') -PathType Leaf)) {
+        -OutputDirectory $noticeEvidenceRoot `
+        -NuGetPackageRoot $nugetPackageRoot
+    $noticeManifestPath = Join-Path $noticeEvidenceRoot 'MANIFEST.sha256'
+    if (-not (Test-Path -LiteralPath $noticeManifestPath -PathType Leaf)) {
         throw "Third-party notice generator did not produce its required evidence manifest."
     }
 
+    $cliRuntime = Get-PrereleasePublishedRuntimeIdentity `
+        -PayloadDirectory (Join-Path $publishRoot 'phoenixinspect-cli')
+    $desktopRuntime = Get-PrereleasePublishedRuntimeIdentity `
+        -PayloadDirectory (Join-Path $publishRoot 'phoenixinspect-desktop')
+    $cliRuntimeText = ConvertTo-Json $cliRuntime -Depth 10 -Compress
+    $desktopRuntimeText = ConvertTo-Json $desktopRuntime -Depth 10 -Compress
+    if ($cliRuntimeText -cne $desktopRuntimeText) {
+        throw "CLI and Desktop published runtime-pack identities disagree: '$cliRuntimeText' versus '$desktopRuntimeText'."
+    }
+    $actualRuntimeDownload = $cliRuntime.RuntimePacks[0].id.Substring('runtimepack.'.Length) + '/' +
+        $cliRuntime.RuntimePacks[0].version
+    if ($restoreGraphEvidence.RuntimePackDownloads -cnotcontains $actualRuntimeDownload) {
+        throw "Published runtime pack '$actualRuntimeDownload' is absent from the agreed isolated restore runtime-pack set."
+    }
+
+    Write-Host 'Rechecking source identity and creating canonical unsigned local build evidence…' -ForegroundColor Cyan
+    $postBuildSourceState = Get-PrereleaseSourceState -RepositoryRoot $repositoryRoot
+    Assert-PrereleaseSourceStateEqual -Initial $initialSourceState -Current $postBuildSourceState
+    $selectedInputs = Get-PrereleaseSelectedInputRecords -RepositoryRoot $repositoryRoot
+    [byte[]] $buildEvidenceBytes = New-PrereleaseBuildEvidenceBytes `
+        -InitialSource $initialSourceState `
+        -FinalSource $postBuildSourceState `
+        -RepositoryContract $repositoryContract `
+        -SelectedSdk $selectedSdk `
+        -RuntimePacks $cliRuntime.RuntimePacks `
+        -ThirdPartyEvidenceManifestSha256 ((Get-FileHash -LiteralPath $noticeManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()) `
+        -SelectedInputs $selectedInputs
+    $null = Test-PrereleaseBuildEvidenceBytes `
+        -Bytes $buildEvidenceBytes `
+        -RepositoryRoot $repositoryRoot `
+        -VerifySelectedInputHashes
+
     foreach ($product in $products) {
         $productPublishDirectory = Join-Path $publishRoot $product.Slug
+        Write-PrereleaseBuildEvidence `
+            -Path (Join-Path $productPublishDirectory 'BUILD-EVIDENCE.json') `
+            -Bytes $buildEvidenceBytes
         $noticeDestination = Join-Path $productPublishDirectory 'THIRD-PARTY-NOTICES'
         if (Test-Path -LiteralPath $noticeDestination) {
             throw "$($product.Name) publish unexpectedly already contains '$noticeDestination'."
@@ -976,6 +1351,10 @@ try {
             -ArchivePath $archivePath `
             -ContentRoot $archiveBaseName
     }
+
+    Assert-PrereleaseBuildEvidenceIdentity `
+        -First ([System.IO.File]::ReadAllBytes((Join-Path $publishRoot 'phoenixinspect-cli/BUILD-EVIDENCE.json'))) `
+        -Second ([System.IO.File]::ReadAllBytes((Join-Path $publishRoot 'phoenixinspect-desktop/BUILD-EVIDENCE.json')))
 
     $archives = @(Get-ChildItem -LiteralPath $archiveRoot -File -Filter '*.zip' | Sort-Object Name)
     if ($archives.Count -ne $products.Count) {
@@ -1000,7 +1379,8 @@ try {
         $extractedPayload = Test-ExtractedArchive `
             -ArchivePath $archivePath `
             -ContentRoot $archiveBaseName `
-            -ExtractionParent $extractionRoot
+            -ExtractionParent $extractionRoot `
+            -ExpectedBuildEvidenceBytes $buildEvidenceBytes
         if ($product.Slug -eq 'phoenixinspect-cli') {
             Write-Host 'Smoke-launching the extracted CLI with a 30-second bound…' -ForegroundColor Cyan
             Invoke-BoundedCliSmoke `
@@ -1017,7 +1397,9 @@ try {
         }
     }
 
-    Test-ArtifactOutputDirectory -Path $outputFullPath -ExpectedNames $expectedOutputNames -AllowPriorVersion
+    Test-ArtifactOutputDirectory -Path $outputFullPath -ExpectedNames $expectedOutputNames -AllowPriorVersion -AllowLegacyPublisherFormat
+    $preStageSourceState = Get-PrereleaseSourceState -RepositoryRoot $repositoryRoot
+    Assert-PrereleaseSourceStateEqual -Initial $initialSourceState -Current $preStageSourceState
 
     $outputParent = Split-Path -Parent $outputFullPath
     $null = New-Item -ItemType Directory -Path $outputParent -Force
@@ -1037,13 +1419,15 @@ try {
     Test-ArtifactOutputDirectory -Path $stagedOutput -ExpectedNames $expectedOutputNames
 
     $hadPreviousOutput = Test-Path -LiteralPath $outputFullPath
+    $preInstallSourceState = Get-PrereleaseSourceState -RepositoryRoot $repositoryRoot
+    Assert-PrereleaseSourceStateEqual -Initial $initialSourceState -Current $preInstallSourceState
     try {
         if ($hadPreviousOutput) {
             # Revalidate at the destructive boundary, not only before the long publish.
-            Test-ArtifactOutputDirectory -Path $outputFullPath -ExpectedNames $expectedOutputNames -AllowPriorVersion
+            Test-ArtifactOutputDirectory -Path $outputFullPath -ExpectedNames $expectedOutputNames -AllowPriorVersion -AllowLegacyPublisherFormat
             [System.IO.Directory]::Move($outputFullPath, $previousOutput)
             $previousOutputMoved = $true
-            Test-ArtifactOutputDirectory -Path $previousOutput -ExpectedNames $expectedOutputNames -AllowPriorVersion
+            Test-ArtifactOutputDirectory -Path $previousOutput -ExpectedNames $expectedOutputNames -AllowPriorVersion -AllowLegacyPublisherFormat
         }
         [System.IO.Directory]::Move($stagedOutput, $outputFullPath)
         $newOutputInstalled = $true
@@ -1075,10 +1459,10 @@ try {
                     throw "Cannot restore previous artifact output because '$outputFullPath' is occupied."
                 }
                 Assert-SwapDirectoryIdentity -Path $previousOutput -Kind previous
-                Test-ArtifactOutputDirectory -Path $previousOutput -ExpectedNames $expectedOutputNames -AllowPriorVersion
+                Test-ArtifactOutputDirectory -Path $previousOutput -ExpectedNames $expectedOutputNames -AllowPriorVersion -AllowLegacyPublisherFormat
                 [System.IO.Directory]::Move($previousOutput, $outputFullPath)
                 $previousOutputMoved = $false
-                Test-ArtifactOutputDirectory -Path $outputFullPath -ExpectedNames $expectedOutputNames -AllowPriorVersion
+                Test-ArtifactOutputDirectory -Path $outputFullPath -ExpectedNames $expectedOutputNames -AllowPriorVersion -AllowLegacyPublisherFormat
             }
             catch {
                 $rollbackFailures.Add($_.Exception.Message)
@@ -1090,7 +1474,7 @@ try {
         throw
     }
     if ($previousOutputMoved) {
-        Test-ArtifactOutputDirectory -Path $previousOutput -ExpectedNames $expectedOutputNames -AllowPriorVersion
+        Test-ArtifactOutputDirectory -Path $previousOutput -ExpectedNames $expectedOutputNames -AllowPriorVersion -AllowLegacyPublisherFormat
         Remove-GuardedSwapDirectory -Path $previousOutput -Kind previous
         $previousOutputMoved = $false
     }
@@ -1103,7 +1487,7 @@ try {
     foreach ($file in Get-ChildItem -LiteralPath $outputFullPath -File | Sort-Object Name) {
         Write-Host "  $($file.Name)"
     }
-    Write-Host 'No signature, SBOM, provenance, package, tag, release, or W8.10 closure is claimed.'
+    Write-Host 'Canonical unsigned local build identity is embedded; no reproducibility, SLSA provenance, signature, SBOM, package, tag, release, redistribution authorization, or W8.10 closure is claimed.'
     Write-Host 'Generated third-party inventory and notice evidence is embedded; human legal review remains a release-closure blocker.'
     Write-Host 'The Desktop smoke covers non-UI dependency presence, selected assembly loads, and compiled XAML registration; it does not claim visible UI startup.'
     $totalStopwatch.Stop()
@@ -1116,7 +1500,7 @@ finally {
         }
         if ($swapCommitted -and $previousOutputMoved -and
             $null -ne $previousOutput -and (Test-Path -LiteralPath $previousOutput)) {
-            Test-ArtifactOutputDirectory -Path $previousOutput -ExpectedNames $expectedOutputNames -AllowPriorVersion
+            Test-ArtifactOutputDirectory -Path $previousOutput -ExpectedNames $expectedOutputNames -AllowPriorVersion -AllowLegacyPublisherFormat
             Remove-GuardedSwapDirectory -Path $previousOutput -Kind previous
             $previousOutputMoved = $false
         }
