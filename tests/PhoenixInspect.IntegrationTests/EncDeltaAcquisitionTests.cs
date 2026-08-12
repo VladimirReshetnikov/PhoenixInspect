@@ -225,7 +225,9 @@ public sealed class EncDeltaAcquisitionTests
             // acquisition exception is the stop, and it fires before any delta byte is consulted.
             var refused = Assert.Throws<StaticFieldV2RuntimeAcquisitionException>(
                 () => StaticFieldV2RuntimeAcquisitionSession.Open(dumpPath));
-            Assert.Contains("snapshot read", refused.Message, StringComparison.Ordinal);
+            Assert.Equal(
+                StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
+                refused.Code);
         }
         finally
         {

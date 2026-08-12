@@ -764,7 +764,7 @@ public sealed class EncPhysicalTruthTests
         {
             if (File.Exists(dumpPath))
             {
-                File.Delete(dumpPath);
+                DeleteDumpAfterClrmdUse(dumpPath);
             }
 
             if (Directory.Exists(payloadDirectory))
@@ -1070,6 +1070,27 @@ public sealed class EncPhysicalTruthTests
 
     /// <summary>One captured memory range of the dump: its virtual start, size, and position in the file.</summary>
     private readonly record struct DumpMemoryRange(ulong StartAddress, ulong Size, ulong FileOffset);
+
+    private static void DeleteDumpAfterClrmdUse(string dumpPath)
+    {
+        const int maximumSharingViolationRetries = 6;
+        for (var retry = 0; ; retry++)
+        {
+            try
+            {
+                File.Delete(dumpPath);
+                return;
+            }
+            catch (IOException exception) when (
+                IsSharingViolation(exception) && retry < maximumSharingViolationRetries)
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(25 << retry));
+            }
+        }
+    }
+
+    private static bool IsSharingViolation(IOException exception) =>
+        (exception.HResult & 0xffff) is 32 or 33;
 
     /// <summary>Reads the dump's Memory64List ranges directly from the minidump header and stream directory.</summary>
     private static ImmutableArray<DumpMemoryRange> ReadMemory64Ranges(byte[] dumpBytes)
