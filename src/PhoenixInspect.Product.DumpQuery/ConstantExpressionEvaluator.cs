@@ -301,6 +301,79 @@ public sealed class ConstantExpressionEvaluation
     /// <summary>Gets the lowercase SHA-256 identity of the canonical outcome projection.</summary>
     public string Sha256 { get; }
 
+    /// <summary>
+    /// Projects this exact result into a reusable operand resolution, so a scratchpad may store it as a variable
+    /// value and feed it back into later expressions.
+    /// </summary>
+    /// <param name="stored">The stored value on success, otherwise null.</param>
+    /// <returns><see langword="true"/> when the value is a scalar the operand domain carries.</returns>
+    /// <remarks>
+    /// Only the scalar kinds the operand resolution carries round-trip: the integral, floating, Boolean, char,
+    /// string, enum-as-underlying, and null values. A sequence, tuple, decimal, or wide-integer result has no
+    /// operand carrier and cannot be stored, so the caller reports it as an unsupported variable value rather than
+    /// silently truncating it.
+    /// </remarks>
+    public bool TryProjectStoredValue(out ConstantOperandResolution? stored)
+    {
+        stored = null;
+        if (Status != ConstantExpressionStatus.Exact)
+        {
+            return false;
+        }
+
+        switch (Kind)
+        {
+            case ConstantValueKind.Int32:
+            case ConstantValueKind.EnumMember:
+                stored = ConstantOperandResolution.FromInt32(Int32Value!.Value);
+                return true;
+            case ConstantValueKind.String:
+                stored = ConstantOperandResolution.FromString(StringValue!);
+                return true;
+            case ConstantValueKind.Char:
+                stored = ConstantOperandResolution.FromChar(CharValue!.Value);
+                return true;
+            case ConstantValueKind.Boolean:
+                stored = ConstantOperandResolution.FromBoolean(BooleanValue!.Value);
+                return true;
+            case ConstantValueKind.Null:
+                stored = ConstantOperandResolution.ExactNull();
+                return true;
+            case ConstantValueKind.Numeric:
+                return TryProjectNumeric(out stored);
+            default:
+                return false;
+        }
+    }
+
+    private bool TryProjectNumeric(out ConstantOperandResolution? stored)
+    {
+        stored = ValueTypeName switch
+        {
+            "Int64" when long.TryParse(ValueText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var l) =>
+                ConstantOperandResolution.FromInt64(l),
+            "Double" when double.TryParse(ValueText, NumberStyles.Float, CultureInfo.InvariantCulture, out var d) =>
+                ConstantOperandResolution.FromDouble(d),
+            "Single" when float.TryParse(ValueText, NumberStyles.Float, CultureInfo.InvariantCulture, out var f) =>
+                ConstantOperandResolution.FromSingle(f),
+            _ => null,
+        };
+        return stored is not null;
+    }
+
+    /// <summary>Gets the display type name of this exact scalar value, for a variable declaration echo.</summary>
+    public string? StoredValueTypeName => Kind switch
+    {
+        ConstantValueKind.Int32 => "Int32",
+        ConstantValueKind.EnumMember => EnumTypeFullName,
+        ConstantValueKind.String => "String",
+        ConstantValueKind.Char => "Char",
+        ConstantValueKind.Boolean => "Boolean",
+        ConstantValueKind.Numeric => ValueTypeName,
+        ConstantValueKind.Null => "null",
+        _ => null,
+    };
+
     internal static ConstantExpressionEvaluation NotConstantResult(string expression) => new(
         ConstantExpressionStatus.NotConstant,
         expression,
@@ -634,6 +707,13 @@ public sealed class ConstantOperandResolvers
 
     /// <summary>Gets the case-sensitive root identifier that anchors a root-relative chain, or null.</summary>
     public string? RootIdentifier { get; init; }
+
+    /// <summary>
+    /// Gets the resolver for a bare identifier that names a declared session variable, or null when none are
+    /// declared. It receives one identifier and returns that variable's stored constant value, or an outside
+    /// resolution when the name is not a variable so the identifier keeps its ordinary not-constant path.
+    /// </summary>
+    public Func<string, ConstantOperandResolution>? LocalName { get; init; }
 }
 
 /// <summary>
@@ -819,9 +899,16 @@ public static partial class ConstantExpressionEvaluator
         // 'Guid.Empty.Version' — folds instead, because those members are type statics and their values, not
         // metadata literals declared in dump modules; and a chain ending in '.Length' folds so an array or
         // string field's length can answer.
-        // A lone identifier is only a literal candidate when a static import could promote it, and a lambda
-        // parameter never is; expanding it otherwise would shadow the frozen not-a-name path for bare identifiers.
-        var allowSingleIdentifier = !effectiveUsings.IsEmpty;
+        // A declared session variable is a lone identifier that shadows everything, exactly as a local shadows an
+        // import in source, so it is never treated as a static-import literal candidate and instead folds through
+        // its resolver below. A lone identifier is otherwise a literal candidate only when a static import could
+        // promote it.
+        var namesDeclaredVariable =
+            syntax is IdentifierNameSyntax bareIdentifier &&
+            resolvers?.LocalName is { } declaredVariableResolver &&
+            declaredVariableResolver(bareIdentifier.Identifier.ValueText).Kind !=
+                ConstantOperandResolutionKind.Outside;
+        var allowSingleIdentifier = !effectiveUsings.IsEmpty && !namesDeclaredVariable;
         if (TryReadQualifiedName(syntax, out var nameParts, out var nameAlias, allowSingleIdentifier) &&
             nameParts[^1] != "Length" &&
             !IsKnownTypeHead(nameParts) &&
@@ -1016,6 +1103,28 @@ public static partial class ConstantExpressionEvaluator
     private static bool IsRootChainOperand(ExpressionSyntax syntax, string rootIdentifier) =>
         syntax is MemberAccessExpressionSyntax or ConditionalAccessExpressionSyntax &&
         LeftmostIdentifier(syntax) == rootIdentifier;
+
+    /// <summary>Maps one declared-variable resolution to an operand without counting it as dump evidence.</summary>
+    private static FoldOutcome ResolveLocalOperand(ConstantOperandResolution resolution) =>
+        resolution.Kind switch
+        {
+            ConstantOperandResolutionKind.Int32 => FoldOutcome.Folded(Operand.FromInt32(resolution.Int32Value!.Value)),
+            ConstantOperandResolutionKind.String => FoldOutcome.Folded(Operand.FromString(resolution.StringValue!)),
+            ConstantOperandResolutionKind.Null => FoldOutcome.Folded(Operand.Null()),
+            ConstantOperandResolutionKind.Int64 =>
+                FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Int64, resolution.Int64Value!.Value)),
+            ConstantOperandResolutionKind.Double =>
+                FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Double, resolution.DoubleValue!.Value)),
+            ConstantOperandResolutionKind.Single =>
+                FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, resolution.SingleValue!.Value)),
+            ConstantOperandResolutionKind.Boolean =>
+                FoldOutcome.Folded(Operand.FromBoolean(resolution.BooleanValue!.Value)),
+            ConstantOperandResolutionKind.Char => FoldOutcome.Folded(Operand.FromChar(resolution.CharValue!.Value)),
+            ConstantOperandResolutionKind.Sequence => MaterializeSequenceResolution(resolution),
+            ConstantOperandResolutionKind.Stop =>
+                FoldOutcome.Error(resolution.DiagnosticCode!, resolution.DiagnosticMessage!),
+            _ => FoldOutcome.NotArithmetic(),
+        };
 
     private static FoldOutcome ResolveDumpOperand(
         FoldContext context,
@@ -1433,9 +1542,14 @@ public static partial class ConstantExpressionEvaluator
                 return Fold(postfix.Operand, context);
             case IdentifierNameSyntax identifier
                 when context.TryResolveBinding(identifier.Identifier.ValueText, out var bound):
-                // A lambda parameter in scope is a value; every other bare identifier stays not-constant so the
-                // frozen pipelines keep answering those names.
+                // A lambda parameter in scope is a value; it shadows a declared variable of the same name exactly
+                // as a nested scope shadows an outer one.
                 return FoldOutcome.Folded(bound);
+            case IdentifierNameSyntax localName
+                when context.Resolvers?.LocalName is { } localResolver:
+                // A declared session variable resolves as its stored constant value; an unknown identifier stays
+                // not-constant so every bare-identifier path without a variable is unchanged.
+                return ResolveLocalOperand(localResolver(localName.Identifier.ValueText));
             default:
                 return FoldOutcome.NotArithmetic();
         }

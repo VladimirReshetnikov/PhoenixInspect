@@ -150,6 +150,7 @@ public static class ExpressionEvaluationService
     /// <param name="context">The adopted root, context frame, and options.</param>
     /// <param name="references">Caller-referenced assemblies, empty by default.</param>
     /// <param name="usings">The active using directives, or null for none.</param>
+    /// <param name="localVariables">The declared-variable resolver, or null when none are declared.</param>
     /// <returns>A complete display report for whichever path the classifier selected.</returns>
     /// <exception cref="ArgumentNullException">A required argument is null.</exception>
     public static EvaluationReport EvaluateWatch(
@@ -157,7 +158,8 @@ public static class ExpressionEvaluationService
         string expression,
         WatchEvaluationContext context,
         ImmutableArray<ConstantReferenceAssembly> references,
-        ConstantUsingDirectiveSet? usings)
+        ConstantUsingDirectiveSet? usings,
+        Func<string, ConstantOperandResolution>? localVariables = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(context);
@@ -170,7 +172,8 @@ public static class ExpressionEvaluationService
                 context.ContextSelector,
                 context.PortablePdbCandidates,
                 references,
-                usings);
+                usings,
+                localVariables);
     }
 
     /// <summary>
@@ -224,12 +227,14 @@ public static class ExpressionEvaluationService
     /// default.
     /// </param>
     /// <param name="usings">The active using directives, or null for none.</param>
+    /// <param name="localVariables">The declared-variable resolver, or null when none are declared.</param>
     /// <returns>A complete display report: an exact constant value or the typed no-snapshot stop.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="expression"/> is null.</exception>
     public static EvaluationReport EvaluateWithoutSnapshot(
         string expression,
         ImmutableArray<ConstantReferenceAssembly> references = default,
-        ConstantUsingDirectiveSet? usings = null)
+        ConstantUsingDirectiveSet? usings = null,
+        Func<string, ConstantOperandResolution>? localVariables = null)
     {
         ArgumentNullException.ThrowIfNull(expression);
         var effectiveReferences = references.IsDefault ? [] : references;
@@ -237,7 +242,7 @@ public static class ExpressionEvaluationService
         var pureConstant = ConstantExpressionEvaluator.Evaluate(
             session: null,
             expression,
-            resolvers: null,
+            localVariables is null ? null : new ConstantOperandResolvers { LocalName = localVariables },
             effectiveReferences,
             usings);
         stopwatch.Stop();
@@ -271,6 +276,32 @@ public static class ExpressionEvaluationService
             ],
             Duration = stopwatch.Elapsed,
         };
+    }
+
+    /// <summary>
+    /// Evaluates one expression to its raw constant result with no snapshot, resolving names through the supplied
+    /// references, using directives, and declared variables. A scratchpad uses this to compute the value a
+    /// variable declaration or assignment stores.
+    /// </summary>
+    /// <param name="expression">The raw expression text, submitted without normalization.</param>
+    /// <param name="references">Caller-referenced assemblies, empty by default.</param>
+    /// <param name="usings">The active using directives, or null for none.</param>
+    /// <param name="localVariables">The declared-variable resolver, or null when none are declared.</param>
+    /// <returns>The raw constant evaluation, whose exact value the caller may store.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="expression"/> is null.</exception>
+    public static ConstantExpressionEvaluation EvaluateConstantValue(
+        string expression,
+        ImmutableArray<ConstantReferenceAssembly> references = default,
+        ConstantUsingDirectiveSet? usings = null,
+        Func<string, ConstantOperandResolution>? localVariables = null)
+    {
+        ArgumentNullException.ThrowIfNull(expression);
+        return ConstantExpressionEvaluator.Evaluate(
+            session: null,
+            expression,
+            localVariables is null ? null : new ConstantOperandResolvers { LocalName = localVariables },
+            references.IsDefault ? [] : references,
+            usings);
     }
 
     /// <summary>Evaluates a static-field expression, optionally consulting one selected frame for name context.</summary>
@@ -307,6 +338,7 @@ public static class ExpressionEvaluationService
     /// <param name="portablePdbCandidates">Caller-discovered Portable-PDB candidate paths, possibly empty.</param>
     /// <param name="references">Caller-referenced assemblies, empty by default.</param>
     /// <param name="usings">The active using directives, or null for none.</param>
+    /// <param name="localVariables">The declared-variable resolver, or null when none are declared.</param>
     /// <returns>A complete display report for the outcome.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="session"/> is null.</exception>
     public static EvaluationReport EvaluateStaticField(
@@ -315,7 +347,8 @@ public static class ExpressionEvaluationService
         DumpSelectedFrameSelector? contextSelector,
         ImmutableArray<string> portablePdbCandidates,
         ImmutableArray<ConstantReferenceAssembly> references,
-        ConstantUsingDirectiveSet? usings)
+        ConstantUsingDirectiveSet? usings,
+        Func<string, ConstantOperandResolution>? localVariables = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         var candidates = portablePdbCandidates.IsDefault ? [] : portablePdbCandidates;
@@ -323,13 +356,14 @@ public static class ExpressionEvaluationService
         var stopwatch = Stopwatch.StartNew();
 
         // Preserve the evidence-free subset even when this snapshot cannot establish base-image authority. The
-        // null-session pass can fold only literals and the closed deterministic BCL surface; a qualified dump name,
-        // metadata literal, or resolver-backed value remains NotConstant and must pass edit-state admission below.
-        // References are session-independent, so a reference-declared literal or enum answers here too.
+        // null-session pass folds literals, the closed deterministic BCL surface, and declared variables; a
+        // qualified dump name, metadata literal, or resolver-backed value remains NotConstant and must pass
+        // edit-state admission below. References are session-independent, so a reference-declared literal or enum
+        // answers here too.
         var pureConstant = ConstantExpressionEvaluator.Evaluate(
             session: null,
             expression,
-            resolvers: null,
+            localVariables is null ? null : new ConstantOperandResolvers { LocalName = localVariables },
             effectiveReferences,
             usings);
         if (pureConstant.Status != ConstantExpressionStatus.NotConstant)
@@ -353,6 +387,7 @@ public static class ExpressionEvaluationService
             StaticName = name => MapStaticOperand(session, name, contextSelector is null
                 ? StaticFieldExpressionEvaluator.Evaluate(session, name)
                 : StaticFieldExpressionEvaluator.Evaluate(session, name, contextSelector, candidates)),
+            LocalName = localVariables,
         };
         var constant = ConstantExpressionEvaluator.Evaluate(
             session,

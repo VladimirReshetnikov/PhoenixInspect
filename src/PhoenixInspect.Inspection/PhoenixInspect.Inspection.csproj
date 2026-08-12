@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="ICSharpCode.Decompiler" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <ProjectReference Include="..\PhoenixInspect.Core.Abstractions\PhoenixInspect.Core.Abstractions.csproj" />
     <ProjectReference Include="..\PhoenixInspect.Host.Abstractions\PhoenixInspect.Host.Abstractions.csproj" />
     <ProjectReference Include="..\PhoenixInspect.Host.Dump.ClrMD\PhoenixInspect.Host.Dump.ClrMD.csproj" />

@@ -22,6 +22,7 @@ public sealed class ImmediateViewModel : ObservableObject
     private string inputText = string.Empty;
     private ImmutableArray<ConstantReferenceAssembly> references = [];
     private ConstantUsingDirectiveSet usings = ConstantUsingDirectiveSet.Empty;
+    private readonly ImmediateVariableStore variables = new();
 
     /// <summary>Creates the immediate pane.</summary>
     /// <param name="shell">The shell services used for serialized session access.</param>
@@ -120,18 +121,36 @@ public sealed class ImmediateViewModel : ObservableObject
             return;
         }
 
+        // A declaration or assignment stores a variable for later expressions rather than producing a value; the
+        // initializer is evaluated with the variables already in scope, so 'var y = x * 2;' composes with 'x'.
+        if (ImmediateVariableStore.IsStatement(text))
+        {
+            var pinnedReferencesForStatement = references;
+            var pinnedUsingsForStatement = usings;
+            var applied = variables.TryApply(
+                text,
+                initializer => EvaluateForValue(initializer, pinnedReferencesForStatement, pinnedUsingsForStatement),
+                out var statementMessage);
+            AppendLine($"// {statementMessage}");
+            AppendLine(string.Empty);
+            shell.SetStatus($"Immediate: variable — {(applied ? "assigned" : "not assigned")}");
+            return;
+        }
+
         if (!shell.IsDumpOpen)
         {
             // The sessionless entry folds the evidence-free constant subset and refuses everything beyond it
-            // with the typed no-snapshot stop, so the prompt is useful before any dump opens. References and
-            // using directives contribute their literals, enums, and type names even with no snapshot.
-            RenderReport(ExpressionEvaluationService.EvaluateWithoutSnapshot(text, references, usings));
+            // with the typed no-snapshot stop, so the prompt is useful before any dump opens. References,
+            // using directives, and declared variables contribute their values even with no snapshot.
+            RenderReport(ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                text, references, usings, variables.LocalNameResolver));
             return;
         }
 
         var contextFactory = evaluate.CreateWatchContextFactory();
         var pinnedReferences = references;
         var pinnedUsings = usings;
+        var pinnedVariables = variables.LocalNameResolver;
         var report = await shell.RunAsync(
             "Evaluating immediate expression…",
             session => ExpressionEvaluationService.EvaluateWatch(
@@ -139,7 +158,8 @@ public sealed class ImmediateViewModel : ObservableObject
                 text,
                 contextFactory(session),
                 pinnedReferences,
-                pinnedUsings))
+                pinnedUsings,
+                pinnedVariables))
             .ConfigureAwait(true);
         if (report is null)
         {
@@ -150,6 +170,16 @@ public sealed class ImmediateViewModel : ObservableObject
 
         RenderReport(report);
     }
+
+    private ConstantExpressionEvaluation EvaluateForValue(
+        string initializer,
+        ImmutableArray<ConstantReferenceAssembly> pinnedReferences,
+        ConstantUsingDirectiveSet pinnedUsings) =>
+        ExpressionEvaluationService.EvaluateConstantValue(
+            initializer,
+            pinnedReferences,
+            pinnedUsings,
+            variables.LocalNameResolver);
 
     private void RenderReport(EvaluationReport report)
     {
