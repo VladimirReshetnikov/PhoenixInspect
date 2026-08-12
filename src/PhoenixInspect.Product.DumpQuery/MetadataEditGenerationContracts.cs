@@ -525,3 +525,323 @@ public sealed class MetadataEditLineageChainOutcome : IEquatable<MetadataEditLin
     /// <returns>A hash code for this canonical chain.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
+
+/// <summary>Classifies one effective-row projection answer.</summary>
+public enum MetadataEditEffectiveProjectionResultKind
+{
+    /// <summary>Every generation's rows projected onto coherent effective table states.</summary>
+    Exact = 1,
+
+    /// <summary>A row contradicted the effective state; no projection is claimed.</summary>
+    Invalid = 2,
+}
+
+/// <summary>Names the typed issue of one non-exact effective-row projection.</summary>
+public enum MetadataEditEffectiveProjectionIssue
+{
+    /// <summary>No issue applies to an exact projection.</summary>
+    None = 0,
+
+    /// <summary>The supplied lineage chain was itself non-exact.</summary>
+    ChainNotExact = 1,
+
+    /// <summary>A log row touched a table whose base row end was not declared.</summary>
+    TableEndUndeclared = 2,
+
+    /// <summary>An added row's identifier skipped past the table's effective end.</summary>
+    AddedRowGap = 3,
+
+    /// <summary>A directive row was the last row of its generation, with no following added row.</summary>
+    DirectiveWithoutFollowingRow = 4,
+}
+
+/// <summary>One caller-declared base table end: the table index and its baseline row count.</summary>
+public readonly struct MetadataEditDeclaredTableEnd : IEquatable<MetadataEditDeclaredTableEnd>
+{
+    /// <summary>Initializes one declared base table end.</summary>
+    /// <param name="tableIndex">The metadata table index.</param>
+    /// <param name="rowCount">The baseline image's row count for that table.</param>
+    public MetadataEditDeclaredTableEnd(int tableIndex, int rowCount)
+    {
+        TableIndex = tableIndex;
+        RowCount = rowCount;
+    }
+
+    /// <summary>Gets the metadata table index.</summary>
+    public int TableIndex { get; }
+
+    /// <summary>Gets the baseline image's row count for the table.</summary>
+    public int RowCount { get; }
+
+    /// <summary>Tests value equality between two declared table ends.</summary>
+    /// <param name="other">The other declared end.</param>
+    /// <returns><see langword="true"/> only for identical table index and row count.</returns>
+    public bool Equals(MetadataEditDeclaredTableEnd other) =>
+        TableIndex == other.TableIndex && RowCount == other.RowCount;
+
+    /// <summary>Tests declared-table-end equality against an arbitrary object.</summary>
+    /// <param name="obj">The object to compare.</param>
+    /// <returns><see langword="true"/> only for an end with identical content.</returns>
+    public override bool Equals(object? obj) => obj is MetadataEditDeclaredTableEnd other && Equals(other);
+
+    /// <summary>Computes a deterministic hash code from the declared content.</summary>
+    /// <returns>A hash code for this declared end.</returns>
+    public override int GetHashCode() => HashCode.Combine(TableIndex, RowCount);
+}
+
+/// <summary>One projected effective row: the token, whether the chain added it, and its generation span.</summary>
+public readonly struct MetadataEditEffectiveRow : IEquatable<MetadataEditEffectiveRow>
+{
+    /// <summary>Initializes one projected effective row.</summary>
+    /// <param name="token">The metadata token of the row.</param>
+    /// <param name="isAdded">Whether the chain added the row past the baseline table end.</param>
+    /// <param name="firstGeneration">The first generation that added or updated the row.</param>
+    /// <param name="latestGeneration">The latest generation that added or updated the row.</param>
+    public MetadataEditEffectiveRow(int token, bool isAdded, int firstGeneration, int latestGeneration)
+    {
+        Token = token;
+        IsAdded = isAdded;
+        FirstGeneration = firstGeneration;
+        LatestGeneration = latestGeneration;
+    }
+
+    /// <summary>Gets the metadata token of the row.</summary>
+    public int Token { get; }
+
+    /// <summary>Gets whether the chain added the row past the baseline table end.</summary>
+    public bool IsAdded { get; }
+
+    /// <summary>Gets the first generation that added or updated the row.</summary>
+    public int FirstGeneration { get; }
+
+    /// <summary>Gets the latest generation that added or updated the row.</summary>
+    public int LatestGeneration { get; }
+
+    /// <summary>Tests value equality between two effective rows.</summary>
+    /// <param name="other">The other row.</param>
+    /// <returns><see langword="true"/> only for identical content.</returns>
+    public bool Equals(MetadataEditEffectiveRow other) =>
+        Token == other.Token &&
+        IsAdded == other.IsAdded &&
+        FirstGeneration == other.FirstGeneration &&
+        LatestGeneration == other.LatestGeneration;
+
+    /// <summary>Tests effective-row equality against an arbitrary object.</summary>
+    /// <param name="obj">The object to compare.</param>
+    /// <returns><see langword="true"/> only for a row with identical content.</returns>
+    public override bool Equals(object? obj) => obj is MetadataEditEffectiveRow other && Equals(other);
+
+    /// <summary>Computes a deterministic hash code from the row content.</summary>
+    /// <returns>A hash code for this row.</returns>
+    public override int GetHashCode() => HashCode.Combine(Token, IsAdded, FirstGeneration, LatestGeneration);
+}
+
+/// <summary>
+/// Projects one exact lineage chain onto the logical table state its generations produce: per-table effective row
+/// ends and a per-token classification of every touched row as chain-added or chain-updated.
+/// </summary>
+/// <remarks>
+/// This is the E4 core model over the retained E3 rows. Updated rows supersede without erasure — the retained
+/// per-generation log rows in the chain remain the physical history — and added rows extend each table's row
+/// domain contiguously past the caller-declared baseline end, which the measured delta shapes require: a
+/// generation's added reference and definition rows continue exactly at the effective end. A directive row (a
+/// nonzero operation such as the measured add-field, add-method, and add-parameter codes) orders the addition
+/// that follows it and never classifies its parent as updated; the parent row's content is not superseded by a
+/// membership change.
+/// </remarks>
+public sealed class MetadataEditEffectiveProjectionOutcome : IEquatable<MetadataEditEffectiveProjectionOutcome>
+{
+    private const string CanonicalDomain = "metadata-edit-effective-projection";
+    private const int CanonicalSchemaVersion = 1;
+    private readonly ImmutableArray<MetadataEditDeclaredTableEnd> effectiveTableEnds;
+    private readonly ImmutableArray<MetadataEditEffectiveRow> effectiveRows;
+    private readonly ImmutableArray<byte> canonicalBytes;
+
+    private MetadataEditEffectiveProjectionOutcome(
+        MetadataEditEffectiveProjectionResultKind resultKind,
+        MetadataEditEffectiveProjectionIssue issue,
+        string chainSha256,
+        ImmutableArray<MetadataEditDeclaredTableEnd> effectiveTableEnds,
+        ImmutableArray<MetadataEditEffectiveRow> effectiveRows)
+    {
+        ResultKind = resultKind;
+        Issue = issue;
+        ChainSha256 = chainSha256;
+        this.effectiveTableEnds = effectiveTableEnds;
+        this.effectiveRows = effectiveRows;
+
+        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
+        writer.WriteInt32((int)resultKind);
+        writer.WriteInt32((int)issue);
+        writer.WriteSha256(chainSha256, nameof(chainSha256));
+        writer.WriteInt32(effectiveTableEnds.Length);
+        foreach (var end in effectiveTableEnds)
+        {
+            writer.WriteInt32(end.TableIndex);
+            writer.WriteInt32(end.RowCount);
+        }
+        writer.WriteInt32(effectiveRows.Length);
+        foreach (var row in effectiveRows)
+        {
+            writer.WriteInt32(row.Token);
+            writer.WriteInt32(row.IsAdded ? 1 : 0);
+            writer.WriteInt32(row.FirstGeneration);
+            writer.WriteInt32(row.LatestGeneration);
+        }
+        canonicalBytes = writer.ToImmutableArray();
+        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
+    }
+
+    /// <summary>Gets whether this projection is exact or invalid.</summary>
+    public MetadataEditEffectiveProjectionResultKind ResultKind { get; }
+
+    /// <summary>Gets the typed issue of a non-exact projection.</summary>
+    public MetadataEditEffectiveProjectionIssue Issue { get; }
+
+    /// <summary>Gets the digest of the projected lineage chain.</summary>
+    public string ChainSha256 { get; }
+
+    /// <summary>Gets a defensive copy of the per-table effective row ends after every generation.</summary>
+    public ImmutableArray<MetadataEditDeclaredTableEnd> EffectiveTableEnds =>
+        ExpressionV2ContractEncoding.Copy(effectiveTableEnds);
+
+    /// <summary>Gets a defensive copy of every touched row's classification, in ascending token order.</summary>
+    public ImmutableArray<MetadataEditEffectiveRow> EffectiveRows =>
+        ExpressionV2ContractEncoding.Copy(effectiveRows);
+
+    /// <summary>Gets a defensive copy of the fixed-reference canonical projection bytes.</summary>
+    public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
+
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical projection.</summary>
+    public string Sha256 { get; }
+
+    /// <summary>Projects one exact chain over the caller-declared baseline table ends.</summary>
+    /// <param name="chain">The exact lineage chain whose generations are projected in order.</param>
+    /// <param name="declaredTableEnds">The baseline row count of every table the chain's rows may touch.</param>
+    /// <returns>A sealed immutable outcome that is one exact projection or one prefix-free typed stop.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="chain"/> is null.</exception>
+    /// <exception cref="ArgumentException">The declared ends are default or name one table twice.</exception>
+    public static MetadataEditEffectiveProjectionOutcome Project(
+        MetadataEditLineageChainOutcome chain,
+        ImmutableArray<MetadataEditDeclaredTableEnd> declaredTableEnds)
+    {
+        ArgumentNullException.ThrowIfNull(chain);
+        if (declaredTableEnds.IsDefault)
+        {
+            throw new ArgumentException("Initialized declared table ends are required.", nameof(declaredTableEnds));
+        }
+
+        var ends = new Dictionary<int, int>();
+        foreach (var declared in declaredTableEnds)
+        {
+            if (!ends.TryAdd(declared.TableIndex, declared.RowCount))
+            {
+                throw new ArgumentException(
+                    "Each table's baseline end may be declared exactly once.",
+                    nameof(declaredTableEnds));
+            }
+        }
+
+        if (chain.ResultKind != MetadataEditLineageChainResultKind.Exact)
+        {
+            return new MetadataEditEffectiveProjectionOutcome(
+                MetadataEditEffectiveProjectionResultKind.Invalid,
+                MetadataEditEffectiveProjectionIssue.ChainNotExact,
+                chain.Sha256,
+                [],
+                []);
+        }
+
+        var rows = new Dictionary<int, MetadataEditEffectiveRow>();
+        foreach (var generation in chain.Generations)
+        {
+            var logRows = generation.EditLogRows;
+            for (var index = 0; index < logRows.Length; index++)
+            {
+                var logRow = logRows[index];
+                if (logRow.Operation != 0)
+                {
+                    if (index == logRows.Length - 1)
+                    {
+                        return new MetadataEditEffectiveProjectionOutcome(
+                            MetadataEditEffectiveProjectionResultKind.Invalid,
+                            MetadataEditEffectiveProjectionIssue.DirectiveWithoutFollowingRow,
+                            chain.Sha256,
+                            [],
+                            []);
+                    }
+
+                    continue;
+                }
+
+                var tableIndex = logRow.Token >>> 24;
+                var rowId = logRow.Token & 0x00_FF_FF_FF;
+                if (!ends.TryGetValue(tableIndex, out var effectiveEnd))
+                {
+                    return new MetadataEditEffectiveProjectionOutcome(
+                        MetadataEditEffectiveProjectionResultKind.Invalid,
+                        MetadataEditEffectiveProjectionIssue.TableEndUndeclared,
+                        chain.Sha256,
+                        [],
+                        []);
+                }
+
+                if (rowId <= effectiveEnd)
+                {
+                    rows[logRow.Token] = rows.TryGetValue(logRow.Token, out var existing)
+                        ? new MetadataEditEffectiveRow(
+                            logRow.Token,
+                            existing.IsAdded,
+                            existing.FirstGeneration,
+                            generation.GenerationNumber)
+                        : new MetadataEditEffectiveRow(
+                            logRow.Token,
+                            isAdded: false,
+                            generation.GenerationNumber,
+                            generation.GenerationNumber);
+                }
+                else if (rowId == effectiveEnd + 1)
+                {
+                    ends[tableIndex] = effectiveEnd + 1;
+                    rows[logRow.Token] = new MetadataEditEffectiveRow(
+                        logRow.Token,
+                        isAdded: true,
+                        generation.GenerationNumber,
+                        generation.GenerationNumber);
+                }
+                else
+                {
+                    return new MetadataEditEffectiveProjectionOutcome(
+                        MetadataEditEffectiveProjectionResultKind.Invalid,
+                        MetadataEditEffectiveProjectionIssue.AddedRowGap,
+                        chain.Sha256,
+                        [],
+                        []);
+                }
+            }
+        }
+
+        return new MetadataEditEffectiveProjectionOutcome(
+            MetadataEditEffectiveProjectionResultKind.Exact,
+            MetadataEditEffectiveProjectionIssue.None,
+            chain.Sha256,
+            [.. ends.OrderBy(static pair => pair.Key)
+                .Select(static pair => new MetadataEditDeclaredTableEnd(pair.Key, pair.Value))],
+            [.. rows.Values.OrderBy(static row => row.Token)]);
+    }
+
+    /// <summary>Tests canonical equality between two effective projections.</summary>
+    /// <param name="other">The other projection.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
+    public bool Equals(MetadataEditEffectiveProjectionOutcome? other) =>
+        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
+
+    /// <summary>Tests effective-projection equality against an arbitrary object.</summary>
+    /// <param name="obj">The object to compare.</param>
+    /// <returns><see langword="true"/> only for a projection with identical canonical content.</returns>
+    public override bool Equals(object? obj) => Equals(obj as MetadataEditEffectiveProjectionOutcome);
+
+    /// <summary>Computes a deterministic hash code from immutable canonical projection content.</summary>
+    /// <returns>A hash code for this canonical projection.</returns>
+    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
+}

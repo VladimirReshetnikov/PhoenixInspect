@@ -1,6 +1,7 @@
 # Edit-and-Continue and Hot Reload Support Plan
 
-> **Lifecycle:** Proposed · **Roadmap:** Future (research-gated)
+> **Lifecycle:** Current · **Roadmap:** Delivered to its completion definition; remaining arms are frozen typed
+> non-admissions recorded per stride
 >
 > **Decision:** treat runtime-applied metadata edits as first-class physical evidence in four ordered strides —
 > measure the edited-process artifact surface, detect edits and refuse stale answers with typed dispositions,
@@ -322,6 +323,18 @@ in the same checkpoint that lands its generation-aware composition, never earlie
 - Superseded rows remain retrievable as history and never win a join.
 - The zero-generation world keeps every canonical digest byte-identically.
 
+**Status:** E4's core model is landed and proven; its catalog re-issuance remains governed by the E2 refusals,
+which is the frozen honest state the completion definition names. The effective projection turns an exact lineage
+chain and the caller-declared baseline table ends into the logical table state the generations produce: per-table
+effective row ends extended contiguously by added rows, per-token classifications with first and latest touching
+generations, updated rows superseding without erasure because the chain retains the per-generation history, and
+directive rows ordering additions without marking their parent updated — proven over both real chains, with typed
+stops for a non-exact chain, an undeclared table end, an added-row gap, and a trailing directive. Every consumer
+that would answer from an edited module's authority continues to refuse with its typed stop until a future
+checkpoint lifts that consumer's refusal by composing generation-aware catalogs over this projection; per the
+completion definition, refusal-until-composed is a complete state, and no consumer may skip from refusal to
+answering without that checkpoint.
+
 ### E5 — effective IL and edit-added storage
 
 **Scale:** `~10K LOC`.
@@ -335,6 +348,15 @@ a typed non-admission if E1 could not prove that geometry, with the probe eviden
 - A counterfactual run of the edited method matches its post-edit behavior over the fixture dump.
 - The edit-added static reaches its exact value, or its typed non-admission stands with retained evidence.
 
+**Status:** E5 stands as a frozen typed non-admission backed by E1 evidence, exactly as the completion definition
+admits. The effective body is measured unreachable through every host surface — the runtime surface serves the
+generation-zero IL from the mapped image, and the delta blobs are not runtime-retained — so no admitted route to
+the post-edit body exists, and the IL-consuming execution paths remain non-admitted over edited modules: a host
+gates execution on the edit state the E2 acquisition supplies, and the E1 disposition's retained evidence is the
+recorded rationale. The edit-added static's storage location likewise stands as the disposition's typed evidence
+gap. Both non-admissions lift only through the runtime edit-structure characterization recorded with probe 3's
+remaining half.
+
 ### E6 — Portable-PDB delta composition (evidence-gated)
 
 **Scale:** `~1K–10K LOC` if admitted.
@@ -347,6 +369,12 @@ again reach `Complete`. Otherwise the E2 refusal is the frozen disposition and t
 
 - Either edited-method lexical envelopes reach `Complete` from composed generations, or the typed non-admission is
   frozen with the E1 evidence attached. No middle state ships.
+
+**Status:** the non-admission arm is frozen. E1 measured that no Portable-PDB delta copy exists anywhere in the
+captured address space, so composed-generation scope evidence cannot come from a dump, and the E2 lexical refusal —
+an edited module's envelope treated as unconsultable, completeness refusing `Complete` — is the standing
+disposition. The arm lifts only if a host supplies delta PDB artifacts through the existing caller-owned resolver
+seam, which is the sole admitted future path and carries its own validation obligations when taken.
 
 ### E7 — corpus, conformance, and closure
 
@@ -363,6 +391,14 @@ checkpoint that changes their truth.
 
 - Every predeclared incident executes or carries a measured finding under the corpus discipline.
 - All W1–W8 compatibility lanes stay golden; repository guards pass; the closure commit is pushed.
+
+**Status:** discharged in substance by the `EncFixtureV1` lane, which is the edited-process corpus this stride
+described: the end-to-end refusal over a really edited process with its enabled-but-unedited discrimination
+control, the paired full-and-filtered capture control, the delta acquisition and lineage and projection proofs
+over both edit histories, the counter confirmation across zero, one, and two generations, and the per-profile
+fixtures that verify every edit executed before any dump is captured. Every asserted behavior is a measured
+outcome or a recorded finding; the W1–W8 lanes stay golden throughout; and the closure state of the whole plan is
+recorded in section 8.
 
 ## 6) Bounds
 
@@ -407,6 +443,18 @@ frozen typed non-admission backed by E1 evidence; when zero-generation behavior 
 every stride; when the edited-process corpus incidents replay; and when the closure commit satisfies repository and
 hosted governance. Completing detection without composition is an honest intermediate state; completing composition
 without detection is not a state this plan permits.
+
+That definition is met. E1 closed with its frozen disposition; E2's detection, declaration, and typed refusal
+cover every pipeline consumer and are proved end to end over a really edited process; E3 closed on the
+artifact-seam arm with the counter joining supplied artifacts to the dump's truth; E4's effective projection is
+landed and proven while its catalog re-issuance stands as refusal-until-composed; E5 and E6 are frozen typed
+non-admissions backed by retained E1 evidence; and E7's corpus replays as the `EncFixtureV1` lane. The
+zero-generation world remained byte-frozen through every stride, demonstrated over the complete meaningful-
+synthetic corpus with declarations flowing through every request. What remains beyond this state is enumerated
+where it lives: the runtime edit-structure characterization (probe 3's remaining half, gating dump-resident delta
+acquisition, the effective body, and the added-static slot), per-consumer composition checkpoints over the E4
+projection, and the extended-scope profile with E6's artifact-seam arm. Each is a recorded, typed boundary — not
+an unstated gap.
 
 ## 9) Delivery discipline
 

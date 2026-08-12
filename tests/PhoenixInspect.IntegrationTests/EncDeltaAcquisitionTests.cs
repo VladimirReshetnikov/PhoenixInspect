@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using PhoenixInspect.Product.DumpQuery;
 using Xunit;
@@ -238,6 +239,128 @@ public sealed class EncDeltaAcquisitionTests
 
             Directory.Delete(payloadDirectory, recursive: true);
         }
+    }
+
+    /// <summary>
+    /// The E4 projection turns both real chains into their logical table states: the body chain updates one method
+    /// row across two generations while extending the reference tables, and the insert chain adds the field, the
+    /// two accessors, and the parameter past the baseline ends without marking the parent type updated.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Effective_projection_classifies_both_real_chains()
+    {
+        var stackedDirectory = Path.Combine(Path.GetTempPath(), $"enc-proj-stack-{Guid.NewGuid():N}");
+        var addedDirectory = Path.Combine(Path.GetTempPath(), $"enc-proj-add-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(stackedDirectory);
+        Directory.CreateDirectory(addedDirectory);
+        try
+        {
+            EncDeltaCompiler.WriteStackedPayload(stackedDirectory);
+            EncDeltaCompiler.WriteAddedStaticPayload(addedDirectory);
+            var declaredEnds = ReadDeclaredTableEnds(stackedDirectory);
+
+            var stackedChain = MetadataEditLineageChainOutcome.Compose(
+                ReadBaselineMvid(stackedDirectory),
+                [
+                    MetadataEditGenerationOutcome.Acquire(
+                        1,
+                        [.. File.ReadAllBytes(Path.Combine(stackedDirectory, "generation-1.metadata-delta"))]),
+                    MetadataEditGenerationOutcome.Acquire(
+                        2,
+                        [.. File.ReadAllBytes(Path.Combine(stackedDirectory, "generation-2.metadata-delta"))]),
+                ]);
+            var stacked = MetadataEditEffectiveProjectionOutcome.Project(stackedChain, declaredEnds);
+            Assert.Equal(MetadataEditEffectiveProjectionResultKind.Exact, stacked.ResultKind);
+
+            // The sentinel method row is chain-updated in both generations and never added; the second
+            // generation's own reference rows extend the tables past the first generation's additions.
+            var sentinelRow = Assert.Single(
+                stacked.EffectiveRows,
+                static row => row.Token == 0x06_00_0001);
+            Assert.False(sentinelRow.IsAdded);
+            Assert.Equal(1, sentinelRow.FirstGeneration);
+            Assert.Equal(2, sentinelRow.LatestGeneration);
+            Assert.All(
+                stacked.EffectiveRows.Where(static row => row.Token != 0x06_00_0001),
+                static row => Assert.True(row.IsAdded));
+
+            var addedChain = MetadataEditLineageChainOutcome.Compose(
+                ReadBaselineMvid(addedDirectory),
+                [
+                    MetadataEditGenerationOutcome.Acquire(
+                        1,
+                        [.. File.ReadAllBytes(Path.Combine(addedDirectory, "generation-1.metadata-delta"))]),
+                ]);
+            var added = MetadataEditEffectiveProjectionOutcome.Project(
+                addedChain,
+                ReadDeclaredTableEnds(addedDirectory));
+            Assert.Equal(MetadataEditEffectiveProjectionResultKind.Exact, added.ResultKind);
+
+            // The insert generation extends the field, method, and parameter domains contiguously, and the parent
+            // type it inserted into is never classified as updated: directives order additions, nothing more.
+            Assert.Contains(
+                added.EffectiveRows,
+                static row => row.Token == 0x04_00_0001 && row.IsAdded);
+            Assert.Contains(
+                added.EffectiveRows,
+                static row => row.Token == 0x06_00_0002 && row.IsAdded);
+            Assert.Contains(
+                added.EffectiveRows,
+                static row => row.Token == 0x06_00_0003 && row.IsAdded);
+            Assert.Contains(
+                added.EffectiveRows,
+                static row => row.Token == 0x08_00_0001 && row.IsAdded);
+            Assert.DoesNotContain(
+                added.EffectiveRows,
+                static row => row.Token == 0x02_00_0002);
+            Assert.Equal(
+                1,
+                Assert.Single(added.EffectiveTableEnds, static end => end.TableIndex == 0x04).RowCount);
+            Assert.Equal(
+                3,
+                Assert.Single(added.EffectiveTableEnds, static end => end.TableIndex == 0x06).RowCount);
+
+            // A declared end that understates the baseline makes the generation's added reference row skip past
+            // the effective end, and the projection refuses with its typed gap stop rather than renumbering.
+            var skipped = MetadataEditEffectiveProjectionOutcome.Project(
+                MetadataEditLineageChainOutcome.Compose(
+                    ReadBaselineMvid(stackedDirectory),
+                    [
+                        MetadataEditGenerationOutcome.Acquire(
+                            1,
+                            [.. File.ReadAllBytes(
+                                Path.Combine(stackedDirectory, "generation-1.metadata-delta"))]),
+                    ]),
+                [.. declaredEnds.Select(static end =>
+                    end.TableIndex == 0x23
+                        ? new MetadataEditDeclaredTableEnd(end.TableIndex, end.RowCount - 1)
+                        : end)]);
+            Assert.Equal(MetadataEditEffectiveProjectionResultKind.Invalid, skipped.ResultKind);
+            Assert.Equal(MetadataEditEffectiveProjectionIssue.AddedRowGap, skipped.Issue);
+        }
+        finally
+        {
+            Directory.Delete(stackedDirectory, recursive: true);
+            Directory.Delete(addedDirectory, recursive: true);
+        }
+    }
+
+    private static ImmutableArray<MetadataEditDeclaredTableEnd> ReadDeclaredTableEnds(string payloadDirectory)
+    {
+        using var stream = File.OpenRead(
+            Path.Combine(payloadDirectory, "PhoenixInspect.EncFixtureBaseline.dll"));
+        using var peReader = new PEReader(stream);
+        var reader = peReader.GetMetadataReader();
+        return
+        [
+            new MetadataEditDeclaredTableEnd(0x01, reader.GetTableRowCount(TableIndex.TypeRef)),
+            new MetadataEditDeclaredTableEnd(0x02, reader.GetTableRowCount(TableIndex.TypeDef)),
+            new MetadataEditDeclaredTableEnd(0x04, reader.GetTableRowCount(TableIndex.Field)),
+            new MetadataEditDeclaredTableEnd(0x06, reader.GetTableRowCount(TableIndex.MethodDef)),
+            new MetadataEditDeclaredTableEnd(0x08, reader.GetTableRowCount(TableIndex.Param)),
+            new MetadataEditDeclaredTableEnd(0x23, reader.GetTableRowCount(TableIndex.AssemblyRef)),
+        ];
     }
 
     private static Guid ReadBaselineMvid(string payloadDirectory)
