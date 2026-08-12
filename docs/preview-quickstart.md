@@ -72,7 +72,9 @@ and immediately before installing output.
 Before the expensive restores, the publisher resolves Microsoft's pinned standalone Windows SBOM Tool 4.1.5. By
 default it downloads the exact versioned asset into its disposable work root; an offline caller may instead pass
 `-SbomToolPath` to a preseeded copy. Either path requires the exact size, SHA-256, version resources, command version,
-and Microsoft Authenticode identity and never falls back to a latest tool. The publisher then derives and verifies a
+and Microsoft Authenticode identity and never falls back to a latest tool. SBOM Tool child processes run with .NET
+invariant globalization so the tool's culture-sensitive SPDX package-verification ordering is stable across Windows
+host locales. The publisher then derives and verifies a
 common third-party dependency/license-evidence bundle from the products' exact
 `.deps.json` graphs, verifies the isolated post-restore project graph and runtime-pack download sets, records the
 actual common runtime pack carried by the published products, retains the packaged CLI `--help` smoke, runs the

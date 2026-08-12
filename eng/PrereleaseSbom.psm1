@@ -12,6 +12,11 @@ $script:ArtifactManifestPath = 'ARTIFACT-MANIFEST.txt'
 $script:DefaultPolicyPath = Join-Path $PSScriptRoot 'prerelease-sbom.policy.json'
 $script:Utf8NoBom = [Text.UTF8Encoding]::new($false)
 $script:StrictUtf8 = [Text.UTF8Encoding]::new($false, $true)
+$script:SbomToolEnvironment = [ordered]@{
+    # Microsoft SBOM Tool 4.1.5 uses the process current culture when sorting SHA-1 strings for the SPDX root
+    # packageVerificationCode. Keep that tool-internal operation stable across Windows host locales.
+    DOTNET_SYSTEM_GLOBALIZATION_INVARIANT = '1'
+}
 
 function Get-Sha256Bytes {
     param([Parameter(Mandatory)][byte[]] $Bytes)
@@ -264,7 +269,8 @@ function Invoke-BoundedProcess {
         [Parameter(Mandatory)][string[]] $Arguments,
         [Parameter(Mandatory)][string] $WorkingDirectory,
         [Parameter(Mandatory)][string] $Description,
-        [ValidateRange(1, 900)][int] $TimeoutSeconds = 120
+        [ValidateRange(1, 900)][int] $TimeoutSeconds = 120,
+        [Collections.IDictionary] $EnvironmentVariables
     )
     $startInfo = [Diagnostics.ProcessStartInfo]::new()
     $startInfo.FileName = $FileName
@@ -274,6 +280,17 @@ function Invoke-BoundedProcess {
     $startInfo.RedirectStandardOutput = $true
     $startInfo.RedirectStandardError = $true
     foreach ($argument in $Arguments) { $startInfo.ArgumentList.Add($argument) }
+    if ($null -ne $EnvironmentVariables) {
+        foreach ($key in $EnvironmentVariables.Keys) {
+            $name = [string]$key
+            $value = [string]$EnvironmentVariables[$key]
+            if ([string]::IsNullOrWhiteSpace($name) -or $name.Contains('=') -or $name.IndexOf([char]0) -ge 0 -or
+                $value.IndexOf([char]0) -ge 0) {
+                throw "$Description received a malformed environment variable name or value."
+            }
+            $startInfo.Environment[$name] = $value
+        }
+    }
     $process = [Diagnostics.Process]::new()
     $process.StartInfo = $startInfo
     $started = $false
@@ -358,7 +375,7 @@ function Test-PrereleaseSbomTool {
         throw "SBOM tool '$fullPath' version resources do not match policy."
     }
     $versionResult = Invoke-BoundedProcess $fullPath @('--version') (Split-Path -Parent $fullPath) `
-        'Checking Microsoft SBOM Tool command version' 30
+        'Checking Microsoft SBOM Tool command version' 30 -EnvironmentVariables $script:SbomToolEnvironment
     if (-not [string]::IsNullOrWhiteSpace($versionResult.StandardError) -or
         $versionResult.StandardOutput.Trim() -cne [string]$policy.tool.versionInfo.commandVersion) {
         throw "SBOM tool '$fullPath' command version transcript is not exactly '$($policy.tool.versionInfo.commandVersion)'."
@@ -1224,7 +1241,8 @@ function Invoke-PrereleaseSbomGeneration {
         '-nsu', (ConvertTo-SbomNamespaceUniquePart $evidence.SourceCommit $evidence.InventoryName $evidence.Version),
         '-gt', $evidence.SourceTimestamp,
         '-li', 'false', '-pm', 'true', '-P', '2', '-F', 'false', '-mi', 'SPDX:2.2', '-V', 'Error'
-    ) $payloadRoot "Generating $($evidence.ProductName) SPDX 2.2 SBOM" 300
+    ) $payloadRoot "Generating $($evidence.ProductName) SPDX 2.2 SBOM" 300 `
+        -EnvironmentVariables $script:SbomToolEnvironment
     $generationTranscript = $generation.StandardOutput + "`n" + $generation.StandardError
     if ($generationTranscript -match '(?im)##\[(?:warning|error)\]|unknown error|\bexception:|there were no packages') {
         throw "Microsoft SBOM Tool reported a warning or internal failure during generation: $($generationTranscript.Trim())"
@@ -1237,7 +1255,8 @@ function Invoke-PrereleaseSbomGeneration {
     $validation = Invoke-BoundedProcess $tool.Path @(
         'validate', '-b', $payloadRoot, '-m', $manifestRoot, '-o', $validationPath,
         '-n', '-P', '2', '-F', 'false', '-mi', 'SPDX:2.2', '-V', 'Error'
-    ) $payloadRoot "Validating $($evidence.ProductName) SPDX 2.2 SBOM" 180
+    ) $payloadRoot "Validating $($evidence.ProductName) SPDX 2.2 SBOM" 180 `
+        -EnvironmentVariables $script:SbomToolEnvironment
     $validationTranscript = $validation.StandardOutput + "`n" + $validation.StandardError
     if ($validationTranscript -match '(?im)##\[(?:warning|error)\]|unknown error|\bexception:') {
         throw "Microsoft SBOM Tool reported a warning or internal failure during validation: $($validationTranscript.Trim())"
@@ -1591,6 +1610,24 @@ function Invoke-PrereleaseSbomSelfTest {
         $descriptor.productSpecific -isnot [bool] -or -not $descriptor.productSpecific) {
         throw 'SBOM build-evidence descriptor self-test failed.'
     }
+    $environmentProbe = Invoke-BoundedProcess `
+        -FileName 'pwsh' `
+        -Arguments @('-NoLogo','-NoProfile','-NonInteractive','-Command',
+            "[Console]::Write([Environment]::GetEnvironmentVariable('PHOENIXINSPECT_SBOM_ENVIRONMENT_PROBE'))") `
+        -WorkingDirectory $PSScriptRoot `
+        -Description 'Checking bounded process environment isolation' `
+        -TimeoutSeconds 30 `
+        -EnvironmentVariables ([ordered]@{ PHOENIXINSPECT_SBOM_ENVIRONMENT_PROBE = 'exact-value' })
+    if ($environmentProbe.StandardOutput -cne 'exact-value' -or
+        -not [string]::IsNullOrEmpty($environmentProbe.StandardError)) {
+        throw 'Bounded process environment-isolation self-test failed.'
+    }
+    Assert-SelfTestThrows {
+        $null = Invoke-BoundedProcess `
+            -FileName 'pwsh' -Arguments @('--version') -WorkingDirectory $PSScriptRoot `
+            -Description 'Checking malformed environment rejection' -TimeoutSeconds 30 `
+            -EnvironmentVariables ([ordered]@{ 'INVALID=NAME' = 'value' })
+    } 'malformed bounded-process environment variable'
 
     $root = Join-Path ([IO.Path]::GetTempPath()) ('phoenixinspect-sbom-selftest-' + [guid]::NewGuid().ToString('N'))
     $null = [IO.Directory]::CreateDirectory($root)
