@@ -16,7 +16,8 @@
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <!--
       The current prerelease lane creates application ZIPs only for local validation and embeds mechanically verified
-      third-party notice evidence; redistribution remains blocked pending human bundled-license review. Keep every
+      third-party notice evidence plus product-specific SBOM inventory; redistribution remains blocked pending human
+      bundled-license review. Keep every
       project under src/ non-packable until the repository defines package-specific compatibility, licensing, and
       validation contracts.
     -->

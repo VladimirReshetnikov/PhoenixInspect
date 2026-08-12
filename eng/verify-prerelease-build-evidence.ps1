@@ -42,4 +42,4 @@ if ($SecondEvidencePath) {
     Assert-PrereleaseBuildEvidenceIdentity -First $first -Second ([System.IO.File]::ReadAllBytes($secondPath))
 }
 
-Write-Output "Verified canonical unsigned local build evidence: sha256=$($result.Sha256) commit=$($result.InitialCommit) sdk=$($result.SelectedSdk) runtimePack=$($result.RuntimePack)"
+Write-Output "Verified canonical unsigned local build evidence: format=$($result.Format) schema=$($result.Schema) sha256=$($result.Sha256) commit=$($result.InitialCommit) sdk=$($result.SelectedSdk) runtimePack=$($result.RuntimePack)"

@@ -89,6 +89,7 @@ if ($workflow -match $writePermissionPattern) {
 }
 
 $relativeWorkflowPath = [System.IO.Path]::GetRelativePath($repositoryRoot, $WorkflowPath) -replace '\\', '/'
+& (Join-Path $PSScriptRoot 'verify-prerelease-sbom.ps1') -SelfTest
 & (Join-Path $PSScriptRoot 'verify-prerelease-build-evidence.ps1') -SelfTest
 & (Join-Path $PSScriptRoot 'Publish-PrereleaseArtifacts.ps1') -SelfTest
 Write-Output "Verified ${relativeWorkflowPath}: prerelease artifacts remain local and non-distributed."

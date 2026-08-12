@@ -9,14 +9,15 @@
     Locked-restores and publishes exactly the CLI and desktop applications as win-x64, self-contained Release
     directory layouts from a raw-byte-verified clean Git source state, fresh isolated SDK intermediates, and a fresh
     NuGet package root. Identical canonical local build-identity evidence and mechanically verified third-party
-    dependency/notice evidence are embedded in both payloads. Each payload then receives a complete per-file SHA-256
-    manifest and is archived with sorted entries and normalized timestamps. The archives are re-extracted before the
+    dependency/notice evidence are embedded in both payloads. Each payload then receives product-specific SPDX 2.2
+    inventory, a complete per-file SHA-256 manifest, and is archived with sorted entries and normalized timestamps.
+    The archives are re-extracted before the
     CLI help smoke, a bounded CLI capture/open/static-field workflow against a disposable sample target, and the
     non-UI Desktop load smoke run. The output directory contains exactly two ZIPs and SHA256SUMS.txt.
 
     These are unsigned local-validation artifacts and must not be redistributed. This script does not create NuGet
-    packages, a GitHub release, an SBOM, SLSA provenance, reproducibility evidence, a signature, redistribution
-    authorization, or evidence of W8.10 release closure.
+    packages, a GitHub release, SLSA provenance, reproducibility evidence, a signature, redistribution authorization,
+    legal clearance, or evidence of W8.10 release closure. The validated SBOM is inventory evidence only.
 
 .PARAMETER OutputDirectory
     Destination for the two ZIP files and SHA256SUMS.txt. A successful run replaces this directory's contents so
@@ -25,6 +26,11 @@
 .PARAMETER SelfTest
     Exercises new/legacy archive-ownership, build-evidence, and CLI workflow-output rejection cases in disposable
     directories without restoring, publishing, staging, or replacing artifact output.
+
+.PARAMETER SbomToolPath
+    Optional path to an already-downloaded Microsoft SBOM Tool 4.1.5 win-x64 executable. The same exact size,
+    SHA-256, Authenticode signer, version-resource, and command-version checks apply. When omitted, the publisher
+    downloads the exact versioned policy asset into its disposable work root; it never falls back to a latest tool.
 
 .EXAMPLE
     ./eng/Publish-PrereleaseArtifacts.ps1
@@ -35,7 +41,8 @@
 [CmdletBinding()]
 param(
     [string] $OutputDirectory,
-    [switch] $SelfTest
+    [switch] $SelfTest,
+    [string] $SbomToolPath
 )
 
 Set-StrictMode -Version Latest
@@ -68,13 +75,17 @@ if ([string]::IsNullOrWhiteSpace($versionPrefix) -or [string]::IsNullOrWhiteSpac
 $expectedVersion = "$versionPrefix-$versionSuffix"
 $headlessProcess = Join-Path $PSScriptRoot 'Invoke-HeadlessProcess.ps1'
 $noticeGenerator = Join-Path $PSScriptRoot 'Generate-ThirdPartyNotices.ps1'
+$sbomPolicyPath = Join-Path $PSScriptRoot 'prerelease-sbom.policy.json'
 Import-Module (Join-Path $PSScriptRoot 'PrereleaseBuildEvidence.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'PrereleaseSbom.psm1') -Force
 . (Join-Path $PSScriptRoot 'Enable-HeadlessTestMode.ps1')
 $null = Enable-HeadlessTestMode
 $workRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("phoenixinspect-publish-" + [guid]::NewGuid().ToString('N'))
 $publishRoot = Join-Path $workRoot 'publish'
 $archiveRoot = Join-Path $workRoot 'archives'
 $noticeEvidenceRoot = Join-Path $workRoot 'third-party-notices-evidence'
+$sbomToolRoot = Join-Path $workRoot 'sbom-tool'
+$sbomWorkRoot = Join-Path $workRoot 'sbom-work'
 $sdkArtifactsRoot = Join-Path $workRoot 'sdk-artifacts'
 $nugetPackageRoot = Join-Path $workRoot 'packages'
 $cliWorkflowRoot = Join-Path $workRoot 'cli-workflow-smoke'
@@ -220,7 +231,8 @@ function Get-CanonicalPayloadRelativePaths {
         foreach ($file in Get-PayloadFiles $PayloadDirectory) {
             $relativePath = [System.IO.Path]::GetRelativePath($PayloadDirectory, $file.FullName).Replace('\', '/')
             Assert-CanonicalRelativePath -RelativePath $relativePath -Context 'Payload'
-            if (-not $ExcludeManifest -or $relativePath -ne 'ARTIFACT-MANIFEST.txt') {
+            if ($relativePath -cne '_manifest/spdx_2.2/manifest.spdx.json' -and
+                (-not $ExcludeManifest -or $relativePath -cne 'ARTIFACT-MANIFEST.txt')) {
                 $relativePath
             }
         }
@@ -258,6 +270,10 @@ function Write-PayloadManifest {
     if (Test-Path -LiteralPath $manifestPath) {
         throw "The publish output unexpectedly supplied its own '$manifestPath'."
     }
+    $reservedSbomDirectory = Join-Path $PayloadDirectory '_manifest'
+    if (Test-Path -LiteralPath $reservedSbomDirectory) {
+        throw "The publish output unexpectedly supplied reserved SBOM directory '$reservedSbomDirectory'."
+    }
     $reparseItems = @(
         Get-ChildItem -LiteralPath $PayloadDirectory -Force -Recurse |
             Where-Object { ($_.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 }
@@ -274,8 +290,10 @@ function Write-PayloadManifest {
     $lines.Add('# Payload: unsigned, self-contained preview application for local validation')
     $lines.Add('# Third-party evidence: generated inventory and hash-pinned license/notice materials included')
     $lines.Add('# Build identity: exact clean Git source and selected-input evidence included; unsigned and local only')
-    $lines.Add('# Redistribution blocked: human legal review, SBOM, SLSA provenance, and signatures are incomplete')
-    $lines.Add('# Not supplied: NuGet package, legal clearance, SBOM, SLSA provenance, reproducibility, signature, W8.10 closure')
+    $lines.Add('# SBOM: product-specific SPDX 2.2 dependency inventory and exact payload-file hashes included and validated')
+    $lines.Add('# Redistribution blocked: human legal review, SLSA provenance, signatures, and W8.10 closure remain incomplete')
+    $lines.Add('# Inventory only: the SBOM does not assert legal clearance or authorize redistribution')
+    $lines.Add('# Not supplied: NuGet package, legal clearance, SLSA provenance, reproducibility, signature, W8.10 closure')
     foreach ($relativePath in Get-CanonicalPayloadRelativePaths $PayloadDirectory) {
         $filePath = Resolve-ContainedRelativePath `
             -RootDirectory $PayloadDirectory `
@@ -307,13 +325,15 @@ function Test-PayloadManifest {
         '# Payload: unsigned, self-contained preview application for local validation',
         '# Third-party evidence: generated inventory and hash-pinned license/notice materials included',
         '# Build identity: exact clean Git source and selected-input evidence included; unsigned and local only',
-        '# Redistribution blocked: human legal review, SBOM, SLSA provenance, and signatures are incomplete',
-        '# Not supplied: NuGet package, legal clearance, SBOM, SLSA provenance, reproducibility, signature, W8.10 closure'
+        '# SBOM: product-specific SPDX 2.2 dependency inventory and exact payload-file hashes included and validated',
+        '# Redistribution blocked: human legal review, SLSA provenance, signatures, and W8.10 closure remain incomplete',
+        '# Inventory only: the SBOM does not assert legal clearance or authorize redistribution',
+        '# Not supplied: NuGet package, legal clearance, SLSA provenance, reproducibility, signature, W8.10 closure'
     )
     if ($lines.Count -lt $fixedHeaders.Count) {
         throw "Payload manifest '$ManifestPath' is missing its required header."
     }
-    foreach ($headerIndex in @(0, 3, 4, 5, 6, 7, 8)) {
+    foreach ($headerIndex in @(0, 3, 4, 5, 6, 7, 8, 9, 10)) {
         if ($lines[$headerIndex] -ne $fixedHeaders[$headerIndex]) {
             throw "Payload manifest '$ManifestPath' has an invalid header at line $($headerIndex + 1)."
         }
@@ -509,6 +529,7 @@ function Test-PublisherOwnedArchiveIdentity {
         [Parameter(Mandatory)][string] $ArchivePath,
         [Parameter(Mandatory)][string] $ContentRoot,
         [Parameter(Mandatory)][string] $Product,
+        [Parameter(Mandatory)][string] $Inventory,
         [Parameter(Mandatory)][string] $Version,
         [switch] $AllowLegacyPublisherFormat
     )
@@ -567,7 +588,20 @@ function Test-PublisherOwnedArchiveIdentity {
                 $manifestStream.Dispose()
             }
 
-            [string[]] $newIdentityHeader = @(
+            [string[]] $sbomIdentityHeader = @(
+                '# PhoenixInspect prerelease payload manifest',
+                "# Product: $Product",
+                "# Version: $Version",
+                "# Runtime: $runtimeIdentifier",
+                '# Payload: unsigned, self-contained preview application for local validation',
+                '# Third-party evidence: generated inventory and hash-pinned license/notice materials included',
+                '# Build identity: exact clean Git source and selected-input evidence included; unsigned and local only',
+                '# SBOM: product-specific SPDX 2.2 dependency inventory and exact payload-file hashes included and validated',
+                '# Redistribution blocked: human legal review, SLSA provenance, signatures, and W8.10 closure remain incomplete',
+                '# Inventory only: the SBOM does not assert legal clearance or authorize redistribution',
+                '# Not supplied: NuGet package, legal clearance, SLSA provenance, reproducibility, signature, W8.10 closure'
+            )
+            [string[]] $buildEvidenceV1IdentityHeader = @(
                 '# PhoenixInspect prerelease payload manifest',
                 "# Product: $Product",
                 "# Version: $Version",
@@ -588,14 +622,26 @@ function Test-PublisherOwnedArchiveIdentity {
                 '# Redistribution blocked: human legal review, SBOM, provenance, and signatures are incomplete',
                 '# Not supplied: NuGet package, legal clearance, SBOM, provenance, signature, W8.10 closure'
             )
-            $isNewFormat = $manifestText.StartsWith(
-                (($newIdentityHeader -join "`n") + "`n"), [System.StringComparison]::Ordinal)
-            $isLegacyFormat = $manifestText.StartsWith(
+            $isSbomFormat = $manifestText.StartsWith(
+                (($sbomIdentityHeader -join "`n") + "`n"), [System.StringComparison]::Ordinal)
+            $isBuildEvidenceV1Format = $manifestText.StartsWith(
+                (($buildEvidenceV1IdentityHeader -join "`n") + "`n"), [System.StringComparison]::Ordinal)
+            $isLegacyV0Format = $manifestText.StartsWith(
                 (($legacyIdentityHeader -join "`n") + "`n"), [System.StringComparison]::Ordinal)
-            if (-not $isNewFormat -and (-not $AllowLegacyPublisherFormat -or -not $isLegacyFormat)) {
+            if (-not $isSbomFormat -and
+                (-not $AllowLegacyPublisherFormat -or
+                    (-not $isBuildEvidenceV1Format -and -not $isLegacyV0Format))) {
                 throw "Archive '$ArchivePath' does not carry the expected PhoenixInspect publisher identity."
             }
-            [string[]] $identityHeader = if ($isNewFormat) { $newIdentityHeader } else { $legacyIdentityHeader }
+            [string[]] $identityHeader = if ($isSbomFormat) {
+                $sbomIdentityHeader
+            }
+            elseif ($isBuildEvidenceV1Format) {
+                $buildEvidenceV1IdentityHeader
+            }
+            else {
+                $legacyIdentityHeader
+            }
             if ($manifestText.StartsWith([char] 0xfeff) -or
                 $manifestText.Contains("`r") -or
                 -not $manifestText.EndsWith("`n")) {
@@ -603,10 +649,14 @@ function Test-PublisherOwnedArchiveIdentity {
             }
 
             [string[]] $manifestLines = $manifestText.Substring(0, $manifestText.Length - 1).Split("`n")
-            [object[]] $payloadEntries = @($entries | Where-Object { $_.FullName -ne $manifestEntryName })
+            $sbomEntryName = "$ContentRoot/_manifest/spdx_2.2/manifest.spdx.json"
+            [object[]] $payloadEntries = @($entries | Where-Object {
+                $_.FullName -cne $manifestEntryName -and
+                (-not $isSbomFormat -or $_.FullName -cne $sbomEntryName)
+            })
             $evidenceEntryName = "$ContentRoot/BUILD-EVIDENCE.json"
             $evidenceEntry = $archive.GetEntry($evidenceEntryName)
-            if ($isNewFormat) {
+            if ($isSbomFormat -or $isBuildEvidenceV1Format) {
                 if ($null -eq $evidenceEntry -or $evidenceEntry.Length -gt 1MB) {
                     throw "Archive '$ArchivePath' has no bounded '$evidenceEntryName'."
                 }
@@ -657,7 +707,7 @@ function Test-PublisherOwnedArchiveIdentity {
                 }
             }
 
-            if ($isNewFormat) {
+            if ($isSbomFormat -or $isBuildEvidenceV1Format) {
                 $evidenceStream = $evidenceEntry.Open()
                 try {
                     $memory = [System.IO.MemoryStream]::new()
@@ -673,6 +723,15 @@ function Test-PublisherOwnedArchiveIdentity {
                     $evidenceStream.Dispose()
                 }
                 $validatedEvidence = Test-PrereleaseBuildEvidenceBytes -Bytes $evidenceBytes
+                $expectedEvidenceFormat = if ($isSbomFormat) {
+                    'BuildEvidenceV2Sbom'
+                }
+                else {
+                    'BuildEvidenceV1NoSbom'
+                }
+                if ($validatedEvidence.Format -cne $expectedEvidenceFormat) {
+                    throw "Archive '$ArchivePath' build-evidence format '$($validatedEvidence.Format)' does not match its publisher header."
+                }
                 $noticeManifestEntryName = "$ContentRoot/THIRD-PARTY-NOTICES/MANIFEST.sha256"
                 $noticeManifestEntry = $archive.GetEntry($noticeManifestEntryName)
                 if ($null -eq $noticeManifestEntry -or $noticeManifestEntry.Length -le 0 -or
@@ -696,17 +755,46 @@ function Test-PublisherOwnedArchiveIdentity {
                 if ($actualNoticeManifestHash -cne $validatedEvidence.ThirdPartyEvidenceManifestSha256) {
                     throw "Archive '$ArchivePath' third-party evidence manifest does not match BUILD-EVIDENCE.json."
                 }
+                $sbomResult = if ($isSbomFormat) {
+                    Test-PrereleaseSbomArchive `
+                        -Archive $archive `
+                        -ContentRoot $ContentRoot `
+                        -PolicyPath $sbomPolicyPath
+                }
+                else {
+                    if (@($entries | Where-Object {
+                        $_.FullName.StartsWith("$ContentRoot/_manifest/", [System.StringComparison]::Ordinal)
+                    }).Count -ne 0) {
+                        throw "Schema-v1 archive '$ArchivePath' unexpectedly contains a validator-owned manifest."
+                    }
+                    $null
+                }
+                if ($isSbomFormat -and
+                    ($sbomResult.Product -cne $Product -or
+                        $sbomResult.InventoryName -cne $Inventory -or
+                        $sbomResult.Version -cne $Version -or
+                        $sbomResult.SourceCommit -cne $validatedEvidence.InitialCommit -or
+                        $sbomResult.SourceTree -cne $validatedEvidence.InitialTree)) {
+                    throw "Archive '$ArchivePath' SBOM product/version/source does not match its publisher and build-evidence identities."
+                }
                 $identityResult = [pscustomobject]@{
-                    Format = 'BuildEvidenceV1'
+                    Format = $expectedEvidenceFormat
                     EvidenceBytes = $evidenceBytes
                     EvidenceSha256 = $validatedEvidence.Sha256
+                    SbomResult = $sbomResult
                 }
             }
             else {
+                if (@($entries | Where-Object {
+                    $_.FullName.StartsWith("$ContentRoot/_manifest/", [System.StringComparison]::Ordinal)
+                }).Count -ne 0) {
+                    throw "Legacy archive '$ArchivePath' unexpectedly contains a validator-owned manifest."
+                }
                 $identityResult = [pscustomobject]@{
                     Format = 'LegacyV0'
                     EvidenceBytes = $null
                     EvidenceSha256 = $null
+                    SbomResult = $null
                 }
             }
         }
@@ -795,13 +883,14 @@ function Test-ArtifactOutputDirectory {
             -ArchivePath (Join-Path $Path $identity.Name) `
             -ContentRoot $contentRoot `
             -Product $product `
+            -Inventory $identity.Slug `
             -Version $identity.Version `
             -AllowLegacyPublisherFormat:$AllowLegacyPublisherFormat))
     }
     if (@($archiveResults | Select-Object -ExpandProperty Format -Unique).Count -ne 1) {
-        throw "Artifact output '$Path' mixes legacy and build-evidence publisher formats."
+        throw "Artifact output '$Path' mixes publisher archive formats."
     }
-    if ($archiveResults[0].Format -eq 'BuildEvidenceV1') {
+    if ($archiveResults[0].Format -in @('BuildEvidenceV1NoSbom', 'BuildEvidenceV2Sbom')) {
         Assert-PrereleaseBuildEvidenceIdentity `
             -First $archiveResults[0].EvidenceBytes `
             -Second $archiveResults[1].EvidenceBytes
@@ -857,7 +946,10 @@ function Test-ExtractedArchive {
         [Parameter(Mandatory)][string] $ArchivePath,
         [Parameter(Mandatory)][string] $ContentRoot,
         [Parameter(Mandatory)][string] $ExtractionParent,
-        [Parameter(Mandatory)][byte[]] $ExpectedBuildEvidenceBytes
+        [Parameter(Mandatory)][byte[]] $ExpectedBuildEvidenceBytes,
+        [Parameter(Mandatory)][string] $ExpectedProduct,
+        [Parameter(Mandatory)][string] $ExpectedInventory,
+        [Parameter(Mandatory)][string] $ExpectedVersion
     )
 
     $extractionDirectory = Join-Path $ExtractionParent $ContentRoot
@@ -883,6 +975,9 @@ function Test-ExtractedArchive {
         -First $ExpectedBuildEvidenceBytes `
         -Second $actualEvidenceBytes
     $validatedEvidence = Test-PrereleaseBuildEvidenceBytes -Bytes $actualEvidenceBytes
+    if ($validatedEvidence.Format -cne 'BuildEvidenceV2Sbom') {
+        throw "Archive '$ArchivePath' extracted build evidence is not the required SBOM-bound schema-v2 format."
+    }
     $noticeManifestPath = Join-Path $payloadDirectory 'THIRD-PARTY-NOTICES/MANIFEST.sha256'
     if (-not (Test-Path -LiteralPath $noticeManifestPath -PathType Leaf)) {
         throw "Archive '$ArchivePath' has no embedded third-party evidence manifest."
@@ -890,6 +985,16 @@ function Test-ExtractedArchive {
     $actualNoticeManifestHash = (Get-FileHash -LiteralPath $noticeManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($actualNoticeManifestHash -cne $validatedEvidence.ThirdPartyEvidenceManifestSha256) {
         throw "Archive '$ArchivePath' extracted third-party evidence manifest does not match BUILD-EVIDENCE.json."
+    }
+    $sbomResult = Test-PrereleaseSbomPayload `
+        -PayloadDirectory $payloadDirectory `
+        -PolicyPath $sbomPolicyPath
+    if ($sbomResult.Product -cne $ExpectedProduct -or
+        $sbomResult.InventoryName -cne $ExpectedInventory -or
+        $sbomResult.Version -cne $ExpectedVersion -or
+        $sbomResult.SourceCommit -cne $validatedEvidence.InitialCommit -or
+        $sbomResult.SourceTree -cne $validatedEvidence.InitialTree) {
+        throw "Archive '$ArchivePath' extracted SBOM product/version/source does not match its publisher and build-evidence identities."
     }
     return $payloadDirectory
 }
@@ -1578,14 +1683,86 @@ function Invoke-PublisherArchiveContractSelfTest {
                 version = '10.0.11'
             }) `
             -ThirdPartyEvidenceManifestSha256 $ThirdPartyEvidenceManifestSha256 `
+            -Sbom (Get-PrereleaseSbomBuildEvidenceDescriptor -PolicyPath $sbomPolicyPath) `
             -SelectedInputs $inputs)
+    }
+
+    function ConvertTo-SelfTestBuildEvidenceV1Bytes {
+        param([Parameter(Mandatory)][byte[]] $BuildEvidenceV2Bytes)
+
+        $evidence = [System.Text.Encoding]::UTF8.GetString($BuildEvidenceV2Bytes) |
+            ConvertFrom-Json -AsHashtable -Depth 32
+        $evidence.schema = 'phoenixinspect.local-prerelease-build-evidence/v1'
+        $null = $evidence.build.Remove('sbom')
+        $v1Paths = [System.Collections.Generic.HashSet[string]]::new(
+            [string[]] (Get-PrereleaseSelectedInputPaths -Schema $evidence.schema),
+            [System.StringComparer]::Ordinal)
+        $evidence.selectedInputs = @($evidence.selectedInputs | Where-Object {
+            $v1Paths.Contains([string] $_.path)
+        })
+        $text = (ConvertTo-Json -InputObject $evidence -Depth 32).Replace("`r`n", "`n").Replace("`r", "`n") + "`n"
+        [byte[]] $bytes = [System.Text.UTF8Encoding]::new($false).GetBytes($text)
+        $validated = Test-PrereleaseBuildEvidenceBytes -Bytes $bytes
+        if ($validated.Format -cne 'BuildEvidenceV1NoSbom') {
+            throw 'Publisher self-test could not synthesize schema-v1 migration evidence.'
+        }
+        return ,$bytes
+    }
+
+    function Write-SelfTestPayloadManifest {
+        param(
+            [Parameter(Mandatory)][string] $PayloadDirectory,
+            [Parameter(Mandatory)][string] $Product,
+            [Parameter(Mandatory)][ValidateSet('BuildEvidenceV1NoSbom','LegacyV0')][string] $Format
+        )
+
+        [string[]] $headers = if ($Format -ceq 'BuildEvidenceV1NoSbom') {
+            @(
+                '# PhoenixInspect prerelease payload manifest',
+                "# Product: $Product",
+                "# Version: $expectedVersion",
+                "# Runtime: $runtimeIdentifier",
+                '# Payload: unsigned, self-contained preview application for local validation',
+                '# Third-party evidence: generated inventory and hash-pinned license/notice materials included',
+                '# Build identity: exact clean Git source and selected-input evidence included; unsigned and local only',
+                '# Redistribution blocked: human legal review, SBOM, SLSA provenance, and signatures are incomplete',
+                '# Not supplied: NuGet package, legal clearance, SBOM, SLSA provenance, reproducibility, signature, W8.10 closure'
+            )
+        }
+        else {
+            @(
+                '# PhoenixInspect prerelease payload manifest',
+                "# Product: $Product",
+                "# Version: $expectedVersion",
+                "# Runtime: $runtimeIdentifier",
+                '# Payload: unsigned, self-contained preview application for local validation',
+                '# Third-party evidence: generated inventory and hash-pinned license/notice materials included',
+                '# Redistribution blocked: human legal review, SBOM, provenance, and signatures are incomplete',
+                '# Not supplied: NuGet package, legal clearance, SBOM, provenance, signature, W8.10 closure'
+            )
+        }
+        $lines = [System.Collections.Generic.List[string]]::new()
+        $lines.AddRange($headers)
+        foreach ($relativePath in Get-CanonicalPayloadRelativePaths $PayloadDirectory) {
+            $hash = (Get-FileHash -LiteralPath (Resolve-ContainedRelativePath `
+                -RootDirectory $PayloadDirectory `
+                -RelativePath $relativePath `
+                -Context 'Self-test payload') -Algorithm SHA256).Hash.ToLowerInvariant()
+            $lines.Add("$hash *$relativePath")
+        }
+        $manifestPath = Join-Path $PayloadDirectory 'ARTIFACT-MANIFEST.txt'
+        Write-Utf8Lines -Path $manifestPath -Lines $lines.ToArray()
+        return $manifestPath
     }
 
     function New-SelfTestArtifactOutput {
         param(
             [Parameter(Mandatory)][string] $Path,
-            [Parameter(Mandatory)][ValidateSet('New', 'Legacy', 'MissingEvidence', 'InvalidEvidence', 'MismatchedNoticeEvidence')][string] $Format,
+            [Parameter(Mandatory)][ValidateSet(
+                'New', 'BuildEvidenceV1', 'LegacyV0', 'MissingEvidence', 'InvalidEvidence',
+                'MismatchedNoticeEvidence', 'MissingSbom', 'InvalidSbom', 'UnexpectedSidecar')][string] $Format,
             [Parameter(Mandatory)][byte[]] $EvidenceBytes,
+            [Parameter(Mandatory)][byte[]] $V1EvidenceBytes,
             [Parameter(Mandatory)][byte[]] $NoticeManifestBytes
         )
 
@@ -1599,9 +1776,34 @@ function Invoke-PublisherArchiveContractSelfTest {
             $payload = Join-Path $payloadRoot $fixture.Slug
             $null = New-Item -ItemType Directory -Path $payload
             Write-Utf8Lines -Path (Join-Path $payload 'fixture.txt') -Lines @('publisher self-test')
-            if ($Format -ne 'Legacy') {
+            if ($Format -eq 'BuildEvidenceV1') {
                 $noticeDirectory = Join-Path $payload 'THIRD-PARTY-NOTICES'
                 $null = New-Item -ItemType Directory -Path $noticeDirectory
+                [System.IO.File]::WriteAllBytes(
+                    (Join-Path $noticeDirectory 'MANIFEST.sha256'),
+                    $NoticeManifestBytes)
+                Write-PrereleaseBuildEvidence `
+                    -Path (Join-Path $payload 'BUILD-EVIDENCE.json') `
+                    -Bytes $V1EvidenceBytes
+                $null = Write-SelfTestPayloadManifest `
+                    -PayloadDirectory $payload `
+                    -Product $fixture.Product `
+                    -Format BuildEvidenceV1NoSbom
+            }
+            elseif ($Format -eq 'LegacyV0') {
+                $null = Write-SelfTestPayloadManifest `
+                    -PayloadDirectory $payload `
+                    -Product $fixture.Product `
+                    -Format LegacyV0
+            }
+            else {
+                $inventoryName = if ($fixture.Slug -ceq 'phoenixinspect-cli') { 'cli' } else { 'desktop' }
+                $synthetic = Initialize-PrereleaseSbomSyntheticFixture `
+                    -PayloadDirectory $payload `
+                    -ProductName $fixture.Product `
+                    -InventoryName $inventoryName `
+                    -Version $expectedVersion `
+                    -PolicyPath $sbomPolicyPath
                 [byte[]] $embeddedNoticeBytes = if ($Format -eq 'MismatchedNoticeEvidence') {
                     [System.Text.UTF8Encoding]::new($false).GetBytes("mismatched publisher self-test notice manifest`n")
                 }
@@ -1609,36 +1811,42 @@ function Invoke-PublisherArchiveContractSelfTest {
                     $NoticeManifestBytes
                 }
                 [System.IO.File]::WriteAllBytes(
-                    (Join-Path $noticeDirectory 'MANIFEST.sha256'),
+                    (Join-Path $payload 'THIRD-PARTY-NOTICES/MANIFEST.sha256'),
                     $embeddedNoticeBytes)
-            }
-            if ($Format -in @('New', 'MismatchedNoticeEvidence')) {
-                Write-PrereleaseBuildEvidence -Path (Join-Path $payload 'BUILD-EVIDENCE.json') -Bytes $EvidenceBytes
-                $null = Write-PayloadManifest -PayloadDirectory $payload -Product $fixture.Product -Version $expectedVersion
-            }
-            elseif ($Format -eq 'InvalidEvidence') {
-                $invalidText = [System.Text.Encoding]::UTF8.GetString($EvidenceBytes).Replace(
-                    '"localOnly": true', '"localOnly": false')
-                Write-PrereleaseBuildEvidence `
-                    -Path (Join-Path $payload 'BUILD-EVIDENCE.json') `
-                    -Bytes ([System.Text.Encoding]::UTF8.GetBytes($invalidText))
-                $null = Write-PayloadManifest -PayloadDirectory $payload -Product $fixture.Product -Version $expectedVersion
-            }
-            elseif ($Format -eq 'MissingEvidence') {
-                $null = Write-PayloadManifest -PayloadDirectory $payload -Product $fixture.Product -Version $expectedVersion
-            }
-            else {
-                $fixtureHash = (Get-FileHash -LiteralPath (Join-Path $payload 'fixture.txt') -Algorithm SHA256).Hash.ToLowerInvariant()
-                Write-Utf8Lines -Path (Join-Path $payload 'ARTIFACT-MANIFEST.txt') -Lines @(
-                    '# PhoenixInspect prerelease payload manifest',
-                    "# Product: $($fixture.Product)",
-                    "# Version: $expectedVersion",
-                    "# Runtime: $runtimeIdentifier",
-                    '# Payload: unsigned, self-contained preview application for local validation',
-                    '# Third-party evidence: generated inventory and hash-pinned license/notice materials included',
-                    '# Redistribution blocked: human legal review, SBOM, provenance, and signatures are incomplete',
-                    '# Not supplied: NuGet package, legal clearance, SBOM, provenance, signature, W8.10 closure',
-                    "$fixtureHash *fixture.txt")
+                if ($Format -ne 'MissingEvidence') {
+                    [byte[]] $embeddedEvidenceBytes = if ($Format -eq 'InvalidEvidence') {
+                        [System.Text.Encoding]::UTF8.GetBytes(
+                            [System.Text.Encoding]::UTF8.GetString($EvidenceBytes).Replace(
+                                '"localOnly": true', '"localOnly": false'))
+                    }
+                    else {
+                        $EvidenceBytes
+                    }
+                    Write-PrereleaseBuildEvidence `
+                        -Path (Join-Path $payload 'BUILD-EVIDENCE.json') `
+                        -Bytes $embeddedEvidenceBytes
+                }
+                $null = Write-PayloadManifest `
+                    -PayloadDirectory $payload `
+                    -Product $fixture.Product `
+                    -Version $expectedVersion
+                if ($Format -ne 'MissingSbom') {
+                    $null = Complete-PrereleaseSbomSyntheticFixture `
+                        -PayloadDirectory $payload `
+                        -ExpectedEvidenceBytes $synthetic.EvidenceBytes `
+                        -PolicyPath $sbomPolicyPath
+                }
+                if ($Format -eq 'InvalidSbom') {
+                    $sbomPath = Join-Path $payload '_manifest/spdx_2.2/manifest.spdx.json'
+                    [byte[]] $sbomBytes = [System.IO.File]::ReadAllBytes($sbomPath)
+                    $sbomBytes[$sbomBytes.Length - 2] = [byte] 0x20
+                    [System.IO.File]::WriteAllBytes($sbomPath, $sbomBytes)
+                }
+                elseif ($Format -eq 'UnexpectedSidecar') {
+                    Write-Utf8Lines `
+                        -Path (Join-Path $payload '_manifest/spdx_2.2/manifest.spdx.json.sha256') `
+                        -Lines @('0' * 64)
+                }
             }
 
             $archiveBaseName = "$($fixture.Slug)-$expectedVersion-$runtimeIdentifier"
@@ -1675,18 +1883,40 @@ function Invoke-PublisherArchiveContractSelfTest {
         }
         [byte[]] $evidenceBytes = New-SelfTestEvidenceBytes `
             -ThirdPartyEvidenceManifestSha256 $noticeManifestHash
+        [byte[]] $v1EvidenceBytes = ConvertTo-SelfTestBuildEvidenceV1Bytes `
+            -BuildEvidenceV2Bytes $evidenceBytes
 
         $newOutput = New-SelfTestArtifactOutput `
             -Path (Join-Path $selfTestRoot 'new') `
             -Format New `
             -EvidenceBytes $evidenceBytes `
+            -V1EvidenceBytes $v1EvidenceBytes `
             -NoticeManifestBytes $noticeManifestBytes
         Test-ArtifactOutputDirectory -Path $newOutput -ExpectedNames $expectedOutputNames
 
+        $v1Output = New-SelfTestArtifactOutput `
+            -Path (Join-Path $selfTestRoot 'build-evidence-v1') `
+            -Format BuildEvidenceV1 `
+            -EvidenceBytes $evidenceBytes `
+            -V1EvidenceBytes $v1EvidenceBytes `
+            -NoticeManifestBytes $noticeManifestBytes
+        Assert-SelfTestThrows {
+            Test-ArtifactOutputDirectory `
+                -Path $v1Output `
+                -ExpectedNames $expectedOutputNames `
+                -AllowPriorVersion
+        } 'schema-v1 pre-SBOM output rejected as new output'
+        Test-ArtifactOutputDirectory `
+            -Path $v1Output `
+            -ExpectedNames $expectedOutputNames `
+            -AllowPriorVersion `
+            -AllowLegacyPublisherFormat
+
         $legacyOutput = New-SelfTestArtifactOutput `
             -Path (Join-Path $selfTestRoot 'legacy') `
-            -Format Legacy `
+            -Format LegacyV0 `
             -EvidenceBytes $evidenceBytes `
+            -V1EvidenceBytes $v1EvidenceBytes `
             -NoticeManifestBytes $noticeManifestBytes
         Assert-SelfTestThrows {
             Test-ArtifactOutputDirectory `
@@ -1700,11 +1930,14 @@ function Invoke-PublisherArchiveContractSelfTest {
             -AllowPriorVersion `
             -AllowLegacyPublisherFormat
 
-        foreach ($invalidFormat in @('MissingEvidence', 'InvalidEvidence', 'MismatchedNoticeEvidence')) {
+        foreach ($invalidFormat in @(
+            'MissingEvidence', 'InvalidEvidence', 'MismatchedNoticeEvidence',
+            'MissingSbom', 'InvalidSbom', 'UnexpectedSidecar')) {
             $invalidOutput = New-SelfTestArtifactOutput `
                 -Path (Join-Path $selfTestRoot $invalidFormat) `
                 -Format $invalidFormat `
                 -EvidenceBytes $evidenceBytes `
+                -V1EvidenceBytes $v1EvidenceBytes `
                 -NoticeManifestBytes $noticeManifestBytes
             Assert-SelfTestThrows {
                 Test-ArtifactOutputDirectory -Path $invalidOutput -ExpectedNames $expectedOutputNames
@@ -1966,19 +2199,21 @@ Session summary
         }
     }
 
-    Write-Output 'Publisher self-test passed: build evidence, legacy ownership boundaries, exact CLI workflow semantics, and PID/path-bound createdump diagnostics reject adversarial fixtures.'
+    Write-Output 'Publisher self-test passed: SBOM-bound v2 output, v1/v0 migration-only ownership, adversarial archive rejection, exact CLI workflow semantics, and PID/path-bound createdump diagnostics.'
 }
 
 $products = @(
     [pscustomobject]@{
         Name = 'PhoenixInspect CLI'
         Slug = 'phoenixinspect-cli'
+        Inventory = 'cli'
         Project = Join-Path $repositoryRoot 'src/PhoenixInspect.Cli/PhoenixInspect.Cli.csproj'
         Executable = 'phoenixinspect.exe'
     },
     [pscustomobject]@{
         Name = 'PhoenixInspect Desktop'
         Slug = 'phoenixinspect-desktop'
+        Inventory = 'desktop'
         Project = Join-Path $repositoryRoot 'src/PhoenixInspect.Desktop/PhoenixInspect.Desktop.csproj'
         Executable = 'PhoenixInspect.exe'
     }
@@ -2027,6 +2262,14 @@ try {
     $selectedSdk = Get-SelectedDotNetSdkVersion `
         -RepositoryRoot $repositoryRoot `
         -ConfiguredMinimum $repositoryContract.ConfiguredSdkMinimum
+    $sourceTimestamp = Get-PrereleaseSbomSourceTimestamp `
+        -RepositoryRoot $repositoryRoot `
+        -SourceCommit $initialSourceState.Commit
+    Write-Host 'Resolving and verifying pinned Microsoft SBOM Tool 4.1.5…' -ForegroundColor Cyan
+    $sbomTool = Resolve-PrereleaseSbomTool `
+        -ToolPath $SbomToolPath `
+        -DownloadDirectory $sbomToolRoot `
+        -PolicyPath $sbomPolicyPath
 
     foreach ($product in $products) {
         Write-Host "Locked-restoring $($product.Name)…" -ForegroundColor Cyan
@@ -2153,6 +2396,7 @@ try {
     $postBuildSourceState = Get-PrereleaseSourceState -RepositoryRoot $repositoryRoot
     Assert-PrereleaseSourceStateEqual -Initial $initialSourceState -Current $postBuildSourceState
     $selectedInputs = Get-PrereleaseSelectedInputRecords -RepositoryRoot $repositoryRoot
+    $sbomBuildDescriptor = Get-PrereleaseSbomBuildEvidenceDescriptor -PolicyPath $sbomPolicyPath
     [byte[]] $buildEvidenceBytes = New-PrereleaseBuildEvidenceBytes `
         -InitialSource $initialSourceState `
         -FinalSource $postBuildSourceState `
@@ -2160,6 +2404,7 @@ try {
         -SelectedSdk $selectedSdk `
         -RuntimePacks $cliRuntime.RuntimePacks `
         -ThirdPartyEvidenceManifestSha256 ((Get-FileHash -LiteralPath $noticeManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()) `
+        -Sbom $sbomBuildDescriptor `
         -SelectedInputs $selectedInputs
     $null = Test-PrereleaseBuildEvidenceBytes `
         -Bytes $buildEvidenceBytes `
@@ -2177,10 +2422,39 @@ try {
         }
         Copy-Item -LiteralPath $noticeEvidenceRoot -Destination $noticeDestination -Recurse
 
+        [byte[]] $sbomEvidenceBytes = New-PrereleaseSbomEvidenceBytes `
+            -ProductName $product.Name `
+            -InventoryName $product.Inventory `
+            -Version $expectedVersion `
+            -SourceCommit $initialSourceState.Commit `
+            -SourceTree $initialSourceState.Tree `
+            -SourceTimestamp $sourceTimestamp `
+            -PolicyPath $sbomPolicyPath
+        Write-PrereleaseSbomEvidence `
+            -Path (Join-Path $productPublishDirectory 'SBOM-EVIDENCE.json') `
+            -Bytes $sbomEvidenceBytes `
+            -PolicyPath $sbomPolicyPath
+
         $manifest = Write-PayloadManifest `
             -PayloadDirectory $productPublishDirectory `
             -Product $product.Name `
             -Version $expectedVersion
+        Test-PayloadManifest -PayloadDirectory $productPublishDirectory -ManifestPath $manifest
+
+        Write-Host "Generating and validating the product-specific $($product.Name) SPDX 2.2 SBOM…" -ForegroundColor Cyan
+        $sbomResult = Invoke-PrereleaseSbomGeneration `
+            -ToolPath $sbomTool.Path `
+            -PayloadDirectory $productPublishDirectory `
+            -WorkDirectory (Join-Path $sbomWorkRoot $product.Inventory) `
+            -ExpectedEvidenceBytes $sbomEvidenceBytes `
+            -PolicyPath $sbomPolicyPath
+        if ($sbomResult.Product -cne $product.Name -or
+            $sbomResult.InventoryName -cne $product.Inventory -or
+            $sbomResult.Version -cne $expectedVersion -or
+            $sbomResult.DependencyCount -le 0 -or
+            $sbomResult.FileCount -le 0) {
+            throw "$($product.Name) SBOM validation returned an invalid product, version, dependency count, or file count."
+        }
         Test-PayloadManifest -PayloadDirectory $productPublishDirectory -ManifestPath $manifest
 
         $archiveBaseName = "$($product.Slug)-$expectedVersion-$runtimeIdentifier"
@@ -2220,7 +2494,10 @@ try {
             -ArchivePath $archivePath `
             -ContentRoot $archiveBaseName `
             -ExtractionParent $extractionRoot `
-            -ExpectedBuildEvidenceBytes $buildEvidenceBytes
+            -ExpectedBuildEvidenceBytes $buildEvidenceBytes `
+            -ExpectedProduct $product.Name `
+            -ExpectedInventory $product.Inventory `
+            -ExpectedVersion $expectedVersion
         if ($product.Slug -eq 'phoenixinspect-cli') {
             Write-Host 'Smoke-launching the extracted CLI with a 30-second bound…' -ForegroundColor Cyan
             Invoke-BoundedCliSmoke `
@@ -2332,8 +2609,8 @@ try {
     foreach ($file in Get-ChildItem -LiteralPath $outputFullPath -File | Sort-Object Name) {
         Write-Host "  $($file.Name)"
     }
-    Write-Host 'Canonical unsigned local build identity is embedded; no reproducibility, SLSA provenance, signature, SBOM, package, tag, release, redistribution authorization, or W8.10 closure is claimed.'
-    Write-Host 'Generated third-party inventory and notice evidence is embedded; human legal review remains a release-closure blocker.'
+    Write-Host 'Canonical unsigned local build identity and validated product-specific SPDX 2.2 inventory are embedded; no reproducibility, SLSA provenance, signature, package, tag, release, redistribution authorization, or W8.10 closure is claimed.'
+    Write-Host 'Generated third-party inventory, SBOM, and notice evidence are embedded; human legal review remains a release-closure blocker.'
     Write-Host 'The extracted CLI workflow smoke proves one local capture/open/static-field evaluation path against a disposable sample dump; it is not general compatibility or release closure.'
     Write-Host 'The Desktop smoke covers non-UI dependency presence, selected assembly loads, and compiled XAML registration; it does not claim visible UI startup.'
     $totalStopwatch.Stop()

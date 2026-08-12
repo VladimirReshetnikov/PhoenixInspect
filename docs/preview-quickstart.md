@@ -69,7 +69,11 @@ in addition to requiring an empty tracked/untracked status — and rejects ignor
 source-project `bin`/`obj` allowance. It repeats that source-state boundary after the build, before output staging,
 and immediately before installing output.
 
-The publisher derives and verifies a common third-party dependency/license-evidence bundle from the products' exact
+Before the expensive restores, the publisher resolves Microsoft's pinned standalone Windows SBOM Tool 4.1.5. By
+default it downloads the exact versioned asset into its disposable work root; an offline caller may instead pass
+`-SbomToolPath` to a preseeded copy. Either path requires the exact size, SHA-256, version resources, command version,
+and Microsoft Authenticode identity and never falls back to a latest tool. The publisher then derives and verifies a
+common third-party dependency/license-evidence bundle from the products' exact
 `.deps.json` graphs, verifies the isolated post-restore project graph and runtime-pack download sets, records the
 actual common runtime pack carried by the published products, retains the packaged CLI `--help` smoke, runs the
 Desktop's exact non-UI `--smoke-test`, and writes two ZIPs plus `SHA256SUMS.txt` under `artifacts/prerelease`. It also
@@ -84,26 +88,35 @@ The target's bounded post-`READY` stdout permits only CoreCLR's measured two-lin
 diagnostic pair, bound to the exact target PID and requested dump path; target stderr and any unrelated application
 output still fail the smoke.
 
-Every ZIP contains byte-identical canonical `BUILD-EVIDENCE.json`, the generated third-party evidence, and a complete
-per-file SHA-256 manifest. The build-evidence record binds the initial/final Git commit and tree, canonical tracked
+Every ZIP contains byte-identical canonical `BUILD-EVIDENCE.json`, the generated third-party evidence, a canonical
+product-specific SPDX 2.2 SBOM under `_manifest/spdx_2.2/manifest.spdx.json`, `SBOM-EVIDENCE.json`, and a complete
+per-file SHA-256 manifest. The CLI SBOM contains exactly the CLI dependency inventory; the Desktop SBOM contains
+exactly the Desktop inventory. Microsoft SBOM Tool validates the generated file hashes, and PhoenixInspect's stricter
+validator independently requires the exact product package set, file set, hashes, relationships, metadata, and
+canonical serialization before and after archive extraction. `ARTIFACT-MANIFEST.txt` hashes every payload file except
+itself and the canonical SBOM; the SBOM in turn hashes `ARTIFACT-MANIFEST.txt` and every other non-SBOM payload file,
+avoiding a hash cycle while the normalized ZIP and `SHA256SUMS.txt` bind the SBOM bytes. The tool's raw hash sidecar
+is verified and then removed before the SBOM is canonically serialized and validated; exactly one validator-owned
+SBOM JSON file ships. The build-evidence record binds the initial/final Git commit and tree, canonical tracked
 repository URL, actual compatible stable .NET 10.0.4xx SDK, target/configuration/RID/self-contained settings, actual
 runtime pack, third-party evidence manifest, and an ordinal list of selected source/configuration inputs and their
-SHA-256 hashes. Entries are sorted and their timestamps are normalized to remove two incidental sources of variation.
-Byte-for-byte reproducibility is not yet a supported or tested claim, even when the same toolchain is used.
+SHA-256 hashes. Entries are sorted and their timestamps are normalized to remove incidental sources of variation,
+but byte-for-byte reproducibility is not yet a supported or tested claim, even when the same toolchain is used.
 
 These files are unsigned local-validation outputs. **Do not redistribute them.** Each contains the repository
 `LICENSE` plus a mechanically generated `THIRD-PARTY-NOTICES` evidence directory: every selected external
 `.deps.json` asset and the SDK-generated apphost are attributed to verified NuGet archives or the .NET runtime pack,
 and policy-pinned license/notice materials are hash-checked. The separate payload manifest covers every packaged file.
 That evidence is deliberately not a legal-clearance assertion; human review of the bundled .NET runtime and NuGet
-dependencies is still required. CI builds and inspects the ZIPs only within the validation job; it does not upload or
+dependencies is still required. An SBOM is inventory evidence, not legal clearance or permission to redistribute.
+CI builds and inspects the ZIPs only within the validation job; it does not upload or
 otherwise distribute them. The Desktop
 smoke verifies the packaged entry assembly and product version, loads a selected Avalonia/product dependency surface,
 checks every selected `.deps.json` asset for presence and managed-assembly metadata, and requires the exact fifteen
 compiled XAML registrations without initializing Avalonia or creating a window. It does **not** parse each view or
 prove that a visible UI can start. The embedded build identity is unsigned local evidence, not SLSA/in-toto
 provenance, a reproducible-build claim, an attestation, legal clearance, a signature, redistribution authorization,
-or evidence of W8.10 release closure. These are not NuGet packages and do not include an SBOM. CI does not create a
+or evidence of W8.10 release closure. These are not NuGet packages. CI does not create a
 tag, artifact upload, or GitHub release from this lane.
 
 ## The shape of a session

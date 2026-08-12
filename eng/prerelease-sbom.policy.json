@@ -1,0 +1,43 @@
+{
+  "schema": "phoenixinspect.prerelease-sbom-policy/v1",
+  "format": {
+    "name": "SPDX",
+    "version": "2.2",
+    "spdxVersion": "SPDX-2.2",
+    "manifestPath": "_manifest/spdx_2.2/manifest.spdx.json"
+  },
+  "namespaceBase": "https://github.com/VladimirReshetnikov/PhoenixInspect/sbom",
+  "supplier": "Vladimir Reshetnikov",
+  "runtimeIdentifier": "win-x64",
+  "tool": {
+    "name": "Microsoft.SBOMTool",
+    "version": "4.1.5",
+    "platform": "win-x64",
+    "asset": {
+      "url": "https://github.com/microsoft/sbom-tool/releases/download/v4.1.5/sbom-tool-win-x64.exe",
+      "size": 81033848,
+      "sha256": "625767b371b7fdd58f40f618b8a86da0247a33c89e419039c86b4edba1dad4b5"
+    },
+    "authenticode": {
+      "status": "Valid",
+      "signerSubject": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+      "signerThumbprint": "3F56A45111684D454E231CFDC4DA5C8D370F9816"
+    },
+    "versionInfo": {
+      "fileVersion": "4.1.5.0",
+      "productVersion": "4.1.5",
+      "commandVersion": "4.1.5"
+    }
+  },
+  "generation": {
+    "parallelism": 2,
+    "fetchLicenseInformation": false,
+    "parsePackageMetadata": true,
+    "followSymlinks": false,
+    "deleteExistingManifest": false,
+    "rawManifestSha256Path": "_manifest/spdx_2.2/manifest.spdx.json.sha256",
+    "requiredPreGenerationFiles": [
+      "ARTIFACT-MANIFEST.txt"
+    ]
+  }
+}

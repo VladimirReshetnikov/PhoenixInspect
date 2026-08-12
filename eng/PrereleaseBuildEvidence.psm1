@@ -4,13 +4,18 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$script:EvidenceSchema = 'phoenixinspect.local-prerelease-build-evidence/v1'
+$script:EvidenceSchemaV1 = 'phoenixinspect.local-prerelease-build-evidence/v1'
+$script:EvidenceSchema = 'phoenixinspect.local-prerelease-build-evidence/v2'
 $script:CanonicalRepositoryUrl = 'https://github.com/VladimirReshetnikov/PhoenixInspect'
 $script:ExpectedTargetFramework = 'net10.0'
 $script:ExpectedConfiguration = 'Release'
 $script:ExpectedRuntimeIdentifier = 'win-x64'
 $script:ExpectedRuntimeTarget = '.NETCoreApp,Version=v10.0/win-x64'
 $script:ExpectedRuntimePackId = 'runtimepack.Microsoft.NETCore.App.Runtime.win-x64'
+$script:ExpectedSbomFormat = 'SPDX-2.2'
+$script:ExpectedSbomToolName = 'Microsoft.SBOMTool'
+$script:ExpectedSbomToolVersion = '4.1.5'
+$script:ExpectedSbomToolAssetSha256 = '625767b371b7fdd58f40f618b8a86da0247a33c89e419039c86b4edba1dad4b5'
 
 [string[]] $script:PublishGraphProjects = @(
     'src/PhoenixInspect.Cli/PhoenixInspect.Cli.csproj'
@@ -32,28 +37,78 @@ $script:ExpectedRuntimePackId = 'runtimepack.Microsoft.NETCore.App.Runtime.win-x
 ) + 'src/PhoenixInspect.Headless.ReferenceConsumer'
 [System.Array]::Sort($script:SourceProjectDirectories, [System.StringComparer]::Ordinal)
 
+# Schema v1 is retained only so a publisher can recognize and safely replace its own pre-SBOM output. Keep this
+# literal list frozen: changing it would make already-produced v1 evidence unparseable during output migration.
+[string[]] $script:EvidenceV1SelectedInputPaths = @(
+    'Directory.Build.props'
+    'Directory.Packages.props'
+    'LICENSE'
+    'eng/Generate-ThirdPartyNotices.ps1'
+    'eng/PrereleaseBuildEvidence.psm1'
+    'eng/Publish-PrereleaseArtifacts.ps1'
+    'eng/third-party-notices.policy.json'
+    'eng/third-party-notices/licenses/MIT.txt'
+    'global.json'
+    'src/Directory.Build.props'
+    'src/PhoenixInspect.Cli/PhoenixInspect.Cli.csproj'
+    'src/PhoenixInspect.Cli/packages.lock.json'
+    'src/PhoenixInspect.Core.Abstractions/PhoenixInspect.Core.Abstractions.csproj'
+    'src/PhoenixInspect.Core.Abstractions/packages.lock.json'
+    'src/PhoenixInspect.Core.Execution/PhoenixInspect.Core.Execution.csproj'
+    'src/PhoenixInspect.Core.Execution/packages.lock.json'
+    'src/PhoenixInspect.Desktop/PhoenixInspect.Desktop.csproj'
+    'src/PhoenixInspect.Desktop/packages.lock.json'
+    'src/PhoenixInspect.Domain.Concrete/PhoenixInspect.Domain.Concrete.csproj'
+    'src/PhoenixInspect.Domain.Concrete/packages.lock.json'
+    'src/PhoenixInspect.Host.Abstractions/PhoenixInspect.Host.Abstractions.csproj'
+    'src/PhoenixInspect.Host.Abstractions/packages.lock.json'
+    'src/PhoenixInspect.Host.Dump.ClrMD/PhoenixInspect.Host.Dump.ClrMD.csproj'
+    'src/PhoenixInspect.Host.Dump.ClrMD/packages.lock.json'
+    'src/PhoenixInspect.Inspection/PhoenixInspect.Inspection.csproj'
+    'src/PhoenixInspect.Inspection/packages.lock.json'
+    'src/PhoenixInspect.Metadata.Abstractions/PhoenixInspect.Metadata.Abstractions.csproj'
+    'src/PhoenixInspect.Metadata.Abstractions/packages.lock.json'
+    'src/PhoenixInspect.Metadata.SRM/PhoenixInspect.Metadata.SRM.csproj'
+    'src/PhoenixInspect.Metadata.SRM/packages.lock.json'
+    'src/PhoenixInspect.Product.DumpDebugging/PhoenixInspect.Product.DumpDebugging.csproj'
+    'src/PhoenixInspect.Product.DumpDebugging/packages.lock.json'
+    'src/PhoenixInspect.Product.DumpQuery/PhoenixInspect.Product.DumpQuery.csproj'
+    'src/PhoenixInspect.Product.DumpQuery/packages.lock.json'
+)
+[System.Array]::Sort($script:EvidenceV1SelectedInputPaths, [System.StringComparer]::Ordinal)
+$v1PathFingerprintAlgorithm = [System.Security.Cryptography.SHA256]::Create()
+try {
+    $v1PathFingerprintBytes = [System.Text.UTF8Encoding]::new($false).GetBytes(
+        (($script:EvidenceV1SelectedInputPaths -join "`n") + "`n"))
+    $v1PathFingerprint = ([System.BitConverter]::ToString(
+        $v1PathFingerprintAlgorithm.ComputeHash($v1PathFingerprintBytes))).Replace('-', '').ToLowerInvariant()
+}
+finally {
+    $v1PathFingerprintAlgorithm.Dispose()
+}
+if ($script:EvidenceV1SelectedInputPaths.Count -ne 34 -or
+    $v1PathFingerprint -cne '8f54d4affa3575d3c7f0fe3b363f55c0cc02724e18aa7385cdfb9f5e94c5b752') {
+    throw 'The frozen schema-v1 selected-input contract changed; existing pre-SBOM publisher evidence would no longer be recognizable.'
+}
+[string[]] $script:EvidenceV2SelectedInputPaths = @(
+    $script:EvidenceV1SelectedInputPaths
+    'eng/PrereleaseSbom.psm1'
+    'eng/prerelease-sbom.policy.json'
+    'eng/verify-prerelease-sbom.ps1'
+)
+[System.Array]::Sort($script:EvidenceV2SelectedInputPaths, [System.StringComparer]::Ordinal)
+
 function Get-PrereleaseSelectedInputPaths {
     [CmdletBinding()]
-    param()
+    param([string] $Schema = $script:EvidenceSchema)
 
-    [string[]] $paths = @(
-        'Directory.Build.props'
-        'Directory.Packages.props'
-        'LICENSE'
-        'eng/Generate-ThirdPartyNotices.ps1'
-        'eng/PrereleaseBuildEvidence.psm1'
-        'eng/Publish-PrereleaseArtifacts.ps1'
-        'eng/third-party-notices.policy.json'
-        'eng/third-party-notices/licenses/MIT.txt'
-        'global.json'
-        'src/Directory.Build.props'
-        foreach ($project in $script:PublishGraphProjects) {
-            $project
-            ([System.IO.Path]::GetDirectoryName($project).Replace('\', '/') + '/packages.lock.json')
-        }
-    )
-    [System.Array]::Sort($paths, [System.StringComparer]::Ordinal)
-    return $paths
+    if ($Schema -ceq $script:EvidenceSchemaV1) {
+        return [string[]] $script:EvidenceV1SelectedInputPaths.Clone()
+    }
+    if ($Schema -ceq $script:EvidenceSchema) {
+        return [string[]] $script:EvidenceV2SelectedInputPaths.Clone()
+    }
+    throw "Unsupported build-evidence schema '$Schema'."
 }
 
 function Test-ByteArraysEqual {
@@ -385,7 +440,7 @@ function Get-PrereleaseRepositoryContract {
     $globalPath = Resolve-RepositoryFile $RepositoryRoot 'global.json' 'SDK policy'
     $global = [System.IO.File]::ReadAllText($globalPath) | ConvertFrom-Json -AsHashtable -Depth 10
     if (@($global.Keys).Count -ne 1 -or -not $global.Contains('sdk')) {
-        throw 'global.json must contain exactly the sdk object for prerelease evidence schema v1.'
+        throw 'global.json must contain exactly the sdk object for prerelease build evidence.'
     }
     $sdk = $global.sdk
     if (@($sdk.Keys).Count -ne 3 -or
@@ -611,11 +666,34 @@ function New-PrereleaseBuildEvidenceBytes {
         [Parameter(Mandatory)][string] $SelectedSdk,
         [Parameter(Mandatory)][object[]] $RuntimePacks,
         [Parameter(Mandatory)][string] $ThirdPartyEvidenceManifestSha256,
+        [Parameter(Mandatory)] $Sbom,
         [Parameter(Mandatory)][object[]] $SelectedInputs
     )
 
     Assert-PrereleaseSourceStateEqual $InitialSource $FinalSource
     Test-PrereleaseSdkVersion $SelectedSdk $RepositoryContract.ConfiguredSdkMinimum
+    if ($null -eq $Sbom -or
+        $Sbom -isnot [System.Collections.IDictionary] -or
+        (@($Sbom.Keys) -join "`n") -cne (@('format', 'toolName', 'version', 'assetSha256', 'productSpecific') -join "`n")) {
+        throw 'SBOM build-evidence contract must contain exactly format, toolName, version, assetSha256, and productSpecific in canonical order.'
+    }
+    if ($Sbom.productSpecific -isnot [bool]) {
+        throw 'SBOM build-evidence productSpecific must be a Boolean.'
+    }
+    $sbomContract = [ordered]@{
+        format = [string] $Sbom.format
+        toolName = [string] $Sbom.toolName
+        version = [string] $Sbom.version
+        assetSha256 = [string] $Sbom.assetSha256
+        productSpecific = [bool] $Sbom.productSpecific
+    }
+    if ($sbomContract.format -cne $script:ExpectedSbomFormat -or
+        $sbomContract.toolName -cne $script:ExpectedSbomToolName -or
+        $sbomContract.version -cne $script:ExpectedSbomToolVersion -or
+        $sbomContract.assetSha256 -cne $script:ExpectedSbomToolAssetSha256 -or
+        -not $sbomContract.productSpecific) {
+        throw 'SBOM build-evidence contract does not match the pinned product-specific SPDX tool policy.'
+    }
     $evidence = [ordered]@{
         schema = $script:EvidenceSchema
         scope = [ordered]@{
@@ -649,6 +727,7 @@ function New-PrereleaseBuildEvidenceBytes {
             runtimeTarget = $script:ExpectedRuntimeTarget
             runtimePacks = @($RuntimePacks)
             thirdPartyEvidenceManifestSha256 = $ThirdPartyEvidenceManifestSha256
+            sbom = $sbomContract
         }
         selectedInputs = @($SelectedInputs)
     }
@@ -753,7 +832,14 @@ function Test-PrereleaseBuildEvidenceBytes {
             Assert-JsonNoDuplicateProperties $root '$'
             Assert-JsonObjectKeys $root @('schema', 'scope', 'source', 'build', 'selectedInputs') '$'
             $schema = Get-RequiredJsonString $root 'schema' '$'
-            if ($schema -cne $script:EvidenceSchema) { throw "Unsupported build-evidence schema '$schema'." }
+            if ($schema -cne $script:EvidenceSchemaV1 -and
+                $schema -cne $script:EvidenceSchema) {
+                throw "Unsupported build-evidence schema '$schema'."
+            }
+            $isV1 = $schema -ceq $script:EvidenceSchemaV1
+            if ($isV1 -and $VerifySelectedInputHashes) {
+                throw 'Schema-v1 build evidence is accepted only for migration ownership recognition; its selected-input hashes cannot be verified against the current repository.'
+            }
 
             $scope = $root.GetProperty('scope')
             Assert-JsonObjectKeys $scope @('kind', 'localOnly', 'redistributionApproved', 'slsaProvenanceClaimed', 'reproducibleBuildClaimed', 'releaseClosureClaimed') '$.scope'
@@ -784,7 +870,11 @@ function Test-PrereleaseBuildEvidenceBytes {
             }
 
             $build = $root.GetProperty('build')
-            Assert-JsonObjectKeys $build @('configuration', 'targetFramework', 'runtimeIdentifier', 'selfContained', 'sdk', 'runtimeTarget', 'runtimePacks', 'thirdPartyEvidenceManifestSha256') '$.build'
+            [string[]] $expectedBuildKeys = @(
+                'configuration', 'targetFramework', 'runtimeIdentifier', 'selfContained', 'sdk', 'runtimeTarget',
+                'runtimePacks', 'thirdPartyEvidenceManifestSha256')
+            if (-not $isV1) { $expectedBuildKeys += 'sbom' }
+            Assert-JsonObjectKeys $build $expectedBuildKeys '$.build'
             $configuration = Get-RequiredJsonString $build 'configuration' '$.build'
             $targetFramework = Get-RequiredJsonString $build 'targetFramework' '$.build'
             $runtimeIdentifier = Get-RequiredJsonString $build 'runtimeIdentifier' '$.build'
@@ -823,11 +913,36 @@ function Test-PrereleaseBuildEvidenceBytes {
                 $runtimePacks.Add([ordered]@{ id = $id; version = $version })
             }
 
+            $sbom = $null
+            if (-not $isV1) {
+                $sbomElement = $build.GetProperty('sbom')
+                Assert-JsonObjectKeys $sbomElement @('format', 'toolName', 'version', 'assetSha256', 'productSpecific') '$.build.sbom'
+                $sbomFormat = Get-RequiredJsonString $sbomElement 'format' '$.build.sbom'
+                $sbomToolName = Get-RequiredJsonString $sbomElement 'toolName' '$.build.sbom'
+                $sbomVersion = Get-RequiredJsonString $sbomElement 'version' '$.build.sbom'
+                $sbomAssetSha256 = Get-RequiredJsonString $sbomElement 'assetSha256' '$.build.sbom'
+                $sbomProductSpecific = Get-RequiredJsonBoolean $sbomElement 'productSpecific' '$.build.sbom'
+                if ($sbomFormat -cne $script:ExpectedSbomFormat -or
+                    $sbomToolName -cne $script:ExpectedSbomToolName -or
+                    $sbomVersion -cne $script:ExpectedSbomToolVersion -or
+                    $sbomAssetSha256 -cne $script:ExpectedSbomToolAssetSha256 -or
+                    -not $sbomProductSpecific) {
+                    throw 'Build evidence records an invalid or unpinned SBOM contract.'
+                }
+                $sbom = [ordered]@{
+                    format = $sbomFormat
+                    toolName = $sbomToolName
+                    version = $sbomVersion
+                    assetSha256 = $sbomAssetSha256
+                    productSpecific = $sbomProductSpecific
+                }
+            }
+
             $inputsElement = $root.GetProperty('selectedInputs')
             if ($inputsElement.ValueKind -ne [System.Text.Json.JsonValueKind]::Array) {
                 throw 'Build evidence selectedInputs must be an array.'
             }
-            [string[]] $expectedPaths = @(Get-PrereleaseSelectedInputPaths)
+            [string[]] $expectedPaths = @(Get-PrereleaseSelectedInputPaths -Schema $schema)
             if ($inputsElement.GetArrayLength() -ne $expectedPaths.Count) {
                 throw "Build evidence has $($inputsElement.GetArrayLength()) selected inputs; expected $($expectedPaths.Count)."
             }
@@ -854,6 +969,22 @@ function Test-PrereleaseBuildEvidenceBytes {
                 $index++
             }
 
+            $canonicalBuild = [ordered]@{
+                configuration = $configuration
+                targetFramework = $targetFramework
+                runtimeIdentifier = $runtimeIdentifier
+                selfContained = $selfContained
+                sdk = [ordered]@{
+                    configuredMinimum = $configuredMinimum
+                    rollForward = $rollForward
+                    allowPrerelease = $allowPrerelease
+                    selected = $selectedSdk
+                }
+                runtimeTarget = $runtimeTarget
+                runtimePacks = $runtimePacks.ToArray()
+                thirdPartyEvidenceManifestSha256 = $noticeHash
+            }
+            if (-not $isV1) { $canonicalBuild.sbom = $sbom }
             $canonical = ConvertTo-CanonicalBuildEvidenceBytes ([ordered]@{
                 schema = $schema
                 scope = [ordered]@{
@@ -873,33 +1004,22 @@ function Test-PrereleaseBuildEvidenceBytes {
                     finalTree = $finalTree
                     workingTreePolicy = $workingTreePolicy
                 }
-                build = [ordered]@{
-                    configuration = $configuration
-                    targetFramework = $targetFramework
-                    runtimeIdentifier = $runtimeIdentifier
-                    selfContained = $selfContained
-                    sdk = [ordered]@{
-                        configuredMinimum = $configuredMinimum
-                        rollForward = $rollForward
-                        allowPrerelease = $allowPrerelease
-                        selected = $selectedSdk
-                    }
-                    runtimeTarget = $runtimeTarget
-                    runtimePacks = $runtimePacks.ToArray()
-                    thirdPartyEvidenceManifestSha256 = $noticeHash
-                }
+                build = $canonicalBuild
                 selectedInputs = $inputs.ToArray()
             })
             if (-not (Test-ByteArraysEqual $Bytes $canonical)) {
                 throw 'BUILD-EVIDENCE.json is valid data but not in the exact canonical serialization.'
             }
             return [pscustomobject]@{
+                Format = if ($isV1) { 'BuildEvidenceV1NoSbom' } else { 'BuildEvidenceV2Sbom' }
+                Schema = $schema
                 Sha256 = Get-ByteArraySha256 $Bytes
                 InitialCommit = $initialCommit
                 InitialTree = $initialTree
                 SelectedSdk = $selectedSdk
                 RuntimePack = "$($runtimePacks[0].id)/$($runtimePacks[0].version)"
                 ThirdPartyEvidenceManifestSha256 = $noticeHash
+                Sbom = $sbom
             }
         }
         finally {
@@ -1083,10 +1203,47 @@ function Invoke-PrereleaseBuildEvidenceSelfTest {
         ConfiguredSdkMinimum = '10.0.400'; RollForward = 'latestPatch'; AllowPrerelease = $false
         TargetFramework = 'net10.0'; RepositoryUrl = $script:CanonicalRepositoryUrl
     }
-    $bytes = New-PrereleaseBuildEvidenceBytes $source $source $contract '10.0.401' `
-        @([ordered]@{ id = $script:ExpectedRuntimePackId; version = '10.0.11' }) ('3' * 64) $inputs
-    $null = Test-PrereleaseBuildEvidenceBytes $bytes
+    $sbom = [ordered]@{
+        format = $script:ExpectedSbomFormat
+        toolName = $script:ExpectedSbomToolName
+        version = $script:ExpectedSbomToolVersion
+        assetSha256 = $script:ExpectedSbomToolAssetSha256
+        productSpecific = $true
+    }
+    $bytes = New-PrereleaseBuildEvidenceBytes `
+        -InitialSource $source `
+        -FinalSource $source `
+        -RepositoryContract $contract `
+        -SelectedSdk '10.0.401' `
+        -RuntimePacks @([ordered]@{ id = $script:ExpectedRuntimePackId; version = '10.0.11' }) `
+        -ThirdPartyEvidenceManifestSha256 ('3' * 64) `
+        -Sbom $sbom `
+        -SelectedInputs $inputs
+    $validatedV2 = Test-PrereleaseBuildEvidenceBytes $bytes
+    if ($validatedV2.Format -cne 'BuildEvidenceV2Sbom' -or
+        $validatedV2.Schema -cne $script:EvidenceSchema -or
+        $validatedV2.Sbom.assetSha256 -cne $script:ExpectedSbomToolAssetSha256) {
+        throw 'Schema-v2 build-evidence self-test returned the wrong format, schema, or SBOM policy.'
+    }
     Assert-PrereleaseBuildEvidenceIdentity $bytes ([byte[]] $bytes.Clone())
+
+    $v1Evidence = [System.Text.Encoding]::UTF8.GetString($bytes) | ConvertFrom-Json -AsHashtable -Depth 32
+    $v1Evidence.schema = $script:EvidenceSchemaV1
+    $null = $v1Evidence.build.Remove('sbom')
+    $v1Paths = [System.Collections.Generic.HashSet[string]]::new(
+        [string[]] (Get-PrereleaseSelectedInputPaths -Schema $script:EvidenceSchemaV1),
+        [System.StringComparer]::Ordinal)
+    $v1Evidence.selectedInputs = @($v1Evidence.selectedInputs | Where-Object { $v1Paths.Contains([string] $_.path) })
+    [byte[]] $v1Bytes = ConvertTo-CanonicalBuildEvidenceBytes $v1Evidence
+    $validatedV1 = Test-PrereleaseBuildEvidenceBytes $v1Bytes
+    if ($validatedV1.Format -cne 'BuildEvidenceV1NoSbom' -or
+        $validatedV1.Schema -cne $script:EvidenceSchemaV1 -or
+        $null -ne $validatedV1.Sbom) {
+        throw 'Schema-v1 migration self-test returned the wrong format, schema, or SBOM policy.'
+    }
+    Assert-Throws {
+        $null = Test-PrereleaseBuildEvidenceBytes $v1Bytes -RepositoryRoot $PSScriptRoot -VerifySelectedInputHashes
+    } 'schema-v1 current selected-input hash verification'
 
     $text = [System.Text.Encoding]::UTF8.GetString($bytes)
     Assert-Throws {
@@ -1109,6 +1266,28 @@ function Invoke-PrereleaseBuildEvidenceSelfTest {
         $uppercaseHash = $text.Replace(('"sha256": "' + ('0' * 64) + '"'), ('"sha256": "' + ('A' * 64) + '"'))
         $null = Test-PrereleaseBuildEvidenceBytes ([System.Text.Encoding]::UTF8.GetBytes($uppercaseHash))
     } 'uppercase SHA-256'
+    Assert-Throws {
+        $wrongSbom = $text.Replace('"format": "SPDX-2.2"', '"format": "SPDX-3.0"')
+        $null = Test-PrereleaseBuildEvidenceBytes ([System.Text.Encoding]::UTF8.GetBytes($wrongSbom))
+    } 'wrong SBOM format'
+    Assert-Throws {
+        $wrongSbom = $text.Replace('"productSpecific": true', '"productSpecific": false')
+        $null = Test-PrereleaseBuildEvidenceBytes ([System.Text.Encoding]::UTF8.GetBytes($wrongSbom))
+    } 'non-product-specific SBOM overclaim'
+    Assert-Throws {
+        $wrongSbom = $text.Replace($script:ExpectedSbomToolAssetSha256, ('f' * 64))
+        $null = Test-PrereleaseBuildEvidenceBytes ([System.Text.Encoding]::UTF8.GetBytes($wrongSbom))
+    } 'unpinned SBOM tool asset'
+    Assert-Throws {
+        $missingInput = $text.Replace(
+            "    {`n      `"path`": `"eng/PrereleaseSbom.psm1`",`n      `"sha256`": `"$('0' * 64)`"`n    },`n",
+            '')
+        $null = Test-PrereleaseBuildEvidenceBytes ([System.Text.Encoding]::UTF8.GetBytes($missingInput))
+    } 'missing schema-v2 selected input'
+    Assert-Throws {
+        $overclaim = $text.Replace('"redistributionApproved": false', '"redistributionApproved": true')
+        $null = Test-PrereleaseBuildEvidenceBytes ([System.Text.Encoding]::UTF8.GetBytes($overclaim))
+    } 'redistribution overclaim'
     Assert-Throws {
         $different = [byte[]] $bytes.Clone()
         $different[$different.Length - 2] = [byte] 0x20
@@ -1205,7 +1384,7 @@ function Invoke-PrereleaseBuildEvidenceSelfTest {
         }
     }
 
-    Write-Output 'Prerelease build-evidence self-test passed: canonical contract, adversarial JSON/SDK/identity cases, and raw Git source-state boundaries.'
+    Write-Output 'Prerelease build-evidence self-test passed: frozen v1 migration recognition, canonical SBOM-bound v2 generation, adversarial JSON/SDK/identity cases, and raw Git source-state boundaries.'
 }
 
 Export-ModuleMember -Function @(
