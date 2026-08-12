@@ -426,7 +426,10 @@ function Resolve-PrereleaseSbomTool {
                     [Net.Http.HttpCompletionOption]::ResponseHeadersRead,
                     $timeout.Token).GetAwaiter().GetResult()
                 try {
-                    $response.EnsureSuccessStatusCode()
+                    # EnsureSuccessStatusCode returns the response instance. Suppress it explicitly: PowerShell
+                    # otherwise adds that non-contract object to this function's success stream only on the
+                    # fresh-download path.
+                    $null = $response.EnsureSuccessStatusCode()
                     $contentLength = $response.Content.Headers.ContentLength
                     if ($null -ne $contentLength -and
                         [long]$contentLength -ne [long]$policy.tool.asset.size) {
@@ -446,12 +449,19 @@ function Resolve-PrereleaseSbomTool {
                                     $timeout.Token).GetAwaiter().GetResult()) -gt 0) {
                                 $total += $read
                                 if ($total -gt [long]$policy.tool.asset.size) { throw 'SBOM tool download exceeded its exact policy size.' }
-                                $target.WriteAsync($buffer, 0, $read, $timeout.Token).GetAwaiter().GetResult()
+                                # Task<VoidTaskResult>.GetResult() is visible on PowerShell's success stream unless
+                                # explicitly suppressed. One leaked object per chunk would turn the resolver's single
+                                # verified-tool contract into a thousands-element array.
+                                $null = $target.WriteAsync(
+                                    $buffer,
+                                    0,
+                                    $read,
+                                    $timeout.Token).GetAwaiter().GetResult()
                             }
                             if ($total -ne [long]$policy.tool.asset.size) {
                                 throw "SBOM tool download produced $total bytes, not the exact policy size $($policy.tool.asset.size)."
                             }
-                            $target.FlushAsync($timeout.Token).GetAwaiter().GetResult()
+                            $null = $target.FlushAsync($timeout.Token).GetAwaiter().GetResult()
                             $target.Flush($true)
                         }
                         finally { $target.Dispose() }

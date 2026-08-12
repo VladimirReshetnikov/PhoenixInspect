@@ -80,6 +80,9 @@ Import-Module (Join-Path $PSScriptRoot 'PrereleaseBuildEvidence.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'PrereleaseSbom.psm1') -Force
 . (Join-Path $PSScriptRoot 'Enable-HeadlessTestMode.ps1')
 $null = Enable-HeadlessTestMode
+# Avalonia.BuildServices otherwise starts a detached dotnet telemetry collector during Desktop compilation. The
+# collector can outlive MSBuild and retain a lock inside the isolated package root, defeating bounded cleanup.
+$env:AVALONIA_TELEMETRY_OPTOUT = '1'
 $workRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("phoenixinspect-publish-" + [guid]::NewGuid().ToString('N'))
 $publishRoot = Join-Path $workRoot 'publish'
 $archiveRoot = Join-Path $workRoot 'archives'
@@ -939,6 +942,80 @@ function Remove-GuardedSwapDirectory {
         Remove-Item -LiteralPath $file.FullName -Force
     }
     Remove-Item -LiteralPath $Path -Force
+}
+
+function Assert-SingleVerifiedSbomToolResult {
+    param([Parameter(Mandatory)][object[]] $Results)
+
+    $items = @($Results)
+    if ($items.Count -ne 1) {
+        throw "SBOM tool resolution returned $($items.Count) success-stream objects; expected exactly one verified tool result."
+    }
+
+    $tool = $items[0]
+    foreach ($requiredProperty in @('Path', 'Name', 'Version', 'Size', 'Sha256', 'SignerSubject', 'SignerThumbprint')) {
+        if ($null -eq $tool.PSObject.Properties[$requiredProperty]) {
+            throw "SBOM tool resolution result is missing required property '$requiredProperty'."
+        }
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$tool.Path) -or
+        [string]::IsNullOrWhiteSpace([string]$tool.Name) -or
+        [string]::IsNullOrWhiteSpace([string]$tool.Version) -or
+        [long]$tool.Size -le 0 -or
+        [string]$tool.Sha256 -cnotmatch '^[0-9a-f]{64}$' -or
+        [string]::IsNullOrWhiteSpace([string]$tool.SignerSubject) -or
+        [string]$tool.SignerThumbprint -cnotmatch '^[0-9A-F]{40}$') {
+        throw 'SBOM tool resolution result does not have the exact verified-tool result shape.'
+    }
+
+    return $tool
+}
+
+function Remove-GuardedPublisherWorkRoot {
+    param([Parameter(Mandatory)][string] $Path)
+
+    $workRootFullPath = [System.IO.Path]::TrimEndingDirectorySeparator(
+        [System.IO.Path]::GetFullPath($Path))
+    $systemTempFullPath = [System.IO.Path]::TrimEndingDirectorySeparator(
+        [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()))
+    $workRootParent = [System.IO.Path]::GetDirectoryName($workRootFullPath)
+    $workRootLeaf = [System.IO.Path]::GetFileName($workRootFullPath)
+    if (-not [string]::Equals($workRootParent, $systemTempFullPath, [System.StringComparison]::OrdinalIgnoreCase) -or
+        $workRootLeaf -notmatch '^phoenixinspect-publish-[0-9a-f]{32}$') {
+        throw "Refusing recursive cleanup of unexpected work root '$workRootFullPath'."
+    }
+
+    [int[]] $retryDelaysMilliseconds = @(0, 25, 50, 100, 200, 400, 800, 1600, 3200)
+    $lastFailure = $null
+    foreach ($delay in $retryDelaysMilliseconds) {
+        if ($delay -ne 0) {
+            Start-Sleep -Milliseconds $delay
+        }
+        if (-not (Test-Path -LiteralPath $workRootFullPath)) {
+            return
+        }
+
+        # Revalidate on every attempt because Remove-Item can partially remove a tree before encountering a
+        # transient Windows file lock. Never retry through a path that was replaced by a reparse point.
+        $workRootItem = Get-Item -LiteralPath $workRootFullPath -Force
+        if (-not $workRootItem.PSIsContainer -or
+            ($workRootItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "Refusing recursive cleanup of unexpected work-root item '$workRootFullPath'."
+        }
+        try {
+            Remove-Item -LiteralPath $workRootFullPath -Recurse -Force
+            if (Test-Path -LiteralPath $workRootFullPath) {
+                throw "Work root '$workRootFullPath' still exists after recursive cleanup."
+            }
+            return
+        }
+        catch {
+            $lastFailure = $_.Exception
+        }
+    }
+
+    [Runtime.ExceptionServices.ExceptionDispatchInfo]::Capture($lastFailure).Throw()
+    throw 'Unreachable publisher work-root cleanup failure.'
 }
 
 function Test-ExtractedArchive {
@@ -1870,7 +1947,12 @@ function Invoke-PublisherArchiveContractSelfTest {
     $selfTestRoot = Join-Path ([System.IO.Path]::GetTempPath()) (
         'phoenixinspect-publisher-selftest-' + [guid]::NewGuid().ToString('N'))
     $null = New-Item -ItemType Directory -Path $selfTestRoot
+    $cleanupRetryRoot = $null
+    $cleanupLockProcess = $null
     try {
+        if ([Environment]::GetEnvironmentVariable('AVALONIA_TELEMETRY_OPTOUT') -cne '1') {
+            throw 'Publisher self-test did not observe the required Avalonia build-telemetry opt-out.'
+        }
         [byte[]] $noticeManifestBytes = [System.Text.UTF8Encoding]::new($false).GetBytes(
             "publisher self-test notice manifest`n")
         $noticeHashAlgorithm = [System.Security.Cryptography.SHA256]::Create()
@@ -2186,8 +2268,122 @@ Session summary
             -not [object]::ReferenceEquals($dumpCleanupException, $multipleCleanupFailure.InnerExceptions[1].InnerException)) {
             throw 'Publisher operation failure composition did not retain multiple cleanup failures in order.'
         }
+
+        $syntheticToolResult = [pscustomobject]@{
+            Path = 'C:\synthetic\sbom-tool.exe'
+            Name = 'Microsoft.SBOMTool'
+            Version = '4.1.5'
+            Size = 81033848L
+            Sha256 = '625767b371b7fdd58f40f618b8a86da0247a33c89e419039c86b4edba1dad4b5'
+            SignerSubject = 'CN=Microsoft Corporation'
+            SignerThumbprint = '3F56A45111684D454E231CFDC4DA5C8D370F9816'
+        }
+        $validatedSyntheticTool = Assert-SingleVerifiedSbomToolResult @($syntheticToolResult)
+        if (-not [object]::ReferenceEquals($syntheticToolResult, $validatedSyntheticTool)) {
+            throw 'Single verified SBOM tool result self-test did not preserve object identity.'
+        }
+        Assert-SelfTestThrows {
+            $null = Assert-SingleVerifiedSbomToolResult @(
+                [pscustomobject]@{ StatusCode = 200 },
+                $syntheticToolResult)
+        } 'fresh-download success-stream pollution'
+        Assert-SelfTestThrows {
+            $null = Assert-SingleVerifiedSbomToolResult @([pscustomobject]@{ StatusCode = 200 })
+        } 'missing verified SBOM tool contract'
+
+        Assert-SelfTestThrows {
+            Remove-GuardedPublisherWorkRoot -Path $selfTestRoot
+        } 'publisher work-root cleanup wrong leaf'
+        if ($IsWindows) {
+            $cleanupRetryRoot = Join-Path ([System.IO.Path]::GetTempPath()) (
+                'phoenixinspect-publish-' + [guid]::NewGuid().ToString('N'))
+            $null = [System.IO.Directory]::CreateDirectory($cleanupRetryRoot)
+            $lockedPath = Join-Path $cleanupRetryRoot 'transient-lock.dll'
+            $readyPath = Join-Path $cleanupRetryRoot 'ready.txt'
+            [System.IO.File]::WriteAllText($lockedPath, 'locked')
+
+            $lockStartInfo = [System.Diagnostics.ProcessStartInfo]::new()
+            $lockStartInfo.FileName = [Environment]::ProcessPath
+            $lockStartInfo.UseShellExecute = $false
+            $lockStartInfo.CreateNoWindow = $true
+            $lockStartInfo.RedirectStandardOutput = $true
+            $lockStartInfo.RedirectStandardError = $true
+            $lockStartInfo.Environment['PHOENIXINSPECT_PUBLISHER_LOCK_PATH'] = $lockedPath
+            $lockStartInfo.Environment['PHOENIXINSPECT_PUBLISHER_READY_PATH'] = $readyPath
+            $lockCommand = @'
+$lockPath = [Environment]::GetEnvironmentVariable('PHOENIXINSPECT_PUBLISHER_LOCK_PATH')
+$readyPath = [Environment]::GetEnvironmentVariable('PHOENIXINSPECT_PUBLISHER_READY_PATH')
+$stream = [IO.File]::Open($lockPath, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::None)
+try {
+    [IO.File]::WriteAllText($readyPath, 'READY')
+    Start-Sleep -Milliseconds 1000
+}
+finally {
+    $stream.Dispose()
+}
+'@
+            $lockCommandBytes = [System.Text.Encoding]::Unicode.GetBytes($lockCommand)
+            $lockEncodedCommand = [Convert]::ToBase64String($lockCommandBytes)
+            foreach ($argument in @(
+                    '-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand', $lockEncodedCommand)) {
+                $lockStartInfo.ArgumentList.Add($argument)
+            }
+            $cleanupLockProcess = [System.Diagnostics.Process]::new()
+            $cleanupLockProcess.StartInfo = $lockStartInfo
+            if (-not $cleanupLockProcess.Start()) {
+                throw 'Could not start the transient publisher cleanup-lock self-test process.'
+            }
+            $lockStdout = $cleanupLockProcess.StandardOutput.ReadToEndAsync()
+            $lockStderr = $cleanupLockProcess.StandardError.ReadToEndAsync()
+            $readyStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+            while (-not (Test-Path -LiteralPath $readyPath -PathType Leaf)) {
+                if ($cleanupLockProcess.HasExited) {
+                    throw "Publisher cleanup-lock self-test process exited before readiness with code $($cleanupLockProcess.ExitCode)."
+                }
+                if ($readyStopwatch.Elapsed.TotalSeconds -ge 5) {
+                    throw 'Publisher cleanup-lock self-test process did not become ready within five seconds.'
+                }
+                Start-Sleep -Milliseconds 10
+            }
+
+            $cleanupStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+            Remove-GuardedPublisherWorkRoot -Path $cleanupRetryRoot
+            $cleanupStopwatch.Stop()
+            if ($cleanupStopwatch.Elapsed.TotalMilliseconds -lt 500 -or
+                (Test-Path -LiteralPath $cleanupRetryRoot)) {
+                throw 'Publisher work-root cleanup did not exercise and complete its transient-lock retry path.'
+            }
+            $cleanupRetryRoot = $null
+            if (-not $cleanupLockProcess.WaitForExit(5000)) {
+                throw 'Publisher cleanup-lock self-test process did not exit within five seconds.'
+            }
+            $cleanupLockProcess.WaitForExit()
+            $lockOutput = $lockStdout.GetAwaiter().GetResult()
+            $lockError = $lockStderr.GetAwaiter().GetResult()
+            if ($cleanupLockProcess.ExitCode -ne 0 -or
+                -not [string]::IsNullOrEmpty($lockOutput) -or
+                -not [string]::IsNullOrEmpty($lockError)) {
+                throw "Publisher cleanup-lock self-test process failed. stdout: $lockOutput stderr: $lockError"
+            }
+            $cleanupLockProcess.Dispose()
+            $cleanupLockProcess = $null
+        }
     }
     finally {
+        if ($null -ne $cleanupLockProcess) {
+            try {
+                if (-not $cleanupLockProcess.HasExited) {
+                    $cleanupLockProcess.Kill($true)
+                    $null = $cleanupLockProcess.WaitForExit(5000)
+                }
+            }
+            finally {
+                $cleanupLockProcess.Dispose()
+            }
+        }
+        if ($null -ne $cleanupRetryRoot -and (Test-Path -LiteralPath $cleanupRetryRoot)) {
+            Remove-GuardedPublisherWorkRoot -Path $cleanupRetryRoot
+        }
         if (Test-Path -LiteralPath $selfTestRoot) {
             $selfTestFullPath = [System.IO.Path]::GetFullPath($selfTestRoot)
             if ([System.IO.Path]::GetDirectoryName($selfTestFullPath) -cne
@@ -2266,10 +2462,11 @@ try {
         -RepositoryRoot $repositoryRoot `
         -SourceCommit $initialSourceState.Commit
     Write-Host 'Resolving and verifying pinned Microsoft SBOM Tool 4.1.5…' -ForegroundColor Cyan
-    $sbomTool = Resolve-PrereleaseSbomTool `
+    $sbomToolResults = @(Resolve-PrereleaseSbomTool `
         -ToolPath $SbomToolPath `
         -DownloadDirectory $sbomToolRoot `
-        -PolicyPath $sbomPolicyPath
+        -PolicyPath $sbomPolicyPath)
+    $sbomTool = Assert-SingleVerifiedSbomToolResult $sbomToolResults
 
     foreach ($product in $products) {
         Write-Host "Locked-restoring $($product.Name)…" -ForegroundColor Cyan
@@ -2648,20 +2845,7 @@ catch {
 }
 try {
     if (Test-Path -LiteralPath $workRoot) {
-        $workRootFullPath = [System.IO.Path]::TrimEndingDirectorySeparator(
-            [System.IO.Path]::GetFullPath($workRoot))
-        $systemTempFullPath = [System.IO.Path]::TrimEndingDirectorySeparator(
-            [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()))
-        $workRootParent = [System.IO.Path]::GetDirectoryName($workRootFullPath)
-        $workRootLeaf = [System.IO.Path]::GetFileName($workRootFullPath)
-        $workRootItem = Get-Item -LiteralPath $workRootFullPath -Force
-        if (-not [string]::Equals($workRootParent, $systemTempFullPath, [System.StringComparison]::OrdinalIgnoreCase) -or
-            $workRootLeaf -notmatch '^phoenixinspect-publish-[0-9a-f]{32}$' -or
-            ($workRootItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
-            throw "Refusing recursive cleanup of unexpected work root '$workRootFullPath'."
-        }
-
-        Remove-Item -LiteralPath $workRoot -Recurse -Force
+        Remove-GuardedPublisherWorkRoot -Path $workRoot
     }
 }
 catch {
