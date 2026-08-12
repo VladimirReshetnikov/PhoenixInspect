@@ -28,26 +28,25 @@ The active plan is the [`Post-W7 Path Forward`](post-w7-path-forward.md).
   through exact compiler/PDB, constructed-runtime, selected-frame, storage, literal, and assignability evidence. Its
   [`physical-truth disposition`](w8-1-physical-truth-disposition.md) admits constructed, thread-relative,
   module-RVA, literal, and exact memory-homed frame-value branches; context-relative storage and selected-frame generic
-  arguments remain typed non-admitted. W8.2 is the active checkpoint. The
-  [`Post-W7 Path Forward`](post-w7-path-forward.md) requires additive `StaticFieldExpressionV2`,
-  `BindingContextV2`, and `FrameValueExpressionV1` contracts. W8.2 has landed the immutable expression-contract
-  foundation, the detached frame-value syntax contract, one shared bounded Core ECMA signature grammar, a Product
-  event adapter, and a selected-method lexical evidence envelope. Source-anchored metadata proofs now add exact table
-  ends and token catalogs, raw and role-classified TypeDefs, a complete TypeSpec graph, exact FieldSig identity,
-  GenericParam declaration/catalog/owner-set/binding ledgers, complete interface/constraint edge aggregates,
-  provisional construction classification, and Nullable construction preservation. These proof objects are not yet
-  mandatory inputs to downstream consumers. The lexical envelope is still constructed from caller-supplied physical
-  rows; a host-owned ClrMD producer and the V2 product binder/runtime/evaluator have not landed. The exact landed
-  metadata checkpoint is `5fd87a3e5`. Its
+  arguments remain typed non-admitted. W8.2 through W8.8 are complete for their defined contract, authority,
+  projection, host-acquisition, binding, runtime/storage/value, lexical/interface, and product-composition scopes.
+  W8.9 is active: its frozen v1 record remains 22 executed / 13 manifest-only, preserving every produced-versus-
+  predeclared finding; the content-addressed v2 reconciliation executes all 35 baselines over fresh independent real
+  dumps. The separate candidate `tests/corpus/w8-static-field-portfolio-decision-candidate-v1.json`, SHA-256
+  `a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450`, conditionally computes `33 / 19 / 25`,
+  proposes retiring rows 20/21/22/26/27 and deferring rows 29/34, and proposes observed-boundary hardening. It is
+  pending explicit owner approval, carries no authority, and closes neither W8.9 nor W8.10. The distinct future
+  authority envelope `tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is absent and, if approved,
+  must bind that exact candidate SHA. W8.10 remains the exact-commit repository and hosted closure checkpoint. The
+  [`Post-W7 Path Forward`](post-w7-path-forward.md) is the detailed authority. Its
   inclusive umbrella scale is `~100K LOC`, generally split into `~10K LOC` implementation/evidence checkpoints. W7's
   context-independent fully qualified guarantee, raw-memory authority, result axes, and unchanged W2/W6 suffix
   semantics remain mandatory controls.
-- **Most recently completed active checkpoint:** W8.1, through exact source baseline `220be94b4`. Its generated
-  artifacts and real full dumps prove candidate-keyed ordered closed constructions; distinct construction and
-  thread-relative slots; exact metadata literals and named FieldRVA bytes; exact `this`, parameter, and active-local
-  memory homes; and bounded constructed assignability. The minimum W8 meaningful portfolio is now thirty-five
-  independent incidents: thirty-two core plus thread-relative, RVA-backed, and frame-value rows. This is pre-contract
-  physical evidence, not product behavior or representative observation.
+- **Most recently completed active checkpoint:** W8.8. Its guarded sixteen-step composition connects the landed V2
+  and frame descriptors to caller-owned context, runtime, suffix, and frame-root evidence seams while retaining typed
+  stops and zero-call proofs. W8.9 is the in-progress checkpoint; its frozen v1 findings and 35/35 physically executed
+  v2 baselines are meaningful-synthetic evidence, not representative production observation. The candidate's seven
+  proposed dispositions remain unapproved; its no-authority computation closes neither W8.9 nor W8.10.
 - **Primary progress signal:** executable scenarios and tests, with the design under `docs/` kept just ahead of and
   consistent with that evidence. This remains early-development evidence, not a production-ready evaluator or
   interpreter.
@@ -65,13 +64,16 @@ rebinding. W7 adds counted selected-frame/PDB/import context, fully qualified an
 static scalar/string/nullable/reference storage, target validation, and unchanged W2/W6 suffix reuse. W8.1 adds
 pre-contract emitted TypeSpec/import/constraint/literal evidence, candidate-keyed runtime construction identity, exact
 strategy-specific storage facts, exact memory-homed frame roots, typed context/frame-generic non-admissions, and
-close/reopen replay. W8.2 now validates source ends, shared-grammar signature projection, TypeSpec graphs, FieldSig
-anchors, GenericParam ownership/bindings, edge aggregates, provisional type use, and Nullable topology as immutable
-Product proof objects. Canonical request, context, symbol, storage, plan, root-selection, and complete-result
-identities preserve the distinctions needed for deterministic replay. The legacy 22-case W2 corpus, W3/W4
-generated-dump lanes, W6 conformance/portfolio lanes, W7's sixteen-dump/four-shape portfolio, W8.1 physical gates, and
-the landed W8.2 proof tests all remain passing; CoreCLR and high-level runtime reads remain late oracles, not inputs
-to interpreter shape, dump evidence, preparation, or execution.
+close/reopen replay. W8.2 through W8.8 add immutable proof authority, V2/frame projection, host-owned acquisition,
+bounded binding, real-dump runtime/storage/value mapping, lexical/interface completeness, and product composition.
+Canonical request, context, symbol, storage, plan, root-selection, and complete-result identities preserve the
+distinctions needed for deterministic replay. W8.9 retains the frozen v1 split of 22 executed and 13 manifest-only
+findings; its content-addressed v2 overlay now executes all 35 reconciled baselines independently while reporting the
+seven proposed counterfactual dispositions separately. The conditional candidate does not supply owner authority or
+milestone closure. The legacy 22-case W2 corpus, W3/W4 generated-dump
+lanes, W6 conformance/portfolio lanes, W7's sixteen-dump/four-shape portfolio, and the landed W8 evidence lanes remain
+controls; CoreCLR and high-level runtime reads remain late oracles, not inputs to interpreter shape, dump evidence,
+preparation, or execution.
 
 ### Physical scope
 
@@ -460,11 +462,13 @@ milestone-selected scope.
 
 Caveat: current evidence covers only the named generated fixtures and explicitly admitted input shapes. Earlier
 out-of-scope experiments have been removed, and the workflow now runs every remaining test in
-each selected category. No result through W8.1 establishes behavior for other artifact shapes. W8.1 is physical
-evidence for its named branches. Only the W8.2 contract and metadata-proof families identified above are
-implementation evidence. Their existence does not make them mandatory consumer authority and does not implement a
-host producer, V2 binder, runtime/storage mapper, evaluator, report, or portfolio. Unlanded W8.2 work and
-W8.3–W8.10 remain plans rather than behavior evidence.
+each selected category. No W8 result establishes behavior for artifact shapes outside its named fixtures or a
+representative production corpus. W8.1 is physical evidence for its named branches; W8.2–W8.8 are implementation and
+validation evidence for their bounded authority, host, binder, runtime/storage/value, and composition scopes. W8.9's
+frozen v1 split remains meaningful-synthetic historical evidence, with the divergences retained rather than retuned;
+v2 supplies 35/35 independent reconciled baseline executions but leaves seven counterfactual dispositions explicit.
+The separate candidate remains pending owner approval and claims no authority or closure; the candidate-bound authority
+envelope is absent. W8.9 disposition and W8.10 exact-commit closure remain incomplete.
 The terminology cleanup renamed a fixture-only environment canary and therefore intentionally re-froze the current
 TestTarget PE and its four derived canonical graph identities in the executable tests. Historical hashes above remain
 evidence for their named commits; they are not claims about the current fixture binary.

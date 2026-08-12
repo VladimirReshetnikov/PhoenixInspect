@@ -22,7 +22,7 @@ For the active dump/query and first interpreter slices, this proposal aligns to 
 
 The comparison material below is historical research. Concrete recommendations and implementation work use SRM while preserving project-owned identities, evidence outcomes, and decision-revisit triggers. Local headless verification at `19c292f9f` passed a zero-warning 15-project Release build, 103 milestone-selected unit tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3 lane, and both documentation guards. [GitHub Actions run 29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) passed all four required jobs at the same exact pushed implementation checkpoint. Exact documentation-closure commit `de6cea124488d503d13c61a4c8e67203a16d06f9` then passed all four required jobs in [GitHub Actions run 29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237). W3 is complete for its defined milestone-selected scope.
 
-## Current implementation, completed W8.1 disposition, and active W8.2 alignment (2026-07-18)
+## Current implementation and recorded W8.1/W8.2 alignment (2026-07-18)
 
 W4 closes the second meaningful value domain, direct-call/model execution, detached ClrMD binding, and dump-grounded
 product composition in its declared profiles. W7 closes the first Portable-PDB product use: bounded candidate bytes
@@ -33,8 +33,14 @@ calls. Windows PDB, SourceLink, decompilation, and broader symbol acquisition re
 
 The [Post-W7 Path Forward](../../plans/post-w7-path-forward.md) governs W8. W8.1 completed at `220be94b4`; its exact
 checkpoint ledger and branch consequences are frozen in the
-[`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). W8.2 is the active product-contract
-checkpoint. Its SRM/Portable-PDB work is broader than record decoding: it must preserve lexical scope levels, alias
+[`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). W8.2 was the product-contract
+checkpoint recorded here; W8.2–W8.8 are now complete and W8.9 portfolio disposition is active. Candidate
+`tests/corpus/w8-static-field-portfolio-decision-candidate-v1.json` at SHA-256
+`a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450` conditionally computes `33 / 19 / 25`,
+proposes the retire-20/21/22/26/27, defer-29/34, observed-boundary-hardening result, but is pending owner approval. It
+has no authority and closes neither W8.9 nor W8.10. The separate candidate-bound authority envelope
+`tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is absent and must bind that exact SHA if approved.
+The landed SRM/Portable-PDB work is broader than record decoding: it preserves lexical scope levels, alias
 hiding, first-viable namespace-level stopping, same-level import accumulation, TypeSpec aliases, `using static`, exact
 extern-alias/AssemblyRef identity, nested per-segment generic arity, and complete lexical blocker catalogs. A fully
 qualified nested/constructed route remains independent of every frame and PDB service.
@@ -52,9 +58,9 @@ metadata table ends govern bounded token catalogs, raw/classified TypeDefs, Type
 GenericParam declarations/tables/owner sets/binding ledgers, and complete interface/constraint edge aggregates. One
 bounded grammar in Core emits structural signature events; the Product adapter resolves their tokens and constructs
 an exact tree only after full source consumption. Direct `CLASS` and `VALUETYPE` TypeSpec roots are valid Type-grammar
-inputs and proceed to role/construction classification. This layer consumes caller-provided rows/catalogs; it is not
-an SRM/PEReader or Portable-PDB acquisition implementation, and its proof objects are not yet mandatory inputs to the
-V2 binder or runtime/storage path.
+inputs and proceed to role/construction classification. At that checkpoint this layer consumed caller-provided rows/
+catalogs and was not itself an SRM/PEReader or Portable-PDB acquisition implementation. W8.3–W8.8 subsequently landed
+host-owned acquisition and made the authority proofs mandatory at the bounded binder/runtime/storage consumer seams.
 
 The gate is executable and headless: fast compiler/SRM/PDB differentials precede hidden full-dump targets, generated
 V2 conformance, and the synthetic portfolio of thirty-two fixed core incidents across four shapes plus
@@ -325,7 +331,8 @@ This keeps every “mixed concern” in exactly one place.
 
 * `RuntimeMethodHandle`, `RuntimeTypeHandle`, `RuntimeModuleHandle`
 * W7 selected-frame/method/instruction correlation plus W8.1-proved exact memory-homed `this`/argument/local location
-  facts. W8.2 must consume those facts through mandatory separate frame-value contracts; register homes are excluded.
+  facts. The completed W8 route consumes those facts through mandatory separate frame-value contracts; register homes
+  are excluded.
 * Optional “runtime hint set” (IL RVA/size, native code ranges, module path hints).
 
 **Why this matters**
@@ -438,7 +445,7 @@ This is the only layer allowed to “speak both languages” (runtime and metada
    profile with deterministic outcome, budget, ordered events, and resulting memory. The host/test composition retains
    the cross-layer correlation provenance and fresh-session replay evidence around that execution.
 
-#### Scenario B: Use a selected dump frame (W8.1 evidence complete; W8.2 product contracts active)
+#### Scenario B: Use a selected dump frame (W8.1 evidence and W8.2–W8.8 product route complete)
 
 1. W7 maps one selected `ClrStackFrame` + `ClrMethod` to exact module/MethodDef/instruction evidence and projects the
    identity-validated Portable-PDB import context. It does not seed a value.

@@ -13,10 +13,15 @@
 > `StaticFieldExpressionV2` W8 design for nested and closed constructed generic owners, scope-precise context,
 > constraints, accessibility, assignability, stored values, metadata literals, and evidence-conditioned storage/frame
 > branches. W8.1 is implemented and locally validated under its
-> [`physical-truth disposition`](../../plans/w8-1-physical-truth-disposition.md); W8.2 is active. Its immutable common
-> expression contracts, detached frame-value syntax, bounded signature projection, and caller-supplied selected-method
-> lexical evidence envelope now exist. The host-owned lexical producer, remaining V2 contract families, binder, and
-> evaluator do not. Roslyn remains the sole syntax parser.
+> [`physical-truth disposition`](../../plans/w8-1-physical-truth-disposition.md). W8.2–W8.8 are now complete for their
+> defined contract, acquisition, binding, runtime, and composition scopes. W8.9 preserves v1 at 22 executed / 13
+> manifest-only and executes reconciled v2 at 35/35. Its separate candidate
+> `tests/corpus/w8-static-field-portfolio-decision-candidate-v1.json`, SHA-256
+> `a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450`, conditionally computes `33 / 19 / 25`
+> and proposes retiring rows 20/21/22/26/27, deferring 29/34, and observed-boundary hardening. It is pending explicit
+> owner approval, has no authority, implements no successor, and closes neither W8.9 nor W8.10. The separate authority
+> envelope `tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is absent and must bind that exact SHA if
+> approved. Roslyn remains the sole syntax parser.
 > Branches, handler transfer, virtual scratch objects, async/dynamic lifting, and advanced query workflows remain
 > research backlog rather than inherited commitments.
 
@@ -162,7 +167,8 @@ W2 v1 deliberately uses only the selected dump plus one host-named, exactly sele
 separate opt-in profile adds a selected-frame/PDB context only for contextual static names; its fully qualified route
 does not need that context. W8.1 now proves exact memory-homed `this`, reference/value parameter, and active-local roots
 for its six generated selected-frame profiles; register homes and selected-frame generic arguments remain non-admitted.
-W8.2 must expose only those exact roots, and unavailable optimized values never become recoverable by assumption.
+The completed W8 frame route exposes only those exact roots, and unavailable optimized values never become recoverable
+by assumption.
 
 ### Output and result indicators
 
@@ -224,7 +230,7 @@ The implementation and full corpus are locally headless-verified. [GitHub Action
 29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178) passed all four required jobs at
 exact W2 closure commit `5bed47100`.
 
-**Closed W7 static-field profile and approved W8 expansion**
+**Closed W7 static-field profile and completed bounded W8 expansion**
 
 W7 is the implemented static-expression baseline. Its opt-in `StaticFieldExpressionV1` binds one ordinary static
 field on a non-generic class from either an unambiguous fully qualified name or exact selected-frame/Portable-PDB
@@ -232,8 +238,8 @@ namespace, import, and simple-alias context. Counted metadata/runtime/storage ev
 nullable, null, and validated reference results. Exact references may continue through the unchanged W2/W6 suffix
 evaluator; a contextual failure never redirects a fully qualified request, and no profile falls through to another.
 
-W8 is active. W8.1 supplies pre-contract physical evidence, while its additive `StaticFieldExpressionV2` product
-profile remains unimplemented and will:
+W8 remains active at its W8.9/W8.10 gates. W8.1 supplied pre-contract physical evidence, and W8.2–W8.8 completed its
+additive `StaticFieldExpressionV2` product profile for the defined bounded scope. The landed profile:
 
 - bind top-level and nested non-generic owners plus closed constructed generic class, value-type, and interface owners,
   preserving per-segment generic arity, nested construction identity, and distinct stored slots for simultaneously
@@ -242,7 +248,7 @@ profile remains unimplemented and will:
   exact extern-alias, current/enclosing type, and evidence-qualified `using static` routes under scoped precedence and
   complete lexical-blocker evidence;
 - support ordinary stored static fields across the bounded fixed-width primitive, native-size, floating-point, enum,
-  string, nullable, array, and constructed-reference forms admitted by the final V2 contract; separately support
+  string, nullable, array, and constructed-reference forms admitted by the bounded V2 contract; separately support
   runtime-free metadata literals for the primitive, enum, floating-bit, string, null, and exact `decimal` encodings
   proven by W8.1;
 - validate substituted generic constraints and inspection accessibility before runtime mapping, substitute owner
@@ -255,10 +261,11 @@ W8.1 freezes the physical outcomes. Constructed and thread-relative slots, modul
 exact memory-homed frame roots (`this`, reference/value parameters, and active locals) are admitted. Context-relative
 storage is non-admitted because no runtime-context identity is attributable; selected-frame declaring/method generic
 arguments are non-admitted because the available surfaces yield `E_NOTIMPL`, canonical `System.__Canon`, or
-`E_NOINTERFACE`; register homes are unproven. W8.2 must expose the admitted strategies and separate
-`FrameValueExpressionV1` without context/register/frame-generic placeholders. The planned conformance and synthetic
-portfolio of thirty-five minimum incidents across four shapes remain future evidence and contribute no representative
-observations today.
+`E_NOINTERFACE`; register homes are unproven. The completed W8 contracts expose the admitted strategies and separate
+`FrameValueExpressionV1` without context/register/frame-generic placeholders. The synthetic portfolio preserves v1 at
+22 executed / 13 manifest-only and executes corrected v2 across all 35 independent baselines over four shapes; it
+still contributes zero representative observations. The conditional decision candidate remains unapproved,
+no-authority evidence and closes neither W8.9 nor W8.10.
 
 **Other later Phase 1 candidates (outside the approved W8 core)**
 
@@ -861,10 +868,12 @@ W7 sequencing is in `docs/plans/post-w6-path-forward.md`; the active W8 sequence
   validation, field-signature substitution, constructed assignability, distinct per-construction slots, and unchanged
   exact-reference suffix composition. W8.1 is implemented through `220be94b4`: exact construction/thread/RVA/literal/
   memory-frame branches are admitted, while context-relative storage, register homes, and selected-frame generic
-  arguments are non-admitted. W8.2 is active. Later checkpoints require sole-parser projection, the remaining
-  immutable V2/frame contract families, metadata/context/runtime binding, lexical completeness, raw value projection,
-  generated conformance, and
-  a decision portfolio of thirty-five minimum incidents across four shapes. The plan's inclusive umbrella scale is
+  arguments are non-admitted. W8.2–W8.8 completed sole-parser projection, the immutable V2/frame contract families,
+  metadata/context/runtime binding, lexical completeness, raw value projection, and generated conformance. W8.9's
+  decision portfolio has 35/35 physically executed v2 baselines. Its `33 / 19 / 25` candidate proposes five retirements,
+  two deferrals, and observed-boundary hardening, but remains pending owner approval, carries no authority, and closes
+  neither W8.9 nor W8.10; the separate candidate-bound authority envelope is absent.
+  The plan's inclusive umbrella scale is
   `~100K LOC`, generally divided into `~10K LOC` evidence and implementation checkpoints.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.

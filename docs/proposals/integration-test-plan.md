@@ -50,9 +50,14 @@ and W8.9 — the thirty-five-incident meaningful synthetic portfolio — is the 
 authoritative on each checkpoint's exact landed scope and declared boundaries. Its corpus lane executes one independent
 hidden full dump per executable incident across four materially distinct application shapes, and reports every
 produced-versus-predeclared divergence of an attempted incident as a finding rather than retuning the frozen
-predeclaration. Coverage still required by that minimum spans nested and closed constructed owners, scoped imports and
-aliases, exact runtime-construction identity, stored/literal values, evidence-qualified bare fields, and the separate
-admitted frame-value profile.
+predeclaration. Frozen v1 remains 22 executed / 13 manifest-only; corrected v2 executes 35/35 with zero manifest-only
+rows. The separate candidate `tests/corpus/w8-static-field-portfolio-decision-candidate-v1.json`, SHA-256
+`a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450`, conditionally computes `33 / 19 / 25`,
+proposes retiring rows 20/21/22/26/27 and deferring rows 29/34, and proposes observed-boundary hardening. It is pending
+explicit owner approval, has no authority, and closes neither W8.9 nor W8.10. The separate candidate-bound authority
+envelope is absent. The 35 baselines span nested and closed constructed owners, scoped imports and aliases, exact
+runtime-construction identity, stored/literal values, evidence-qualified bare fields, and the separate admitted
+frame-value profile.
 Dump-free parser/admission, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
 Caveat: the current lanes establish behavior only for the named generated fixtures and explicitly admitted input
@@ -264,7 +269,7 @@ defined milestone-selected scope.
 | W7 selected-frame import context | Identity-validated bounded Portable PDB bytes, exact active LocalScope/ImportScope chain, and project-owned namespace/import/alias facts | Stack values, exact closed generic runtime arguments, lexical blocker completeness, or broader language binding |
 | W7 static-field result | Counted metadata, one exact non-generic declaration, pinned runtime slot, counted raw value reads, and optional unchanged suffix evaluation | Nested/generic owners, literals, per-construction slot selection, or any W8 branch |
 | Preview demo answers | One generated full dump of `samples/Contoso.OrderService`, with the exact rendered answer of every expression `eng/demo-session.pi` submits, an exhaustive strong-handle search reaching the same object, and the stalled frame resolved by name from snapshot metadata | That the demo's shapes generalize beyond the admitted subset, or that any published claim outside those expressions is proven |
-| Active W8.2 contract gate | W8.1 physical facts plus immutable expression/frame syntax, caller-supplied lexical evidence, one shared bounded Core signature grammar and Product event adapter, exact source ends/token catalogs, TypeSpec/FieldSig/GenericParam/edge proof artifacts, provisional type classification, and Nullable topology | Mandatory downstream proof consumption, a host-owned lexical/metadata producer, complete V2 contract surface, binder, runtime/storage mapper, evaluator, report schema, or portfolio result |
+| Completed W8.2 contract gate | W8.1 physical facts plus immutable expression/frame syntax, caller-supplied lexical evidence, one shared bounded Core signature grammar and Product event adapter, exact source ends/token catalogs, TypeSpec/FieldSig/GenericParam/edge proof artifacts, provisional type classification, and Nullable topology | At that checkpoint: downstream proof consumption, a host-owned lexical/metadata producer, complete V2 contract surface, binder, runtime/storage mapper, evaluator, report schema, or portfolio result; the product path arrived in W8.3–W8.8 and the portfolio evidence in W8.9 rather than either being retroactively attributed to W8.2 |
 
 ## CI policy
 
@@ -665,14 +670,15 @@ disposition records rejected hosted jobs without claiming execution evidence or 
 label permits a bounded successor choice but does not identify or prove one particular alias, import, frame, or generic
 rule. The W8 plan makes the successor decision, and W8.1 now supplies its pre-contract physical evidence.
 
-## Closed W8.1 physical gate and active W8.2+ evidence gates
+## Closed W8.1–W8.8 gates and active W8.9 portfolio evidence
 
 W8.1 began with an executable truth gate rather than a product API. Compiler-emitted targets, independent SRM/Portable-
 PDB projections, real full dumps, and late runtime/compiler oracles establish the physical relation among
 source spelling, Roslyn tree, nested TypeDef arity, GenericParam ownership/order, TypeSpec bytes, exact runtime type
 identity, declaring construction, static storage, and decoded value. Display-name parsing is probe evidence only. A V2
-constructed-owner contract may now consume the proven ordered closed-argument source keyed to each runtime type
-candidate and the distinct slots for simultaneously loaded constructions sharing a TypeDef/FieldDef.
+constructed-owner contract was then able to consume the proven ordered closed-argument source keyed to each runtime
+type candidate and the distinct slots for simultaneously loaded constructions sharing a TypeDef/FieldDef; W8.2–W8.8
+landed that bounded product path.
 
 The completed W8.1 fixture matrix distinguishes facts that must never be collapsed:
 
@@ -696,24 +702,28 @@ duplicate, crossed-owner, defensive-copy, canonical-equality, and public-XML cas
 stop. Verification at `5fd87a3e5` passed strict Release with zero warnings/errors, unit 519/519, integration 344/344,
 and focused metadata construction 18/18.
 
-Remaining fast generated tests must freeze mandatory proof consumption, one-Roslyn-parse V2 projection,
+The later W8.2–W8.8 fast generated tests freeze mandatory proof consumption, one-Roslyn-parse V2 projection,
 namespace/type partitioning, nested per-segment arity, constraints, accessibility, definition-kind member lookup,
 scoped alias/import precedence, lexical blocker completeness, constructed assignability, canonical product
-identities, bounds, and typed first stops. Poison/count doubles must prove that unsupported syntax makes no metadata,
+identities, bounds, and typed first stops. Poison/count doubles prove that unsupported syntax makes no metadata,
 context, runtime, storage, or memory calls; fully qualified controls make no frame/PDB calls; and literal plans make no
 runtime/storage/memory calls.
 
-The ordinary generated-dump lane then covers fully qualified, contextual, extern-alias, current-type, `using static`,
-and any W8.1-admitted frame-value route through direct results and the unchanged W2/W6 suffixes. It requires
+The ordinary generated-dump lane covers fully qualified, contextual, extern-alias, current-type, `using static`, and
+W8.1-admitted frame-value routes through direct results and the unchanged W2/W6 suffixes. It freezes
 same-session, fresh-object, fresh-process, and close/reopen/rebind canonical replay. Every repository-invoked managed
 command runs through `eng/Invoke-HeadlessProcess.ps1`; every target, helper, or consumer child process spawned by the
 tests is configured as hidden and windowless.
 
-The final meaningful synthetic lane contains thirty-five minimum independent full-dump incidents over four
-materially distinct application shapes: thirty-two core plus thread-relative, RVA-backed, and frame-value rows. It includes exact and deliberately
-imperfect context, TypeSpec, construction, slot, literal, frame, and suffix cases; validates attributable-stage,
-usefulness, and counterfactual decision facts independently; keeps representative counts at zero; runs each incident
-through its own fresh hidden consumer; and requires two additional fresh portfolio consumers to emit byte-identical
-reports. W8 is not complete until this lane, all W1–W7 compatibility lanes, and the W8.1 physical regressions pass with zero skips under the complete
-headless repository matrix. The required hosted jobs must then pass at the exact pushed W8 closure commit unless the
-owner records a new W8-specific disposition; no earlier milestone disposition is W8 execution evidence.
+The meaningful synthetic lane preserves v1's 22-executed / 13-manifest-only historical record and runs corrected v2
+across thirty-five independent full-dump incidents over four materially distinct application shapes: thirty-two core
+plus thread-relative, RVA-backed, and frame-value rows. It includes exact and deliberately imperfect context, TypeSpec,
+construction, slot, literal, frame, and suffix cases; validates attributable-stage, usefulness, and counterfactual
+facts independently; keeps representative counts at zero; and executes all 35 v2 baselines with zero manifest-only
+rows. The separate candidate conditionally derives `33 / 19 / 25` and deterministic reports under seven unapproved
+proposed dispositions. It has no authority and closes neither W8.9 nor W8.10. The absent
+`tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` envelope must, if approved, bind candidate SHA
+`a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450`; it must not be folded into or rewrite the
+candidate. W8 remains incomplete until W8.9 has explicit separate owner authority and W8.10's complete headless local
+matrix plus required hosted jobs pass at the exact pushed closure commit. No earlier milestone disposition is W8
+execution evidence.

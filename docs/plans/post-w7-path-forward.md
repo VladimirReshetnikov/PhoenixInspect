@@ -8,18 +8,19 @@
 > fields, metadata literals, and evidence-qualified `using static` bare-field roots. Exact reference values continue
 > through the unchanged W2/W6 suffix evaluators.
 >
-> **Implementation status:** W8.1 is implemented and locally validated through exact source baseline `220be94b4`;
-> its authoritative branch record is the [W8.1 Physical-Truth Disposition](w8-1-physical-truth-disposition.md). W8.2
-> is active. The immutable expression-contract foundation, detached frame-value syntax contract, one shared bounded
-> Core ECMA signature grammar, its Product event adapter, and the caller-supplied selected-method lexical evidence
-> envelope have landed. Checkpoint `5fd87a3e5` adds exact metadata source ends and token catalogs, raw and
-> role-classified TypeDefs, a complete TypeSpec graph, exact FieldSig identity, GenericParam
-> declaration/catalog/owner-set/binding ledgers, interface/constraint edge aggregates, provisional construction
-> classification, and Nullable construction preservation. These proof objects are not yet mandatory consumer inputs.
-> A host-owned lexical producer, downstream authority integration, the remaining V2 contract families, binder,
-> runtime/storage mapping, evaluator, report schema, and portfolio result remain.
+> **Implementation status:** W8.1 through W8.8 are complete for their defined physical-evidence, contract, metadata-
+> authority, acquisition, binding, runtime/storage/value, lexical/interface, and guarded-composition scopes. W8.9 is
+> active. Its frozen v1 portfolio remains unchanged at 22 executed / 13 manifest-only findings. The content-addressed
+> v2 reconciliation now materializes and evaluates all 35 baselines over fresh independent real dumps with zero
+> manifest-only v2 rows. The separate candidate
+> `tests/corpus/w8-static-field-portfolio-decision-candidate-v1.json` at SHA-256
+> `a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450` conditionally computes `33 / 19 / 25` and
+> proposes seven dispositions plus an observed-boundary-hardening successor. It remains pending explicit owner
+> approval, has no owner authority, and closes neither W8.9 nor W8.10. The distinct future authority envelope
+> `tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is absent and, if approved, must bind that exact
+> candidate SHA. W8.10 exact-commit repository and hosted closure remains a separate later gate.
 >
-> **Evidence boundary:** W8 is a generated-fixture and meaningful-synthetic development milestone. Its planned corpus is
+> **Evidence boundary:** W8 is a generated-fixture and meaningful-synthetic development milestone. Its generated corpus is
 > not representative observation and cannot establish field readiness. W5, W6, and W7 milestone-specific hosted
 > dispositions do not carry forward.
 
@@ -1257,11 +1258,21 @@ hidden full-dump targets. No profile falls through to another.
 Materialize the frozen four-shape corpus, execute one fresh hidden consumer per incident plus two fresh portfolio
 consumers, validate raw counts/counterfactual decision facts, and select exactly one qualified action or defer.
 
-**Status:** Foundation landed. The thirty-five-incident manifest is predeclared with all twelve typed axes, usefulness
-and decision-changing booleans with counterfactual actions, and frozen successor categories; four materially distinct
-shape targets build; and the two fresh byte-identical machine and human portfolio reports are complete at `b1cc5a11d`
-with the raw counts (33 useful, 26 decision-changing, 19 attributable) and category-qualification arithmetic
-independently validated. Seven incidents now execute end to end through the composed pipeline over real dumps across all four materially
+**Status:** Active at the owner-approval gate. Frozen v1 remains content-addressed at 22 executed / 13 manifest-only;
+corrected v2 executes all 35 independent real-dump baselines with zero manifest-only rows. The separate
+`tests/corpus/w8-static-field-portfolio-decision-candidate-v1.json` candidate at SHA-256
+`a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450` conditionally recomputes 33 useful, 19
+decision-changing, and 25 attributable incidents. It proposes retiring rows 20, 21, 22, 26, and 27; deferring rows 29
+and 34 with zero decision-changing credit; and selecting category `observed-boundary-hardening` with action “Harden the
+observed first-boundary reporting surface without extending binding reach.” The candidate is pending explicit owner
+approval, carries no owner authority, closes neither W8.9 nor W8.10, and implements no successor action. The separate
+authority envelope `tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is absent; if approved, it must
+be created separately and bind the exact candidate path, identity, and SHA rather than modifying the candidate. The
+chronological implementation record follows. At the first portfolio checkpoint, the
+thirty-five-incident manifest predeclared all twelve typed axes, usefulness and decision-changing booleans with
+counterfactual actions, and frozen successor categories; four materially distinct shape targets built; and two
+byte-identical machine and human portfolio reports at `b1cc5a11d` recorded the then-raw counts (33 useful, 26
+decision-changing, 19 attributable). At the next checkpoint, seven incidents executed end to end through the composed pipeline over real dumps across all four materially
 distinct shapes — Request (`request-qualified-constructed-sentinel`, `request-distinct-construction-slots`,
 `request-absent-runtime-construction`, `request-thread-relative-slot`), Batch (`batch-nested-per-segment-arity`),
 Coordinator (`coordinator-four-coexisting-constructions`) at `db0630de8`, and Workflow
@@ -1501,6 +1512,26 @@ the same construction-axis conflation the module-RVA row documents — the prede
 as `NotRequired` while the pipeline constructs the non-generic spelled owner `Exact` at arity zero — so the row stays
 manifest-only with its corrected recorded reason and the divergence remains the finding.
 
+**Reconciliation and decision-candidate successor:** The frozen v1 manifest and its 22-executed / 13-manifest-only reports remain historical
+evidence and are content-addressed rather than rewritten. `w8-static-field-incidents-v2.json` overlays only the
+thirteen measured produced-axis corrections and pins v1 by SHA-256. Its execution test starts each unchanged target,
+captures a fresh independent full dump, and evaluates every one of the 35 incident identities; all 35 reconciled
+baselines pass and v2 reports zero manifest-only baselines. The successor separates that baseline closure from the
+counterfactual decision claims v1 predeclared. Candidate path
+`tests/corpus/w8-static-field-portfolio-decision-candidate-v1.json` is pinned at SHA-256
+`a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450`. It proposes retiring rows 20, 21, 22, 26,
+and 27 because the real snapshots disprove their adverse premises, and deferring rows 29 and 34 because their proposed
+counterfactuals require a new physical circumstance. Rows 23 and 30 have executable derived inputs, rows 12 and 28 are
+already verified by current artifacts, and rows 9 and 11 are non-decision-changing. Under those unapproved proposals,
+the candidate gives the seven rows zero decision-changing credit, recomputes the conditional `33 / 19 / 25` metrics,
+and proposes `observed-boundary-hardening` as the unique qualified future category with action “Harden the observed
+first-boundary reporting surface without extending binding reach.” Two fresh hidden reference-consumer processes emit
+byte-identical machine and human candidate reports. That computation is technical evidence only: it carries no owner
+authority, implements no successor, and closes neither W8.9 nor W8.10. The separate authority path
+`tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is currently absent. If the owner approves the exact
+proposals, that envelope must be created independently, bind the candidate path/identity/SHA above, approve the exact
+seven dispositions and category/action, and itself make no W8.10 closure claim.
+
 **Exit gate**
 
 - The thirty-five minimum dumps—thirty-two core plus thread-relative, RVA-backed, and frame-value incidents—execute
@@ -1508,10 +1539,12 @@ manifest-only with its corrected recorded reason and the divergence remains the 
 - Both portfolio reports are byte-identical; representative counts remain zero; promotion is rejected.
 - Attributable-stage, usefulness, decision, shape, and boundary counts are independently validated.
 - A substantive tie defers; W8 implements no selected successor action.
+- Explicit owner approval is recorded only in the separate candidate-bound authority envelope. Until that absent
+  artifact exists, the candidate remains no-authority evidence and W8.9 stays open; no W8.9 artifact closes W8.10.
 
 ### W8.10 — repository and hosted closure
 
-**Scale:** `~100 LOC` documentation, plus corrections exposed by final evidence.
+**Scale:** `~100 LOC` documentation, plus corrections exposed by closure evidence.
 
 Close only after the exact pushed source commit passes the complete local headless matrix and every required hosted job
 executes and passes, unless the owner records a new W8-only disposition. Earlier milestone dispositions are not W8
@@ -1544,9 +1577,12 @@ Expected managed command shape:
 
 The committed local entry point is `eng/Invoke-W8LocalReleaseValidation.ps1`. `-List` emits its deterministic command
 contract without changing the workspace, and `-SelfTest` exercises the TRX parser, owner-authority gate, tracked-HEAD
-provenance, and exact command inventory without running the matrix. The full run requires a clean tree and the tracked,
-byte-identical owner-authorized W8.9 final-decision input before it creates or replaces output or starts any expensive
-command:
+provenance, and exact command inventory without running the matrix. The full run requires a clean tree plus tracked,
+byte-identical v1, v2, decision-candidate, and separate owner-authority inputs before it creates or replaces output or
+starts any expensive command. The candidate must retain its no-authority/no-closure shape. The owner-authority envelope
+must bind the exact candidate path, identity, and SHA and approve the exact dispositions and proposed category/action;
+it cannot claim W8.10 closure. That authority path is currently absent, so the full run intentionally fails closed while
+`-List` and `-SelfTest` remain available:
 
 ```powershell
 .\eng\Invoke-W8LocalReleaseValidation.ps1 -List

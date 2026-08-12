@@ -7,10 +7,11 @@
 > [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md), respectively. The active
 > [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) governs W8. W8.1's physical-truth fixture and probes are
 > complete at `220be94b4`; their exact checkpoint ledger and branch dispositions are frozen in the
-> [`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). W8.2 is complete for its
-> authority-cutover scope and W8.3 for its projection scope, both landed and locally verified, while mandatory downstream
-> consumption, host production, binding, runtime/storage, and evaluation remain active work. The repository must
-> distinguish checked-in test code, a locally verified
+> [`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). W8.2–W8.8 are complete for their
+> bounded contract, authority, projection, host-production, binding, runtime/storage/value, lexical/interface, and
+> composition scopes. W8.9 preserves v1 at 22 executed / 13 manifest-only and executes reconciled v2 at 35/35. Its
+> separate decision candidate is pending owner approval, has no authority, and closes neither W8.9 nor W8.10; the
+> separately bound authority envelope is absent. The repository must distinguish checked-in test code, a locally verified
 > result, a CI-enforced gate, and an approved design. The broad abstract-analysis, virtual-stepping, dynamic, async,
 > and performance matrices remain behind their entry gates.
 
@@ -1041,9 +1042,9 @@ integration 242/242, Fast 184/184, ordinary dump 29/29, optimized context 1/1, f
 and authored-scope vocabulary guards. The W7-only owner disposition records the hosted billing rejection without
 claiming job execution or weakening the workflow.
 
-### Completed W8.1 evidence and active W8.2+ test frontier
+### Completed W8.1–W8.8 evidence and active W8.9 test frontier
 
-The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) approves an additive
+The [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) approves an additive
 `StaticFieldExpressionV2` test sequence for nested and closed constructed owners, scope-precise imports and aliases,
 exact extern aliases, ordinary stored fields, metadata literals, and evidence-qualified `using static` bare roots.
 W8.1 has proved the compiler/PDB, candidate-keyed runtime-construction, storage, exact memory-homed frame-value, and
@@ -1071,15 +1072,21 @@ versus cap-plus-one pairs for every reachable syntax bound. An assembly-wide ref
 metadata-identity factories that accept W7 candidates and proves the deleted pre-authority types are absent, and the
 one-parser-site guard still admits exactly one production parse. Verification recorded at `8bb74c866` passed the
 strict Release solution build with zero warnings/errors, unit 519/519, and the complete Fast category 424/424 with
-zero skips. This validates detached authority and syntax construction only; it does not validate a host producer or
-any V2 binder, runtime, or evaluator consumer.
+zero skips. At that checkpoint this validated detached authority and syntax construction only; it did not yet validate
+a host producer or V2 binder, runtime, or evaluator consumer.
 
-W8.3b onward require host-producer, binder, contextual, runtime/value, lexical-completeness, product-composition, and
-generated-conformance lanes. The meaningful synthetic portfolio contains thirty-two fixed
-independent core full dumps across four materially distinct application shapes, plus thread-relative, RVA-backed, and
-frame-value incidents: 35 independent incidents minimum. The portfolio retains per-row decision facts and tie
-deferral. Every managed process remains headless, every W1–W7 artifact remains golden, and only landed checkpoints may
-be cited as implementation or validation evidence.
+W8.3b through W8.8 subsequently completed the host-producer, binder, contextual, runtime/value, lexical-completeness,
+product-composition, generated-conformance, exact replay, and zero-capability-call lanes for their bounded scopes.
+W8.9 preserves the frozen 22-executed / 13-manifest-only v1 findings and now runs all 35 reconciled v2 baselines over
+independent real dumps across four application shapes. The separate candidate
+`tests/corpus/w8-static-field-portfolio-decision-candidate-v1.json` at SHA-256
+`a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450` conditionally derives `33 / 19 / 25`,
+proposes retiring rows 20/21/22/26/27 and deferring 29/34, and proposes observed-boundary hardening. Its deterministic
+reports and computation remain no-authority evidence: the candidate is pending explicit owner approval and closes
+neither W8.9 nor W8.10. The separate future authority envelope
+`tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is absent and must bind that exact SHA if approved.
+Every managed process remains headless, every W1–W7 artifact remains golden, and only landed checkpoints may be cited
+as implementation or validation evidence.
 
 ## 9) Deferred research suites
 
@@ -1116,7 +1123,8 @@ designed incidents across four shapes to select one context-acquisition category
 static-field expression slice with a fully qualified floor and one exact selected-frame/Portable-PDB import-context
 profile. W7's portfolio uniquely labels `BindingContextPrecision` and names
 `AddOneEvidenceBackedFramePdbImportAliasGenericRule`, but its manifest-assigned failure rows do not prove one exact
-successor rule. The approved, unimplemented W8 design therefore treats that result as direction and defines the broader
-V2 binding/runtime/storage test sequence summarized above. The remaining external question is separate: whether later
-representative observations confirm, reverse, or stop that direction. No readiness threshold is inferred from a
-designed corpus.
+successor rule. The approved W8.1–W8.8 design and implementation treated that result as direction and realized the
+broader bounded V2 binding/runtime/storage test sequence summarized above. W8.9's successor remains only a conditional,
+unapproved candidate; the separate owner-authority artifact is absent. The remaining external question is also
+separate: whether later representative observations confirm, reverse, or stop that direction. No readiness threshold
+is inferred from a designed corpus.

@@ -189,8 +189,18 @@ Core principles:
   counterfactual method evaluation; the expression-to-result product path; fixed-depth member chains over the
   pinned Roslyn front end; and static-field expressions with selected-frame/Portable-PDB context.
 - **Active:** W8 — the additive `StaticFieldExpressionV2` design under the
-  [Post-W7 Path Forward](docs/plans/post-w7-path-forward.md). W8.1 (physical-truth evidence) is complete;
-  W8.2 (immutable contracts and source-anchored metadata proofs) is the active checkpoint.
+  [Post-W7 Path Forward](docs/plans/post-w7-path-forward.md). W8.1 through W8.8 are complete for their defined evidence,
+  contract, acquisition, binding, runtime, and composition scopes. W8.9 preserves the frozen v1 record at 22 executed /
+  13 manifest-only and adds a content-addressed corrected v2 with 35/35 independently executed baselines and zero
+  manifest-only rows. The separate decision candidate
+  `tests/corpus/w8-static-field-portfolio-decision-candidate-v1.json` (SHA-256
+  `a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450`) conditionally computes 33 useful / 19
+  decision-changing / 25 attributable incidents. It proposes retiring rows 20, 21, 22, 26, and 27; deferring rows 29
+  and 34 with zero decision credit; and selecting `observed-boundary-hardening` with action “Harden the observed
+  first-boundary reporting surface without extending binding reach.” The candidate is pending explicit owner approval,
+  carries no owner authority, and closes neither W8.9 nor W8.10; W8 implements none of the proposed action. The distinct
+  authority envelope `tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is absent and, if approved,
+  must be created separately and bind the exact candidate SHA above.
 
 The complete delivery ledger — every closed milestone with its exact closure commits, verification counts, hosted CI
 runs, and realized-scale accounting — is the [milestone history](docs/plans/milestone-history.md). Current evidence

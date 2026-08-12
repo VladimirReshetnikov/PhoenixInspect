@@ -3,7 +3,7 @@
 > **Lifecycle:** Complete · **Roadmap:** Active evidence record
 >
 > **Decision:** W8.1 is implemented and locally validated. Its compiler/PDB, constructed-runtime, selected-frame,
-> storage, literal, and assignability evidence freezes the branches that W8.2 contracts must expose or omit.
+> storage, literal, and assignability evidence froze the branches that the later W8.2 contracts had to expose or omit.
 >
 > **Product boundary:** this is pre-contract physical evidence, not a V2 binder or evaluator.
 > `StaticFieldExpressionV2`, `BindingContextV2`, and `FrameValueExpressionV1` product contracts begin in W8.2.
@@ -16,8 +16,14 @@ pinned compiler, Portable PDB, .NET 10 runtime, or selected-frame surfaces can p
 W8. No later contract may promote a non-admitted branch, omit an admitted branch, or weaken an exact identity rule
 without a new executable evidence checkpoint and an explicit plan revision.
 
-W8 remains the sole active delivery sequence. W8.1 is complete; W8.2 is the active checkpoint. W1–W7 public profiles,
-canonical artifacts, and evidence remain unchanged.
+W8 remains the sole active delivery sequence. W8.1–W8.8 are complete for their defined scopes; W8.9 preserves frozen
+v1 at 22 executed / 13 manifest-only and executes corrected v2 at 35/35 with zero manifest-only rows. The separate
+candidate `tests/corpus/w8-static-field-portfolio-decision-candidate-v1.json` at SHA-256
+`a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450` conditionally computes `33 / 19 / 25` and
+proposes seven counterfactual dispositions plus observed-boundary hardening. It remains pending explicit owner
+approval, has no authority, and closes neither W8.9 nor W8.10. The separate future authority envelope
+`tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is absent and must bind that exact SHA if approved.
+W1–W7 public profiles, canonical artifacts, and evidence remain unchanged.
 
 ## 2) Evidence boundary
 
@@ -129,9 +135,9 @@ negative, and the rank-one multidimensional form has no C# source spelling. W8 d
 Array assignability requires equal rank and equal SZ-versus-multidimensional topology before recursive reference-element
 assignability; value elements never gain covariance.
 
-## 9) Mandatory W8.2 API consequences
+## 9) Mandatory W8.2 API consequences (subsequently completed)
 
-W8.2 must freeze additive immutable contracts for:
+At W8.1 closure, this disposition required W8.2 to freeze additive immutable contracts for:
 
 1. `StaticFieldExpressionV2` and `BindingContextV2`;
 2. structured closed type syntax, exact metadata construction, TypeSpec bytes, substitution, constraints,
@@ -142,9 +148,10 @@ W8.2 must freeze additive immutable contracts for:
 5. strategy-tagged operation requirements and `NotRequired` facts, including literal and RVA no-call behavior; and
 6. independent context, root, construction, member, runtime, storage, value, suffix, and completeness axes.
 
-W8.2 must not expose `ContextRelativeSlot`, a register-home descriptor, selected-frame generic substitution, or a
-placeholder capability for any non-admitted branch. The general V2 constructed-owner path still uses exact ordered
-runtime arguments because that source was proven independently of selected-frame generic recovery.
+It also prohibited W8.2 from exposing `ContextRelativeSlot`, a register-home descriptor, selected-frame generic
+substitution, or a placeholder capability for any non-admitted branch. W8.2–W8.8 satisfy these requirements. The
+general V2 constructed-owner path uses exact ordered runtime arguments because that source was proven independently of
+selected-frame generic recovery.
 
 ## 10) Meaningful synthetic portfolio consequence
 
@@ -177,7 +184,9 @@ and .NET 10 runtime/DAC surface. It establishes architectural feasibility and ex
 artifact coverage, production recoverability, product readiness, or hosted closure. Representative observation counts
 remain zero.
 
-W8.2 is active and partially landed. Its immutable common expression identities, detached frame-value syntax, shared
-bounded signature projection, and caller-supplied selected-method lexical envelope are implemented. The remaining
-contract families and host-owned lexical producer must still satisfy section 9, preserve every W1–W7 canonical
-artifact, and leave the two non-admitted families absent rather than postponing them behind dormant API shapes.
+W8.2 and its downstream W8.3–W8.8 product checkpoints are complete for their defined scopes. Their immutable common
+expression identities, detached frame-value syntax, shared bounded signature projection, host-owned evidence
+acquisition, binding, runtime/storage/value path, and guarded composition satisfy section 9 while preserving the
+declared non-admitted families. W8.9 baseline reconciliation is complete locally; owner-approved disposition remains
+before W8.9 closure and the W8.10 exact-commit repository/hosted gate. The current decision candidate is explicitly
+no-authority/no-closure evidence, and the separately bound authority envelope has not been created.

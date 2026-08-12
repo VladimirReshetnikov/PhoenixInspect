@@ -7,8 +7,12 @@ evaluation initiative. The completed W5 sequence is the [Post-W4 Path Forward](p
 completed W6 sequence is the [Post-W5 Path Forward](post-w5-path-forward.md). The completed W7 sequence is the
 [Post-W6 Path Forward](post-w6-path-forward.md). The active W8 sequence is the
 [Post-W7 Path Forward](post-w7-path-forward.md); W8.1 is complete under its
-[physical-truth disposition](w8-1-physical-truth-disposition.md), and W8.2 is active. All six documents remain
-evidence-led: each admitted milestone must
+[physical-truth disposition](w8-1-physical-truth-disposition.md), W8.2 through W8.8 are complete for their defined
+scopes. W8.9 preserves its 22-executed / 13-manifest-only v1 record and executes corrected v2 across 35/35 independent
+dumps with zero manifest-only rows. Its separate `33 / 19 / 25` decision candidate proposes post-W8 observed-boundary
+hardening without implementing it. The candidate remains pending explicit owner approval, has no authority, and closes
+neither W8.9 nor W8.10; the absent separate authority envelope must bind the exact candidate SHA if approved.
+All six documents remain evidence-led: each admitted milestone must
 produce a useful executable scenario or remove a concrete obstacle to the next one.
 
 ## 1) Scope lock
@@ -29,10 +33,20 @@ current-type and evidence-qualified `using static` bare fields, general TypeSpec
 accessibility, field-signature substitution, constructed assignability, per-construction runtime slots, and metadata
 literals. W8.1 now supplies exact pre-contract compiler/PDB, constructed-runtime, thread-relative, module-RVA, literal,
 memory-homed frame-root, and assignability evidence. Context-relative storage and selected-frame generic arguments are
-typed non-admitted, and register homes are unproven. W8.2 owns the V2/frame product contracts. Its immutable common
-expression foundation, detached frame-value syntax, shared bounded signature projection, and caller-supplied
-selected-method lexical envelope have landed; remaining contract families and all binding/evaluation behavior remain
-roadmap intent until their named checkpoints land.
+typed non-admitted, and register homes are unproven. W8.2 through W8.8 have landed the V2/frame contracts, metadata
+authority, sole-Roslyn-parse projectors, host acquisition, bounded binding, real-dump runtime/storage/value mapping,
+lexical/interface authority, and guarded product composition. W8.9 baseline reconciliation is complete locally: frozen v1 stays at 22 executed /
+13 manifest-only so its predeclaration findings remain intact; the content-addressed v2 overlay reconciles those
+produced axes and executes all 35 baselines over independent real dumps with zero manifest-only rows. The separate
+candidate `tests/corpus/w8-static-field-portfolio-decision-candidate-v1.json`, SHA-256
+`a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450`, conditionally recomputes `33 / 19 / 25`
+useful / decision-changing / attributable incidents. It proposes retiring disproved rows 20/21/22/26/27, deferring
+unrealized physical counterfactual rows 29/34 with zero decision credit, and selecting category
+`observed-boundary-hardening` with action “Harden the observed first-boundary reporting surface without extending
+binding reach.” W8 implements none of that proposed action. The candidate is pending explicit owner approval, carries
+no owner authority, and closes neither W8.9 nor W8.10. The future authority record
+`tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is absent; if approved, it must be created as a
+separate envelope bound to that exact candidate SHA. W8.10 then owns its own exact-commit repository and hosted closure.
 
 The current proof generates and opens dumps read-only, finds a strongly GCHandle-rooted object through bounded dump
 enumeration, validates the handle slot and object-header method table through counted raw-memory reads, and reads a
@@ -862,8 +876,9 @@ production recoverability rate.
 Continue to report raw counts and corpus composition before any aggregate percentage. Do not extrapolate from the
 modeled fixture to production incidents, and do not set a readiness threshold until a representative
 private-production incident corpus exists. Until then, the W7 schema-v2 product route remains available only at its
-validated strong-root path, while W8.1's exact memory-homed frame roots remain pre-contract evidence rather than a
-product route.
+validated strong-root path. W8.1's physical frame evidence is now consumed by the separately versioned, bounded
+`FrameValueExpressionV1` product route completed through W8.8; that generated-fixture result is still not a production
+recoverability rate.
 
 ## 8) Documentation policy
 

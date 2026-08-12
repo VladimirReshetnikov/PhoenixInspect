@@ -10,7 +10,9 @@ This inventory records the small public contract surface exercised by the curren
 W3 concrete-IL, W4.2–W4.7 dump-free explained-unknown, graph-preparation, interpreted-call, pure-model, target-outcome,
 and closed W5/W6/W7 product proofs. It is descriptive, not a promise of compatibility. W7's implemented static-
 expression, binding-context, symbol, storage, and value contracts are recorded below. W8.1's test-only evidence types
-are summarized separately; W8.2 is the active additive V2 contract checkpoint.
+are summarized separately; W8.2–W8.8 now record the completed additive V2 contract and composition checkpoints, while
+W8.9 is the active portfolio checkpoint. Its separate conditional decision candidate is pending owner approval,
+carries no authority, and closes neither W8.9 nor W8.10; the candidate-bound authority envelope is absent.
 Strengthened W3 checkpoint `19c292f9f`
 passed the required local milestone-selected lanes and all four jobs in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767). W3 formally closed at exact
@@ -463,13 +465,14 @@ headless reference consumer adds append-only W7 conformance and sixteen-incident
 internal host, not a stable CLI. Every public W7 type/method carries xML documentation and contract,
 canonical, invalid-input, replay, and real-dump tests.
 
-## Completed W8.1 evidence inventory and active W8.2 contract frontier
+## Completed W8.1–W8.8 evidence and contract inventory; W8.9 candidate frontier
 
 The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) approves additive
-`StaticFieldExpressionV2` and `BindingContextV2` profiles rather than mutating W7. The first W8.2 checkpoints now
-provide immutable common expression identities, detached frame-value syntax, one shared bounded Core ECMA signature
-grammar, its Product event adapter, and a selected-method lexical contract envelope. That lexical surface validates
-caller-supplied physical rows and source ends; it is not yet produced by one host-owned ClrMD acquisition authority.
+`StaticFieldExpressionV2` and `BindingContextV2` profiles rather than mutating W7. The first W8.2 checkpoints provided
+immutable common expression identities, detached frame-value syntax, one shared bounded Core ECMA signature grammar,
+its Product event adapter, and a selected-method lexical contract envelope. At that checkpoint the lexical surface
+validated caller-supplied physical rows and source ends; later W8.3–W8.8 checkpoints supplied the host-owned ClrMD
+acquisition, consumers, and guarded composition.
 
 The completed [metadata-authority cutover](../../plans/w8-2-metadata-authority-cutover.md) replaced the earlier
 caller-authored proof inventory. Through `d4d5f745c` the public surface in `PhoenixInspect.Product.DumpQuery` is:
@@ -508,14 +511,19 @@ targets and integration probes establish the compiler/PDB, candidate-keyed runti
 storage, assignability, and selected-frame dispositions recorded in the
 [`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md).
 
-Remaining W8.2 work must expose `ConstructedSlot`, `ThreadRelativeSlot`, `ModuleRva`, and `MetadataLiteral` strategies.
-It must also complete the separate `FrameValueExpressionV1` exact memory location, source, plan, result, and provenance
-contracts;
-that route is never a fallback from the static profile. It must not expose a context-relative strategy, register-home
-descriptor, or selected-frame generic-substitution contract. The current proof objects are not yet mandatory inputs
-to substitution, member/context binding, runtime construction, storage, or value consumers. A host-owned metadata/
-lexical producer, V2 binder, runtime/storage mapper, evaluator, reports, and portfolio remain unimplemented. W1–W7
-contracts remain unchanged while these additive W8.2 contracts land.
+W8.2–W8.8 subsequently exposed `ConstructedSlot`, `ThreadRelativeSlot`, `ModuleRva`, and `MetadataLiteral` strategies;
+completed the separate `FrameValueExpressionV1` exact memory location, source, plan, result, and provenance contracts;
+made the authority proofs mandatory at their consumer boundaries; and landed the host-owned metadata/lexical producer,
+V2 binder, runtime/storage mapper, evaluator, reports, and guarded composition. The frame route is never a fallback
+from the static profile, and no context-relative strategy, register-home descriptor, or selected-frame generic-
+substitution contract exists. W1–W7 contracts remain unchanged. W8.9 preserves v1 at 22 executed / 13 manifest-only
+and executes reconciled v2 at 35/35. Candidate
+`tests/corpus/w8-static-field-portfolio-decision-candidate-v1.json` at SHA-256
+`a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450` conditionally computes `33 / 19 / 25` and
+proposes the retire-20/21/22/26/27, defer-29/34, observed-boundary-hardening outcome. It remains pending explicit owner
+approval, carries no authority, implements no successor, and closes neither W8.9 nor W8.10. The distinct future
+authority envelope `tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is absent and, if approved, must
+bind that exact candidate SHA.
 
 ## Change rule
 

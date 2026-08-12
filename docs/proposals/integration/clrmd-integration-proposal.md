@@ -32,7 +32,7 @@ fixture shapes. The completed [Post-W6 Path Forward](../../plans/post-w6-path-fo
 selected-frame/Portable-PDB import projection for static-expression binding; that work does not alter W3's
 implemented boundary.
 
-## Closed W4/W7 additions, completed W8.1 disposition, and active W8.2 boundary (2026-07-18)
+## Closed W4/W7 additions and recorded W8.1/W8.2 boundary (2026-07-18)
 
 Later closed milestones extend the host without rewriting the historical W3 checkpoint. W4.2 implements the second
 meaningful, provenance-aware value domain; W4.3–W4.9 carry typed non-exact field evidence through the execution kernel
@@ -46,7 +46,13 @@ The [Post-W7 Path Forward](../../plans/post-w7-path-forward.md) governs W8. W8.1
 and branch table. The emitted nested/generic metadata and TypeSpecs, candidate-keyed ordered closed arguments,
 distinct per-construction slots/values, and close/reopen replay are proved. Display-derived runtime type names remain
 probe evidence only and cannot select a construction. Class, value-type, and interface definition kinds all have an
-exact disposition. W8.2 is the active product-contract checkpoint.
+exact disposition. That was the W8.2 product-contract checkpoint recorded here. W8.2–W8.8 are now complete for their
+defined scopes; W8.9 portfolio disposition is active. Its 35/35 reconciled v2 baselines do not themselves decide the
+seven counterfactuals. Candidate `tests/corpus/w8-static-field-portfolio-decision-candidate-v1.json` at SHA-256
+`a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450` conditionally computes `33 / 19 / 25` and
+proposes the retire-20/21/22/26/27, defer-29/34, observed-boundary-hardening outcome. It is pending owner approval, has
+no authority, and closes neither W8.9 nor W8.10. The separate candidate-bound authority envelope
+`tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is absent and must bind that exact SHA if approved.
 
 W8 also keeps value sources separate. A metadata literal performs no runtime, slot, or memory call. An ordinary stored
 static follows exact construction, declaring field, application domain, slot, and counted raw-memory evidence.
@@ -155,9 +161,9 @@ Here’s the layering that scales:
 * W4.2 implements the provenance-aware second domain, and W4.9 composes it with the detached dump producer. Neither
   permits a disk artifact to fill a missing dump body or value.
 * W7's product path adds counted ordinary static-field reads plus optional selected-frame/PDB binding context outside
-  the core machine. W8.2 must add constructed-owner, thread-relative, RVA-backed, and exact memory-homed frame-value
-  routes through new frozen contracts, never by widening a V1 artifact implicitly. Context-relative identity,
-  register homes, and selected-frame generic substitution have no route.
+  the core machine. W8.2–W8.8 added constructed-owner, thread-relative, RVA-backed, and exact memory-homed frame-value
+  routes through new frozen contracts, never by widening a V1 artifact implicitly. Context-relative identity, register
+  homes, and selected-frame generic substitution have no route.
 
 ---
 
@@ -171,7 +177,7 @@ Define internal identifiers that are cheap and comparable:
 * Complete disk-artifact identity: exact whole-file length plus SHA-256, carried in addition to metadata identity and optional PE timestamp/image size. A path is a location hint, never identity.
 * `MethodId`: `(ModuleId, MethodDefToken)` in W3/W4. `MemberRef`/`MethodSpec` and method-generic context remain separate
   structural extensions, not aliases for an admitted MethodDef.
-* W7's non-generic static identity retains module, declaring TypeDef, and FieldDef. W8 V2 must add a canonical closed
+* W7's non-generic static identity retains module, declaring TypeDef, and FieldDef. W8 V2 adds a canonical closed
   construction with nested segment groups and ordered flattened arguments; `(ModuleId, TypeDefToken)` alone is not a
   runtime construction identity.
 * TypeDef/TypeRef identities and bounded TypeSpec signatures remain token/signature based. Display strings are never
@@ -433,8 +439,8 @@ The interpreter itself just sees an `IHeap` + `IObjectModel`; it doesn’t know 
 Arbitrary-object getter execution in Flow B is not a current product capability. Direct calls, deterministic
 unknown-aware propagation, detached dump composition, selected-frame/PDB import context, and certified body-free W6
 property projection are implemented in their closed scopes. Broader arbitrary dispatch/effects remain separate gates.
-W8.1 admits exact memory-homed frame values and rejects selected-frame generic recovery; W8.2 must reflect both results
-without a fallback route.
+W8.1 admits exact memory-homed frame values and rejects selected-frame generic recovery; the completed W8 frame route
+reflects both results without a fallback route.
 
 ---
 
@@ -501,7 +507,8 @@ The important part is: **these types don’t mention ClrMD or SRM** and partial 
 * **SRM/PEReader** is the active metadata decoder over exact counted dump metadata and over independently identified
   disk artifacts. W3/W4 use it for closed structural method/signature/local/FieldDef projections; the disk PE remains
   an oracle. W7 implements the first bounded Portable-PDB identity/scope/import projection and static metadata binder.
-  W8.2 extends generic/nested/TypeSpec/literal/scoped binding from the completed physical dispositions.
+  W8.2–W8.8 extend generic/nested/TypeSpec/literal/scoped binding from the completed physical dispositions through the
+  host-owned, composed product route.
 * You absolutely want a **binding layer in between** to:
 
   * unify identity,

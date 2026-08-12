@@ -13,8 +13,15 @@ by itself. W1–W7 are closed for their named milestone scopes. Most recently, W
 while exact selected-frame/Portable-PDB namespace, import, and simple-alias facts can bind contextual `Type.Field`
 forms. Direct values and exact references can continue through the unchanged W2/W6 suffix evaluator.
 
-W8 is the sole active design/implementation sequence. W8.1's physical-truth fixture and probes are complete at
-`220be94b4`; W8.2 is the active product-contract checkpoint. The additive
+W8 is the sole active delivery sequence. W8.1–W8.8 are complete for their defined evidence, contract, acquisition,
+binding, runtime, and composition scopes. W8.9 is the active portfolio checkpoint: frozen v1 remains the historical
+22-executed / 13-manifest-only record, while its content-addressed v2 reconciliation physically executes all 35
+baselines. The separate candidate `tests/corpus/w8-static-field-portfolio-decision-candidate-v1.json` at SHA-256
+`a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450` conditionally computes `33 / 19 / 25`,
+proposes retiring rows 20/21/22/26/27 and deferring rows 29/34, and proposes observed-boundary hardening. It is pending
+explicit owner approval, has no owner authority, and closes neither W8.9 nor W8.10. It does not become an authority
+record: the distinct `tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` envelope is absent and, if
+approved, must be created separately and bind that exact candidate SHA. The additive
 `StaticFieldExpressionV2` profile expands the same pipeline across nested types, closed constructed generic owners,
 scope-precise aliases/imports, constraints, accessibility, constructed assignability, ordinary stored fields,
 metadata literals, and evidence-qualified bare static fields. W8.1 admits constructed ordinary, thread-relative, and
@@ -44,7 +51,8 @@ complete local headless matrix and repository guards, including sixteen independ
 shapes. W8.1 adds three generated targets and executable compiler/PDB, runtime-construction, storage, assignability,
 and selected-frame probes. Its focused gates pass 25/25, 1/1, one test across six dumps/profiles, and 8/8,
 respectively. This remains generated and meaningful-synthetic evidence with zero representative observations; it does
-not establish production readiness. W8.2 product behavior requires its own implementation and validation evidence.
+not establish production readiness. The bounded W8.2–W8.8 product behavior has its own implementation and validation
+evidence; W8.9 disposition and W8.10 exact-commit local/hosted closure remain incomplete.
 
 The following W3 checkpoint record is retained as historical evidence for one of those foundations. At that point the
 implementation contained public contracts; structural module/type/method/field identities; SRM-derived method
@@ -233,7 +241,8 @@ If these answers become stronger over time, the design is moving in the right di
 Out of scope in the current phase:
 
 - claiming production or general-interpreter completeness from the closed W1–W7 early-development evidence,
-- presenting W8.2+ V2 product behavior as implemented before its checkpoint evidence lands,
+- extrapolating the completed W8.2–W8.8 V2 behavior beyond its bounded fixture evidence, or presenting the unapproved
+  W8.9 decision candidate as owner authority or milestone closure,
 - promising production timelines,
 - polishing runtime tooling UX beyond design-level proposals,
 - publishing final API guarantees before executable evidence stabilizes them,
