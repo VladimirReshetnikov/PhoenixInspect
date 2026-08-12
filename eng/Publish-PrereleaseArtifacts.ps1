@@ -920,6 +920,51 @@ function New-BoundedProcessStartInfo {
     return $startInfo
 }
 
+function New-PublisherOperationFailure {
+    param(
+        [AllowNull()][System.Exception] $PrimaryFailure,
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]] $CleanupFailures,
+        [Parameter(Mandatory)][string] $Description
+    )
+
+    if ($null -eq $PrimaryFailure -and $CleanupFailures.Count -eq 0) {
+        return $null
+    }
+    if ($null -ne $PrimaryFailure -and $CleanupFailures.Count -eq 0) {
+        return $PrimaryFailure
+    }
+    if ($null -eq $PrimaryFailure -and $CleanupFailures.Count -eq 1) {
+        return $CleanupFailures[0].Failure
+    }
+
+    $failures = [System.Collections.Generic.List[System.Exception]]::new()
+    if ($null -ne $PrimaryFailure) {
+        $failures.Add($PrimaryFailure)
+    }
+    foreach ($cleanupFailure in $CleanupFailures) {
+        $failures.Add([System.InvalidOperationException]::new(
+            "Cleanup failure ($($cleanupFailure.Name)): $($cleanupFailure.Failure.Message)",
+            $cleanupFailure.Failure))
+    }
+    return [System.AggregateException]::new("$Description failed.", $failures.ToArray())
+}
+
+function Complete-PublisherOperation {
+    param(
+        [AllowNull()][System.Exception] $PrimaryFailure,
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]] $CleanupFailures,
+        [Parameter(Mandatory)][string] $Description
+    )
+
+    $failure = New-PublisherOperationFailure `
+        -PrimaryFailure $PrimaryFailure `
+        -CleanupFailures $CleanupFailures `
+        -Description $Description
+    if ($null -ne $failure) {
+        throw $failure
+    }
+}
+
 function Stop-PublisherOwnedProcess {
     param(
         [Parameter(Mandatory)][System.Diagnostics.Process] $Process,
@@ -969,6 +1014,10 @@ function Invoke-BoundedCapturedProcess {
     $process = [System.Diagnostics.Process]::new()
     $process.StartInfo = $startInfo
     $started = $false
+    $stdoutTask = $null
+    $stderrTask = $null
+    $result = $null
+    $primaryFailure = $null
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     try {
         if (-not $process.Start()) {
@@ -979,16 +1028,6 @@ function Invoke-BoundedCapturedProcess {
         $stderrTask = $process.StandardError.ReadToEndAsync()
         $timeoutMilliseconds = $TimeoutSeconds * 1000
         if (-not $process.WaitForExit($timeoutMilliseconds)) {
-            Stop-PublisherOwnedProcess -Process $process -Description $Description
-            try {
-                Wait-PublisherTextTasks `
-                    -Tasks ([System.Threading.Tasks.Task[]]@($stdoutTask, $stderrTask)) `
-                    -TimeoutMilliseconds 5000 `
-                    -Description "$Description cleanup"
-            }
-            catch {
-                # The timeout is already fatal. Process disposal below closes any remaining redirected handles.
-            }
             throw "$Description exceeded its $TimeoutSeconds-second wall-clock bound."
         }
 
@@ -1000,14 +1039,17 @@ function Invoke-BoundedCapturedProcess {
             -Tasks ([System.Threading.Tasks.Task[]]@($stdoutTask, $stderrTask)) `
             -TimeoutMilliseconds $remainingMilliseconds `
             -Description $Description
-        return [pscustomobject]@{
+        $result = [pscustomobject]@{
             ExitCode = $process.ExitCode
             StandardOutput = $stdoutTask.GetAwaiter().GetResult()
             StandardError = $stderrTask.GetAwaiter().GetResult()
         }
     }
+    catch {
+        $primaryFailure = $_.Exception
+    }
     finally {
-        $cleanupFailure = $null
+        $cleanupFailures = [System.Collections.Generic.List[object]]::new()
         if ($started) {
             try {
                 if (-not $process.HasExited) {
@@ -1015,14 +1057,41 @@ function Invoke-BoundedCapturedProcess {
                 }
             }
             catch {
-                $cleanupFailure = $_
+                $cleanupFailures.Add([pscustomobject]@{
+                    Name = 'process-tree termination'
+                    Failure = $_.Exception
+                })
+            }
+            if ($null -ne $stdoutTask -and $null -ne $stderrTask) {
+                try {
+                    Wait-PublisherTextTasks `
+                        -Tasks ([System.Threading.Tasks.Task[]]@($stdoutTask, $stderrTask)) `
+                        -TimeoutMilliseconds 5000 `
+                        -Description "$Description cleanup"
+                }
+                catch {
+                    $cleanupFailures.Add([pscustomobject]@{
+                        Name = 'redirected-stream drain'
+                        Failure = $_.Exception
+                    })
+                }
             }
         }
-        $process.Dispose()
-        if ($null -ne $cleanupFailure) {
-            throw "Failed to clean up ${Description}: $($cleanupFailure.Exception.Message)"
+        try {
+            $process.Dispose()
         }
+        catch {
+            $cleanupFailures.Add([pscustomobject]@{
+                Name = 'process disposal'
+                Failure = $_.Exception
+            })
+        }
+        Complete-PublisherOperation `
+            -PrimaryFailure $primaryFailure `
+            -CleanupFailures $cleanupFailures.ToArray() `
+            -Description $Description
     }
+    return $result
 }
 
 function Start-BoundedDemoTarget {
@@ -1042,6 +1111,8 @@ function Start-BoundedDemoTarget {
     $process.StartInfo = $startInfo
     $started = $false
     $ownershipTransferred = $false
+    $result = $null
+    $primaryFailure = $null
     try {
         if (-not $process.Start()) {
             throw 'Failed to start the disposable Contoso.OrderService smoke target.'
@@ -1058,16 +1129,19 @@ function Start-BoundedDemoTarget {
         }
 
         $remainingStdoutTask = $process.StandardOutput.ReadToEndAsync()
-        $ownershipTransferred = $true
-        return [pscustomobject]@{
+        $result = [pscustomobject]@{
             Process = $process
             RemainingStandardOutputTask = $remainingStdoutTask
             StandardErrorTask = $stderrTask
         }
+        $ownershipTransferred = $true
+    }
+    catch {
+        $primaryFailure = $_.Exception
     }
     finally {
         if (-not $ownershipTransferred) {
-            $cleanupFailure = $null
+            $cleanupFailures = [System.Collections.Generic.List[object]]::new()
             if ($started) {
                 try {
                     Stop-PublisherOwnedProcess `
@@ -1075,21 +1149,37 @@ function Start-BoundedDemoTarget {
                         -Description 'the disposable Contoso.OrderService smoke target'
                 }
                 catch {
-                    $cleanupFailure = $_
+                    $cleanupFailures.Add([pscustomobject]@{
+                        Name = 'process-tree termination'
+                        Failure = $_.Exception
+                    })
                 }
             }
-            $process.Dispose()
-            if ($null -ne $cleanupFailure) {
-                throw "Failed to clean up the disposable Contoso.OrderService smoke target: $($cleanupFailure.Exception.Message)"
+            try {
+                $process.Dispose()
             }
+            catch {
+                $cleanupFailures.Add([pscustomobject]@{
+                    Name = 'process disposal'
+                    Failure = $_.Exception
+                })
+            }
+            Complete-PublisherOperation `
+                -PrimaryFailure $primaryFailure `
+                -CleanupFailures $cleanupFailures.ToArray() `
+                -Description 'The disposable Contoso.OrderService smoke target startup'
         }
     }
+    return $result
 }
 
 function Stop-BoundedDemoTarget {
     param([Parameter(Mandatory)][pscustomobject] $Target)
 
     $process = $Target.Process
+    $processId = $process.Id
+    $result = $null
+    $primaryFailure = $null
     try {
         Stop-PublisherOwnedProcess `
             -Process $process `
@@ -1101,16 +1191,60 @@ function Stop-BoundedDemoTarget {
             -TimeoutMilliseconds 5000 `
             -Description 'The disposable Contoso.OrderService smoke target cleanup'
         $remainingOutput = $Target.RemainingStandardOutputTask.GetAwaiter().GetResult()
-        if (-not [string]::IsNullOrEmpty($remainingOutput)) {
-            throw 'The disposable Contoso.OrderService smoke target wrote unexpected output after exact READY.'
-        }
         $errorOutput = $Target.StandardErrorTask.GetAwaiter().GetResult()
-        if (-not [string]::IsNullOrEmpty($errorOutput)) {
-            throw 'The disposable Contoso.OrderService smoke target wrote an unexpected diagnostic to standard error.'
+        $result = [pscustomobject]@{
+            ProcessId = $processId
+            StandardOutput = $remainingOutput
+            StandardError = $errorOutput
         }
     }
+    catch {
+        $primaryFailure = $_.Exception
+    }
     finally {
-        $process.Dispose()
+        $cleanupFailures = [System.Collections.Generic.List[object]]::new()
+        try {
+            $process.Dispose()
+        }
+        catch {
+            $cleanupFailures.Add([pscustomobject]@{
+                Name = 'target process disposal'
+                Failure = $_.Exception
+            })
+        }
+        Complete-PublisherOperation `
+            -PrimaryFailure $primaryFailure `
+            -CleanupFailures $cleanupFailures.ToArray() `
+            -Description 'The disposable Contoso.OrderService smoke target cleanup'
+    }
+    return $result
+}
+
+function Assert-BoundedDemoTargetPostReadyOutput {
+    param(
+        [Parameter(Mandatory)][pscustomobject] $StoppedTarget,
+        [Parameter(Mandatory)][string] $ExpectedDumpPath
+    )
+
+    if (-not [string]::IsNullOrEmpty($StoppedTarget.StandardError)) {
+        throw 'The disposable Contoso.OrderService smoke target wrote an unexpected diagnostic to standard error.'
+    }
+
+    $remainingOutput = [string] $StoppedTarget.StandardOutput
+    if ($remainingOutput.Length -gt 4096) {
+        throw 'The disposable Contoso.OrderService smoke target wrote more than 4 KiB after exact READY.'
+    }
+
+    $expectedStart = '[createdump] Writing full dump for process {0} to file {1}' -f `
+        $StoppedTarget.ProcessId,
+        [System.IO.Path]::GetFullPath($ExpectedDumpPath)
+    $expectedPattern = '\A{0}\r?\n\[createdump\] Dump successfully written in [0-9]+ms(?:\r?\n)?\z' -f `
+        [System.Text.RegularExpressions.Regex]::Escape($expectedStart)
+    if (-not [System.Text.RegularExpressions.Regex]::IsMatch(
+            $remainingOutput,
+            $expectedPattern,
+            [System.Text.RegularExpressions.RegexOptions]::CultureInvariant)) {
+        throw 'The disposable Contoso.OrderService smoke target did not write the exact PID/path-bound CoreCLR createdump start/success diagnostics after READY.'
     }
 }
 
@@ -1211,8 +1345,10 @@ function Invoke-BoundedCliWorkflowSmoke {
     $null = New-Item -ItemType Directory -Path $ScratchDirectory
     $dumpPath = Join-Path $ScratchDirectory 'Contoso.OrderService.dmp'
     $target = $null
+    $primaryFailure = $null
     try {
         $target = Start-BoundedDemoTarget -ExecutablePath $TargetExecutablePath
+        $captureFailure = $null
         try {
             $capture = Invoke-BoundedCapturedProcess `
                 -FilePath $ExecutablePath `
@@ -1235,13 +1371,30 @@ function Invoke-BoundedCliWorkflowSmoke {
                 throw 'The extracted CLI capture smoke did not create a nonempty regular dump file.'
             }
         }
-        finally {
-            if ($null -ne $target) {
-                $ownedTarget = $target
-                $target = $null
-                Stop-BoundedDemoTarget -Target $ownedTarget
-            }
+        catch {
+            $captureFailure = $_.Exception
         }
+
+        $targetCleanupFailures = [System.Collections.Generic.List[object]]::new()
+        $stoppedTarget = $null
+        try {
+            $ownedTarget = $target
+            $target = $null
+            $stoppedTarget = Stop-BoundedDemoTarget -Target $ownedTarget
+        }
+        catch {
+            $targetCleanupFailures.Add([pscustomobject]@{
+                Name = 'target termination and stream drain'
+                Failure = $_.Exception
+            })
+        }
+        Complete-PublisherOperation `
+            -PrimaryFailure $captureFailure `
+            -CleanupFailures $targetCleanupFailures.ToArray() `
+            -Description 'The extracted CLI capture smoke'
+        Assert-BoundedDemoTargetPostReadyOutput `
+            -StoppedTarget $stoppedTarget `
+            -ExpectedDumpPath $dumpPath
 
         $evaluation = Invoke-BoundedCapturedProcess `
             -FilePath $ExecutablePath `
@@ -1260,13 +1413,37 @@ function Invoke-BoundedCliWorkflowSmoke {
         }
         Assert-CliWorkflowEvaluationOutput -Output $evaluation.StandardOutput
     }
+    catch {
+        $primaryFailure = $_.Exception
+    }
     finally {
+        $cleanupFailures = [System.Collections.Generic.List[object]]::new()
         if ($null -ne $target) {
-            $ownedTarget = $target
-            $target = $null
-            Stop-BoundedDemoTarget -Target $ownedTarget
+            try {
+                $ownedTarget = $target
+                $target = $null
+                $null = Stop-BoundedDemoTarget -Target $ownedTarget
+            }
+            catch {
+                $cleanupFailures.Add([pscustomobject]@{
+                    Name = 'fallback target termination and stream drain'
+                    Failure = $_.Exception
+                })
+            }
         }
-        Remove-BoundedSmokeFile -Path $dumpPath -ExpectedParent $ScratchDirectory
+        try {
+            Remove-BoundedSmokeFile -Path $dumpPath -ExpectedParent $ScratchDirectory
+        }
+        catch {
+            $cleanupFailures.Add([pscustomobject]@{
+                Name = 'temporary dump removal'
+                Failure = $_.Exception
+            })
+        }
+        Complete-PublisherOperation `
+            -PrimaryFailure $primaryFailure `
+            -CleanupFailures $cleanupFailures.ToArray() `
+            -Description 'The extracted CLI workflow smoke'
     }
 }
 
@@ -1572,6 +1749,210 @@ Session summary
                 Assert-CliWorkflowEvaluationOutput -Output $invalidEvaluation.Output
             } $invalidEvaluation.Name
         }
+
+        $selfTestDumpPath = Join-Path $selfTestRoot 'workflow-smoke/Contoso.OrderService.dmp'
+        $selfTestProcessId = 12345
+        $validTargetOutput = @(
+            '[createdump] Writing full dump for process {0} to file {1}' -f `
+                $selfTestProcessId,
+                [System.IO.Path]::GetFullPath($selfTestDumpPath)
+            '[createdump] Dump successfully written in 435ms'
+        ) -join "`n"
+        $validStoppedTarget = [pscustomobject]@{
+            ProcessId = $selfTestProcessId
+            StandardOutput = $validTargetOutput + "`n"
+            StandardError = ''
+        }
+        foreach ($validTranscript in @(
+            $validTargetOutput,
+            ($validTargetOutput + "`n"),
+            $validTargetOutput.Replace("`n", "`r`n"),
+            ($validTargetOutput.Replace("`n", "`r`n") + "`r`n"))) {
+            Assert-BoundedDemoTargetPostReadyOutput `
+                -StoppedTarget ([pscustomobject]@{
+                    ProcessId = $selfTestProcessId
+                    StandardOutput = $validTranscript
+                    StandardError = ''
+                }) `
+                -ExpectedDumpPath $selfTestDumpPath
+        }
+
+        foreach ($invalidTargetOutput in @(
+            [pscustomobject]@{
+                Name = 'wrong createdump PID rejected'
+                Target = [pscustomobject]@{
+                    ProcessId = 54321
+                    StandardOutput = $validStoppedTarget.StandardOutput
+                    StandardError = ''
+                }
+                DumpPath = $selfTestDumpPath
+            },
+            [pscustomobject]@{
+                Name = 'wrong createdump path rejected'
+                Target = $validStoppedTarget
+                DumpPath = Join-Path $selfTestRoot 'workflow-smoke/other.dmp'
+            },
+            [pscustomobject]@{
+                Name = 'missing createdump completion rejected'
+                Target = [pscustomobject]@{
+                    ProcessId = $selfTestProcessId
+                    StandardOutput = $validTargetOutput.Split("`n")[0]
+                    StandardError = ''
+                }
+                DumpPath = $selfTestDumpPath
+            },
+            [pscustomobject]@{
+                Name = 'empty target output rejected'
+                Target = [pscustomobject]@{
+                    ProcessId = $selfTestProcessId
+                    StandardOutput = ''
+                    StandardError = ''
+                }
+                DumpPath = $selfTestDumpPath
+            },
+            [pscustomobject]@{
+                Name = 'createdump success without start rejected'
+                Target = [pscustomobject]@{
+                    ProcessId = $selfTestProcessId
+                    StandardOutput = "[createdump] Dump successfully written in 435ms`n"
+                    StandardError = ''
+                }
+                DumpPath = $selfTestDumpPath
+            },
+            [pscustomobject]@{
+                Name = 'reversed createdump diagnostics rejected'
+                Target = [pscustomobject]@{
+                    ProcessId = $selfTestProcessId
+                    StandardOutput = $validTargetOutput.Split("`n")[1] + "`n" + $validTargetOutput.Split("`n")[0]
+                    StandardError = ''
+                }
+                DumpPath = $selfTestDumpPath
+            },
+            [pscustomobject]@{
+                Name = 'duplicate createdump diagnostic rejected'
+                Target = [pscustomobject]@{
+                    ProcessId = $selfTestProcessId
+                    StandardOutput = $validTargetOutput + "`n" + $validTargetOutput.Split("`n")[1]
+                    StandardError = ''
+                }
+                DumpPath = $selfTestDumpPath
+            },
+            [pscustomobject]@{
+                Name = 'blank line before createdump diagnostics rejected'
+                Target = [pscustomobject]@{
+                    ProcessId = $selfTestProcessId
+                    StandardOutput = "`n" + $validTargetOutput
+                    StandardError = ''
+                }
+                DumpPath = $selfTestDumpPath
+            },
+            [pscustomobject]@{
+                Name = 'blank line between createdump diagnostics rejected'
+                Target = [pscustomobject]@{
+                    ProcessId = $selfTestProcessId
+                    StandardOutput = $validTargetOutput.Replace("`n", "`n`n")
+                    StandardError = ''
+                }
+                DumpPath = $selfTestDumpPath
+            },
+            [pscustomobject]@{
+                Name = 'extra blank line after createdump diagnostics rejected'
+                Target = [pscustomobject]@{
+                    ProcessId = $selfTestProcessId
+                    StandardOutput = $validTargetOutput + "`n`n"
+                    StandardError = ''
+                }
+                DumpPath = $selfTestDumpPath
+            },
+            [pscustomobject]@{
+                Name = 'malformed createdump duration rejected'
+                Target = [pscustomobject]@{
+                    ProcessId = $selfTestProcessId
+                    StandardOutput = $validTargetOutput.Replace('435ms', '+435ms')
+                    StandardError = ''
+                }
+                DumpPath = $selfTestDumpPath
+            },
+            [pscustomobject]@{
+                Name = 'unrelated target output rejected'
+                Target = [pscustomobject]@{
+                    ProcessId = $selfTestProcessId
+                    StandardOutput = $validStoppedTarget.StandardOutput + "application output`n"
+                    StandardError = ''
+                }
+                DumpPath = $selfTestDumpPath
+            },
+            [pscustomobject]@{
+                Name = 'oversized target output rejected'
+                Target = [pscustomobject]@{
+                    ProcessId = $selfTestProcessId
+                    StandardOutput = 'x' * 4097
+                    StandardError = ''
+                }
+                DumpPath = $selfTestDumpPath
+            },
+            [pscustomobject]@{
+                Name = 'target standard error rejected'
+                Target = [pscustomobject]@{
+                    ProcessId = $selfTestProcessId
+                    StandardOutput = $validStoppedTarget.StandardOutput
+                    StandardError = 'unexpected diagnostic'
+                }
+                DumpPath = $selfTestDumpPath
+            })) {
+            Assert-SelfTestThrows {
+                Assert-BoundedDemoTargetPostReadyOutput `
+                    -StoppedTarget $invalidTargetOutput.Target `
+                    -ExpectedDumpPath $invalidTargetOutput.DumpPath
+            } $invalidTargetOutput.Name
+        }
+
+        $primaryException = [System.InvalidOperationException]::new('primary operation failed')
+        $targetCleanupException = [System.InvalidOperationException]::new('target cleanup failed')
+        $dumpCleanupException = [System.InvalidOperationException]::new('dump cleanup failed')
+        $targetCleanupRecord = [pscustomobject]@{
+            Name = 'target cleanup'
+            Failure = $targetCleanupException
+        }
+        $dumpCleanupRecord = [pscustomobject]@{
+            Name = 'dump cleanup'
+            Failure = $dumpCleanupException
+        }
+        $primaryOnlyFailure = New-PublisherOperationFailure `
+            -PrimaryFailure $primaryException `
+            -CleanupFailures @() `
+            -Description 'self-test operation'
+        if (-not [object]::ReferenceEquals($primaryException, $primaryOnlyFailure)) {
+            throw 'Publisher operation failure composition did not preserve a primary-only exception.'
+        }
+        $cleanupOnlyFailure = New-PublisherOperationFailure `
+            -PrimaryFailure $null `
+            -CleanupFailures @($targetCleanupRecord) `
+            -Description 'self-test operation'
+        if (-not [object]::ReferenceEquals($targetCleanupException, $cleanupOnlyFailure)) {
+            throw 'Publisher operation failure composition did not preserve a cleanup-only exception.'
+        }
+        $combinedFailure = New-PublisherOperationFailure `
+            -PrimaryFailure $primaryException `
+            -CleanupFailures @($targetCleanupRecord, $dumpCleanupRecord) `
+            -Description 'self-test operation'
+        if ($combinedFailure -isnot [System.AggregateException] -or
+            $combinedFailure.InnerExceptions.Count -ne 3 -or
+            -not [object]::ReferenceEquals($primaryException, $combinedFailure.InnerExceptions[0]) -or
+            -not [object]::ReferenceEquals($targetCleanupException, $combinedFailure.InnerExceptions[1].InnerException) -or
+            -not [object]::ReferenceEquals($dumpCleanupException, $combinedFailure.InnerExceptions[2].InnerException)) {
+            throw 'Publisher operation failure composition did not retain primary, target-cleanup, and dump-cleanup failures in order.'
+        }
+        $multipleCleanupFailure = New-PublisherOperationFailure `
+            -PrimaryFailure $null `
+            -CleanupFailures @($targetCleanupRecord, $dumpCleanupRecord) `
+            -Description 'self-test operation'
+        if ($multipleCleanupFailure -isnot [System.AggregateException] -or
+            $multipleCleanupFailure.InnerExceptions.Count -ne 2 -or
+            -not [object]::ReferenceEquals($targetCleanupException, $multipleCleanupFailure.InnerExceptions[0].InnerException) -or
+            -not [object]::ReferenceEquals($dumpCleanupException, $multipleCleanupFailure.InnerExceptions[1].InnerException)) {
+            throw 'Publisher operation failure composition did not retain multiple cleanup failures in order.'
+        }
     }
     finally {
         if (Test-Path -LiteralPath $selfTestRoot) {
@@ -1585,7 +1966,7 @@ Session summary
         }
     }
 
-    Write-Output 'Publisher self-test passed: build evidence, legacy ownership boundaries, and exact CLI workflow semantics reject adversarial fixtures.'
+    Write-Output 'Publisher self-test passed: build evidence, legacy ownership boundaries, exact CLI workflow semantics, and PID/path-bound createdump diagnostics reject adversarial fixtures.'
 }
 
 $products = @(
@@ -1619,6 +2000,7 @@ $newOutputInstalled = $false
 $swapCommitted = $false
 $outputMutex = [System.Threading.Mutex]::new($false, $outputMutexName)
 $outputMutexHeld = $false
+$publisherFailure = $null
 
 try {
     try {
@@ -1957,39 +2339,83 @@ try {
     $totalStopwatch.Stop()
     Write-Host "Completed in $([math]::Round($totalStopwatch.Elapsed.TotalSeconds, 1)) s."
 }
+catch {
+    $publisherFailure = $_.Exception
+}
 finally {
-    try {
-        if ($null -ne $stagedOutput -and (Test-Path -LiteralPath $stagedOutput)) {
-            Remove-GuardedSwapDirectory -Path $stagedOutput -Kind stage
+$publisherCleanupFailures = [System.Collections.Generic.List[object]]::new()
+try {
+    if ($null -ne $stagedOutput -and (Test-Path -LiteralPath $stagedOutput)) {
+        Remove-GuardedSwapDirectory -Path $stagedOutput -Kind stage
+    }
+}
+catch {
+    $publisherCleanupFailures.Add([pscustomobject]@{
+        Name = 'staged artifact directory removal'
+        Failure = $_.Exception
+    })
+}
+try {
+    if ($swapCommitted -and $previousOutputMoved -and
+        $null -ne $previousOutput -and (Test-Path -LiteralPath $previousOutput)) {
+        Test-ArtifactOutputDirectory -Path $previousOutput -ExpectedNames $expectedOutputNames -AllowPriorVersion -AllowLegacyPublisherFormat
+        Remove-GuardedSwapDirectory -Path $previousOutput -Kind previous
+        $previousOutputMoved = $false
+    }
+}
+catch {
+    $publisherCleanupFailures.Add([pscustomobject]@{
+        Name = 'previous artifact directory removal'
+        Failure = $_.Exception
+    })
+}
+try {
+    if (Test-Path -LiteralPath $workRoot) {
+        $workRootFullPath = [System.IO.Path]::TrimEndingDirectorySeparator(
+            [System.IO.Path]::GetFullPath($workRoot))
+        $systemTempFullPath = [System.IO.Path]::TrimEndingDirectorySeparator(
+            [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()))
+        $workRootParent = [System.IO.Path]::GetDirectoryName($workRootFullPath)
+        $workRootLeaf = [System.IO.Path]::GetFileName($workRootFullPath)
+        $workRootItem = Get-Item -LiteralPath $workRootFullPath -Force
+        if (-not [string]::Equals($workRootParent, $systemTempFullPath, [System.StringComparison]::OrdinalIgnoreCase) -or
+            $workRootLeaf -notmatch '^phoenixinspect-publish-[0-9a-f]{32}$' -or
+            ($workRootItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "Refusing recursive cleanup of unexpected work root '$workRootFullPath'."
         }
-        if ($swapCommitted -and $previousOutputMoved -and
-            $null -ne $previousOutput -and (Test-Path -LiteralPath $previousOutput)) {
-            Test-ArtifactOutputDirectory -Path $previousOutput -ExpectedNames $expectedOutputNames -AllowPriorVersion -AllowLegacyPublisherFormat
-            Remove-GuardedSwapDirectory -Path $previousOutput -Kind previous
-            $previousOutputMoved = $false
-        }
-        if (Test-Path -LiteralPath $workRoot) {
-            $workRootFullPath = [System.IO.Path]::TrimEndingDirectorySeparator(
-                [System.IO.Path]::GetFullPath($workRoot))
-            $systemTempFullPath = [System.IO.Path]::TrimEndingDirectorySeparator(
-                [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()))
-            $workRootParent = [System.IO.Path]::GetDirectoryName($workRootFullPath)
-            $workRootLeaf = [System.IO.Path]::GetFileName($workRootFullPath)
-            $workRootItem = Get-Item -LiteralPath $workRootFullPath -Force
-            if (-not [string]::Equals($workRootParent, $systemTempFullPath, [System.StringComparison]::OrdinalIgnoreCase) -or
-                $workRootLeaf -notmatch '^phoenixinspect-publish-[0-9a-f]{32}$' -or
-                ($workRootItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
-                throw "Refusing recursive cleanup of unexpected work root '$workRootFullPath'."
-            }
 
-            Remove-Item -LiteralPath $workRoot -Recurse -Force
-        }
+        Remove-Item -LiteralPath $workRoot -Recurse -Force
     }
-    finally {
-        if ($outputMutexHeld) {
-            $outputMutex.ReleaseMutex()
-            $outputMutexHeld = $false
-        }
-        $outputMutex.Dispose()
+}
+catch {
+    $publisherCleanupFailures.Add([pscustomobject]@{
+        Name = 'temporary publisher work-root removal'
+        Failure = $_.Exception
+    })
+}
+try {
+    if ($outputMutexHeld) {
+        $outputMutex.ReleaseMutex()
+        $outputMutexHeld = $false
     }
+}
+catch {
+    $publisherCleanupFailures.Add([pscustomobject]@{
+        Name = 'artifact-output mutex release'
+        Failure = $_.Exception
+    })
+}
+try {
+    $outputMutex.Dispose()
+}
+catch {
+    $publisherCleanupFailures.Add([pscustomobject]@{
+        Name = 'artifact-output mutex disposal'
+        Failure = $_.Exception
+    })
+}
+Complete-PublisherOperation `
+    -PrimaryFailure $publisherFailure `
+    -CleanupFailures $publisherCleanupFailures.ToArray() `
+    -Description 'The prerelease artifact publisher'
 }

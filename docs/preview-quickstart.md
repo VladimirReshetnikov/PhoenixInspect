@@ -80,6 +80,9 @@ self-contained CLI must capture a nonempty dump and reopen it to evaluate
 is stopped and disposed before inspection, and the smoke requires the exact value `"2026.07.30-preview"`, an
 `Exact`/`Complete` answer, one evaluated expression, and zero non-exact answers. The dump, target publish, and all
 smoke logs remain outside the ZIPs and are deleted with the temporary work root; CI does not retain or upload them.
+The target's bounded post-`READY` stdout permits only CoreCLR's measured two-line `[createdump]` start/success
+diagnostic pair, bound to the exact target PID and requested dump path; target stderr and any unrelated application
+output still fail the smoke.
 
 Every ZIP contains byte-identical canonical `BUILD-EVIDENCE.json`, the generated third-party evidence, and a complete
 per-file SHA-256 manifest. The build-evidence record binds the initial/final Git commit and tree, canonical tracked
