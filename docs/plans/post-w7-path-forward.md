@@ -1523,7 +1523,8 @@ evidence.
 - Complete unit, Fast, ordinary dump, optimized context, focused V2, generated conformance, and meaningful synthetic
   lanes pass with zero skips.
 - Every W1–W7 regression and canonical golden remains unchanged except explicit new target identities.
-- Markdown, headless-workflow, authored-scope vocabulary, one-parser-site, public-surface, and clean-tree guards pass.
+- Markdown, headless-workflow, tracked-project/solution-membership, authored-scope vocabulary, one-parser-site,
+  public-surface, and clean-tree guards pass.
 - The exact closure commit is pushed and current documents distinguish design, implementation, local validation, and
   hosted evidence accurately.
 
@@ -1537,9 +1538,25 @@ evidence.
 | Optimized context | Existing five-axis report remains stable; only an explicit V2 schema may add new facts |
 | Meaningful synthetic | Fixed thirty-two independent core dumps, four shapes, one independent dump per admitted branch, corrected decision metrics, zero representative rows |
 | Compatibility | All W1–W7 profiles, manifests, reports, canonical bytes, and default routes remain golden |
-| Repository | Markdown, headless workflow, authored vocabulary, one parser, XML docs, strict build, clean tree |
+| Repository | Markdown, headless workflow, tracked project/solution equality, authored vocabulary, one parser, XML docs, strict build, clean tree |
 
 Expected managed command shape:
+
+The committed local entry point is `eng/Invoke-W8LocalReleaseValidation.ps1`. `-List` emits its deterministic command
+contract without changing the workspace, and `-SelfTest` exercises the TRX parser, owner-authority gate, tracked-HEAD
+provenance, and exact command inventory without running the matrix. The full run requires a clean tree and the tracked,
+byte-identical owner-authorized W8.9 final-decision input before it creates or replaces output or starts any expensive
+command:
+
+```powershell
+.\eng\Invoke-W8LocalReleaseValidation.ps1 -List
+.\eng\Invoke-W8LocalReleaseValidation.ps1 -SelfTest
+.\eng\Invoke-W8LocalReleaseValidation.ps1 -OutputDirectory artifacts/w8-local-release-validation -Force
+```
+
+Its deterministic `evidence.json` is explicitly `LocalOnly`, records hosted evidence as `NotRun`, and sets
+`closureClaim` to `false`. A successful local run is therefore necessary W8.10 evidence, never hosted proof or closure
+by itself. The underlying managed commands retain the following shape:
 
 ```powershell
 .\eng\Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode

@@ -1089,6 +1089,7 @@ function Get-CommandSpecs {
     $selfRelativePath = ConvertTo-RepositoryRelativePath $scriptPath
     $markdownGuard = 'eng/verify-markdown-links.ps1'
     $headlessGuard = 'eng/verify-headless-workflows.ps1'
+    $solutionProjectsGuard = 'eng/verify-solution-projects.ps1'
     $prereleaseGuard = 'eng/verify-prerelease-nondistribution.ps1'
     $prereleasePublisher = 'eng/Publish-PrereleaseArtifacts.ps1'
     $previewDemo = 'eng/Invoke-PreviewDemo.ps1'
@@ -1143,6 +1144,8 @@ function Get-CommandSpecs {
         '-NoLogo', '-NoProfile', '-NonInteractive', '-File', $markdownGuard)))
     $commands.Add((New-CommandSpec 'headless-workflows' 'RepositoryGuard' 'pwsh' @(
         '-NoLogo', '-NoProfile', '-NonInteractive', '-File', $headlessGuard)))
+    $commands.Add((New-CommandSpec 'solution-projects' 'RepositoryGuard' 'pwsh' @(
+        '-NoLogo', '-NoProfile', '-NonInteractive', '-File', $solutionProjectsGuard)))
     $commands.Add((New-CommandSpec 'prerelease-nondistribution' 'RepositoryGuard' 'pwsh' @(
         '-NoLogo', '-NoProfile', '-NonInteractive', '-File', $prereleaseGuard)))
     $commands.Add((New-CommandSpec 'authored-vocabulary' 'RepositoryGuard' 'pwsh' @(
@@ -1214,6 +1217,7 @@ function Invoke-CommandPlanSelfTest {
         'prerelease-payloads',
         'markdown-links',
         'headless-workflows',
+        'solution-projects',
         'prerelease-nondistribution',
         'authored-vocabulary',
         'one-parser-site',
@@ -1311,6 +1315,7 @@ function Invoke-CommandPlanSelfTest {
     $guardScripts = [ordered]@{
         'markdown-links' = 'eng/verify-markdown-links.ps1'
         'headless-workflows' = 'eng/verify-headless-workflows.ps1'
+        'solution-projects' = 'eng/verify-solution-projects.ps1'
         'prerelease-nondistribution' = 'eng/verify-prerelease-nondistribution.ps1'
     }
     foreach ($guardId in $guardScripts.Keys) {

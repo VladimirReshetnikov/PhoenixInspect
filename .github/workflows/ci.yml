@@ -28,6 +28,9 @@ jobs:
       - name: Verify headless managed workflow invocations
         shell: pwsh
         run: ./eng/verify-headless-workflows.ps1
+      - name: Verify tracked project solution membership
+        shell: pwsh
+        run: ./eng/verify-solution-projects.ps1
       - name: Enforce the prerelease non-distribution boundary
         shell: pwsh
         run: ./eng/verify-prerelease-nondistribution.ps1
@@ -43,7 +46,7 @@ jobs:
             throw 'The W8 local release-validation plan is not deterministic.'
           }
           $plan = $first | ConvertFrom-Json
-          if ($plan.commandCount -ne 21 -or $plan.requiredInputs.Count -ne 3 -or
+          if ($plan.commandCount -ne 22 -or $plan.requiredInputs.Count -ne 3 -or
               -not $plan.localOnly -or $plan.hostedEvidence -cne 'NotRun' -or $plan.closureClaim) {
             throw 'The W8 local release-validation plan has an unexpected scope or command inventory.'
           }
