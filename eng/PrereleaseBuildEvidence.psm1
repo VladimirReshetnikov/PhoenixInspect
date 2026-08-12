@@ -398,13 +398,12 @@ function Get-PrereleaseRepositoryContract {
     [xml] $rootProps = [System.IO.File]::ReadAllText(
         (Resolve-RepositoryFile $RepositoryRoot 'Directory.Build.props' 'Build properties'))
     $targetFramework = [string] $rootProps.Project.PropertyGroup.TargetFramework
-    $repositoryUrl = [string] $rootProps.Project.PropertyGroup.RepositoryUrl
-    $repositoryType = [string] $rootProps.Project.PropertyGroup.RepositoryType
+    $repositoryUrl = [string] $rootProps.Project.PropertyGroup.PhoenixInspectCanonicalRepositoryUrl
     if ($targetFramework -cne $script:ExpectedTargetFramework) {
         throw "Directory.Build.props must target '$($script:ExpectedTargetFramework)'."
     }
-    if ($repositoryUrl -cne $script:CanonicalRepositoryUrl -or $repositoryType -cne 'git') {
-        throw 'Directory.Build.props must carry the canonical tracked HTTPS RepositoryUrl and RepositoryType git.'
+    if ($repositoryUrl -cne $script:CanonicalRepositoryUrl) {
+        throw 'Directory.Build.props must carry the publisher-specific canonical tracked HTTPS repository URL.'
     }
 
     return [pscustomobject]@{

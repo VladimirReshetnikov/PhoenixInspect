@@ -2,9 +2,8 @@
   <!-- Early-development baseline configuration. Public API and target frameworks are intentionally provisional. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <!-- Canonical tracked source identity; artifact evidence must never depend on a mutable local Git remote. -->
-    <RepositoryUrl>https://github.com/VladimirReshetnikov/PhoenixInspect</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
+    <!-- Publisher-specific tracked identity; do not flow standard RepositoryUrl metadata into frozen test artifacts. -->
+    <PhoenixInspectCanonicalRepositoryUrl>https://github.com/VladimirReshetnikov/PhoenixInspect</PhoenixInspectCanonicalRepositoryUrl>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>14.0</LangVersion>

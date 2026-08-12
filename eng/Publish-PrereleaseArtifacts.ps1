@@ -1230,7 +1230,6 @@ try {
         Invoke-Checked -Description "Restoring $($product.Project)" -CommandArguments @(
             'restore', $product.Project,
             '--locked-mode',
-            '--force-evaluate',
             '--runtime', $runtimeIdentifier,
             '--artifacts-path', $sdkArtifactsRoot,
             '--packages', $nugetPackageRoot,
