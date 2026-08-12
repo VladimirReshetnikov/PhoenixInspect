@@ -2235,6 +2235,23 @@ function Invoke-TechnicalPreflightPolicySelfTest {
         throw 'The TechnicalPreflight switch must remain mandatory in its own parameter set.'
     }
 
+    $exactExitCode = Assert-SingleCommandExitCodeResult `
+        -Result ([object[]]@([int]0)) `
+        -CommandId 'self-test-exact-exit-code'
+    if ($exactExitCode -ne 0) {
+        throw 'The command exit-code contract did not preserve its sole typed value.'
+    }
+    Assert-PolicyThrows {
+        Assert-SingleCommandExitCodeResult `
+            -Result ([object[]]@('child transcript pollution', [int]0)) `
+            -CommandId 'self-test-polluted-exit-code'
+    } 'command success-stream pollution rejected' 'polluted or missing exit-code contract'
+    Assert-PolicyThrows {
+        Assert-SingleCommandExitCodeResult `
+            -Result ([object[]]@()) `
+            -CommandId 'self-test-missing-exit-code'
+    } 'missing command exit code rejected' 'polluted or missing exit-code contract'
+
     $null
 }
 
@@ -2259,8 +2276,8 @@ function Invoke-CommandSpec {
         [Parameter(Mandatory)][string] $PowerShellPath
     )
 
-    Write-Output ''
-    Write-Output "[$($Command.Id)] $(Format-Command $Command)"
+    Write-Host ''
+    Write-Host "[$($Command.Id)] $(Format-Command $Command)"
     [string[]] $hostArgumentList = @(
         '-NoLogo',
         '-NoProfile',
@@ -2268,13 +2285,28 @@ function Invoke-CommandSpec {
         '-File',
         $headlessWrapperPath,
         $Command.Executable) + @($Command.ArgumentList)
-    & $PowerShellPath @hostArgumentList
+    # Preserve the child transcript for the operator without returning it through this function's success stream.
+    # The sole success-stream value is the typed exit code consumed by the evidence state machine below.
+    & $PowerShellPath @hostArgumentList | ForEach-Object { Write-Host $_ }
     $exitCode = $LASTEXITCODE
     if ($null -eq $exitCode) {
         throw "Command '$($Command.Id)' did not report an exit code."
     }
 
     [int]$exitCode
+}
+
+function Assert-SingleCommandExitCodeResult {
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]] $Result,
+        [Parameter(Mandatory)][string] $CommandId
+    )
+
+    if ($Result.Count -ne 1 -or $Result[0] -isnot [int]) {
+        throw "Command '$CommandId' returned a polluted or missing exit-code contract."
+    }
+
+    [int]$Result[0]
 }
 
 function New-CommandEvidence {
@@ -2475,7 +2507,8 @@ try {
                 }
             }
 
-            $evidence.exitCode = Invoke-CommandSpec $command $powerShellPath
+            $rawCommandResult = @(Invoke-CommandSpec $command $powerShellPath)
+            $evidence.exitCode = Assert-SingleCommandExitCodeResult $rawCommandResult $command.Id
             if ($evidence.exitCode -ne 0) {
                 throw "Command '$($command.Id)' failed with exit code $($evidence.exitCode)."
             }
