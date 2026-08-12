@@ -200,7 +200,13 @@ Core principles:
   first-boundary reporting surface without extending binding reach.” The candidate is pending explicit owner approval,
   carries no owner authority, and closes neither W8.9 nor W8.10; W8 implements none of the proposed action. The distinct
   authority envelope `tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is absent and, if approved,
-  must be created separately and bind the exact candidate SHA above.
+  must be created separately and bind the exact candidate SHA above. An authority-absent technical preflight at exact
+  commit `6acfef2808d85e69f36f356813a9337507ea5b7b` passed all 22 commands and all 3,430 test executions across 11
+  strict TRX lanes with zero failures or skips. Separate hosted
+  [CI run 31618781452](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/31618781452) passed all six
+  jobs and 2,129/2,129 hosted TRX executions at that same commit. These pre-authority technical checkpoints do not
+  approve W8.9, satisfy the future authority-bound W8.10 local run and exact-commit hosted rerun, or close either
+  milestone; the local record itself embeds no hosted-evidence claim.
 
 The complete delivery ledger — every closed milestone with its exact closure commits, verification counts, hosted CI
 runs, and realized-scale accounting — is the [milestone history](docs/plans/milestone-history.md). Current evidence

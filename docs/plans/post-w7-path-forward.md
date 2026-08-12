@@ -1599,7 +1599,25 @@ Its deterministic `evidence.json` is explicitly `LocalOnly`, records hosted evid
 `closureClaim` to `false`. A successful local run is therefore necessary W8.10 evidence, never hosted proof or closure
 by itself. Technical preflight never satisfies that local-run obligation: after owner approval, the authority-bound
 normal matrix must execute again at the exact prospective closure commit, and the required hosted jobs must pass at
-that exact pushed commit. The underlying managed commands retain the following shape:
+that exact pushed commit.
+
+The first complete authority-absent technical preflight passed at exact commit
+`6acfef2808d85e69f36f356813a9337507ea5b7b`. Its 22/22 commands included the strict zero-warning Release build, all
+11 fail-closed TRX lanes, ordinary and optimized dump evidence, preview demo, SBOM-bound CLI/Desktop local publishing
+and extraction, the disposable capture/open/static-field CLI workflow, native Desktop main-window startup, and every
+repository guard. All 3,430 test executions passed with zero failures and zero skips. The final local record at
+`artifacts/w8-technical-preflight/technical-preflight.json` was 27,806 bytes with SHA-256
+`51cb6235ebb5b0240a1310014548ea6363df827819f93b16c3590dc956425ca8`; it records the authority path absent at both
+admission and completion, the same clean HEAD before and after, `hostedEvidence: NotRun`, and every authority/W8.9/W8.10
+claim as false. Separately, hosted
+[CI run 31618781452](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/31618781452) passed all six jobs,
+all 62 steps, four zero-warning/error strict builds, and 2,129/2,129 hosted TRX executions with zero failures or skips at
+that same commit. It also passed the full SBOM-bound publisher, extracted CLI capture/evaluation, and native Desktop
+main-window smoke. That hosted result does not alter the local record's `NotRun` field and is still pre-authority
+technical evidence. Neither checkpoint can be promoted into the required post-approval exact-commit local and hosted
+closure evidence.
+
+The underlying managed commands retain the following shape:
 
 ```powershell
 .\eng\Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode

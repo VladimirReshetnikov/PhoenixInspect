@@ -37,7 +37,13 @@ The active plan is the [`Post-W7 Path Forward`](post-w7-path-forward.md).
   proposes retiring rows 20/21/22/26/27 and deferring rows 29/34, and proposes observed-boundary hardening. It is
   pending explicit owner approval, carries no authority, and closes neither W8.9 nor W8.10. The distinct future
   authority envelope `tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is absent and, if approved,
-  must bind that exact candidate SHA. W8.10 remains the exact-commit repository and hosted closure checkpoint. The
+  must bind that exact candidate SHA. An authority-absent technical-readiness checkpoint at exact commit
+  `6acfef2808d85e69f36f356813a9337507ea5b7b` passed all 22 commands and all 3,430 test executions in 11 strict TRX
+  lanes with zero failures or skips; it carries no approval, W8.9, W8.10-local-validation, hosted, or closure claim.
+  Separate hosted [CI run 31618781452](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/31618781452)
+  passed all six jobs and 2,129/2,129 hosted TRX executions at that same commit with zero failures or skips. Both are
+  pre-authority technical-readiness evidence, not substitutes for the future authority-bound exact-commit local and
+  hosted W8.10 closure checkpoints. The
   [`Post-W7 Path Forward`](post-w7-path-forward.md) is the detailed authority. Its
   inclusive umbrella scale is `~100K LOC`, generally split into `~10K LOC` implementation/evidence checkpoints. W7's
   context-independent fully qualified guarantee, raw-memory authority, result axes, and unchanged W2/W6 suffix
@@ -46,7 +52,8 @@ The active plan is the [`Post-W7 Path Forward`](post-w7-path-forward.md).
   and frame descriptors to caller-owned context, runtime, suffix, and frame-root evidence seams while retaining typed
   stops and zero-call proofs. W8.9 is the in-progress checkpoint; its frozen v1 findings and 35/35 physically executed
   v2 baselines are meaningful-synthetic evidence, not representative production observation. The candidate's seven
-  proposed dispositions remain unapproved; its no-authority computation closes neither W8.9 nor W8.10.
+  proposed dispositions remain unapproved; its no-authority computation and the successful technical-only preflight
+  close neither W8.9 nor W8.10.
 - **Primary progress signal:** executable scenarios and tests, with the design under `docs/` kept just ahead of and
   consistent with that evidence. This remains early-development evidence, not a production-ready evaluator or
   interpreter.

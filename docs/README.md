@@ -41,7 +41,13 @@ with zero decision credit, and proposes `observed-boundary-hardening` with actio
 reporting surface without extending binding reach.” It remains pending explicit owner approval, has no owner authority,
 closes neither W8.9 nor W8.10, and implements no successor action. The separate future authority envelope
 `tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is absent; if approved, it must bind that exact
-candidate SHA rather than modifying the candidate.
+candidate SHA rather than modifying the candidate. At exact commit
+`6acfef2808d85e69f36f356813a9337507ea5b7b`, the separate authority-absent technical preflight passed 22/22 commands
+and 3,430/3,430 test executions across 11 strict TRX lanes with zero failures or skips. Its local record is deliberately
+non-promotable and embeds no hosted-evidence claim. Separate hosted
+[CI run 31618781452](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/31618781452) passed all six jobs
+and 2,129/2,129 hosted TRX executions at the same commit, but these pre-authority checkpoints supply neither owner
+approval, the future authority-bound W8.10 local/hosted exact-commit rerun, nor closure.
 The umbrella scale remains `~100K LOC`, split primarily into `~10K LOC` checkpoints.
 
 Caveat: current evidence covers only the named generated fixtures and explicitly admitted input shapes. It does not

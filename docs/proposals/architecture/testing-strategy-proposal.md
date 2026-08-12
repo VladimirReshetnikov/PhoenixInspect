@@ -1089,7 +1089,13 @@ While it remains absent from both the worktree and tracked `HEAD`, the local val
 `-TechnicalPreflight` mode can execute the same 22-command matrix against the tracked v1, v2, and candidate inputs. Its
 separate path, filename, schema, and all-false authority/W8.9/W8.10 claim fields make the result technical regression
 evidence only; it cannot be promoted into the authority-gated local-validation record. Once authority exists, preflight
-refuses to run, and the normal matrix must execute again at the exact prospective W8.10 closure commit.
+refuses to run, and the normal matrix must execute again at the exact prospective W8.10 closure commit. The first full
+technical preflight passed at exact commit `6acfef2808d85e69f36f356813a9337507ea5b7b`: 22/22 commands, 11/11 strict TRX
+lanes, and 3,430/3,430 test executions passed with zero failures or skips. Its final record retained the same clean HEAD,
+required the authority envelope to remain absent, and made no owner, W8.9, W8.10-local-validation, hosted, or closure
+claim. Separate hosted [CI run 31618781452](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/31618781452)
+passed all six jobs and 2,129/2,129 hosted TRX executions at the same commit. These are technical-readiness checkpoints,
+not substitutes for the post-approval authority-bound local matrix and hosted rerun at the prospective closure commit.
 Every managed lane remains unattended, bounded, and free of prompts or user input; only the explicit nonactivating
 native Desktop startup smoke creates a window, while every other managed process remains headless. Every W1–W7
 artifact remains golden, and only landed checkpoints may be cited as implementation or validation evidence.
