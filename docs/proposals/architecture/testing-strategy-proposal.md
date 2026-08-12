@@ -212,7 +212,7 @@ separate product-readiness question.
 
 | Signal | In-tree evidence | Service-side evidence / remaining distinction |
 |---|---|---|
-| Repository build | Stable .NET 10.0.2xx feature-band/minimum-patch pin, central versions, committed lock files, deterministic Release build, warnings-as-errors under `CI=true`. | `CI-enforced` for exact completion commit `3ece32a36eccc06a61025b1b35b58c09f6e4ed09`: locked restore and the zero-warning Release build passed in GitHub run 29309374548. |
+| Repository build | .NET SDK 10.0.400 with latest-patch roll-forward in the 10.0.4xx feature band, central versions, committed lock files, deterministic Release build, and warnings-as-errors for Release or `CI=true`. | `CI-enforced` for exact completion commit `3ece32a36eccc06a61025b1b35b58c09f6e4ed09`: locked restore and the zero-warning Release build passed in GitHub run 29309374548. |
 | Fast tests | Unit/domain/admission/differential/determinism/metadata suite plus artifact-text-free harness start/readiness failure coverage is checked in. | The same run passed 60 semantic/differential tests and 40 fast adapter/harness tests. |
 | Dump integration | Required Windows dump category and a bounded target/dump harness are checked in. | The dependent Windows job passed 3/3 dump tests. An inability to create/load the dump remains a failure, not a passing skip. |
 | Determinism | Canonical UTF-8 machine transcripts and multi-axis W1/W2 result envelopes carry explicit replayable evidence context. W3's successful prepared-execution test projection separately retains owner-evidence identity, structural method/field facts, imported memory, resolver/load counts, state, budget, events, and return outcome, then serializes those documented observables canonically. The same dump reopened in a fresh session reproduces module/root selection, W2 result/plan bytes, and W3 successful prepared-execution identity/transcript/fingerprint. Target-null idempotence and CoreCLR agreement are asserted separately rather than claimed as a fresh-session canonical transcript. | W1 passed at exact closure commit `e2580a8a8` in run 29353198889; W3's expanded replay passed at strengthened implementation checkpoint `19c292f9f` and formally closed at exact documentation commit `de6cea124` in [run 29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237). |
@@ -221,7 +221,7 @@ separate product-readiness question.
 The workflow in `.github/workflows/ci.yml` is checked in and has reported successful exact-commit runs, recorded below.
 `CI-enforced` applies only to the gates that the successful workflow actually executed. The exact W1 closure commit is
 green, but its historical fast totals describe only the milestone-selected set at that commit. The current workflow
-runs every remaining test in each selected category and builds all 17 current projects. Caveat: this is not evidence
+runs every remaining test in each selected category and builds every project listed in `PhoenixInspect.sln`. Caveat: this is not evidence
 beyond the named fixture shapes. Representative private-production measurement remains a separate product-readiness
 question.
 
@@ -280,7 +280,8 @@ Every command below ran through `./eng/Invoke-HeadlessProcess.ps1`; no test was 
 | Optimized modeled-context evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1"` | Passed, 1/1 at W2 implementation commit `ff7cd1965`. |
 
 Both W1 and W2 local results are corroborated by their exact-commit hosted closure runs above. Their historical project
-and test counts describe the repositories at those commits. The current workflow builds all 20 projects and runs every
+and test counts describe the repositories at those commits. The current workflow builds every project listed in
+`PhoenixInspect.sln` and runs every
 remaining test in each selected category. Caveat: those tests establish behavior only for the named fixture shapes.
 
 ### Current local W3 implementation verification — 2026-07-14
@@ -714,7 +715,7 @@ The pipeline targets `net10.0` and should remain small enough to diagnose:
 5. documentation/link and headless-workflow consistency checks with stable signal.
 
 All four current `dotnet test` commands run every remaining test in their selected category. Restore and build cover
-all 17 current projects. Caveat: this validates only the named fixture and input shapes.
+every project listed in `PhoenixInspect.sln`. Caveat: this validates only the named fixture and input shapes.
 
 The historical W0 run below proves only its original jobs. A new or changed gate becomes `CI-enforced` only after a
 successful hosted run names the exact pushed closure commit; checked-in workflow text or local execution alone is

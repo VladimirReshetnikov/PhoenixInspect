@@ -275,7 +275,7 @@ and then runs the required ordinary-dump, preview-demo, and optimized-context Wi
 lane runs `eng/Invoke-PreviewDemo.ps1` end to end — build, target launch, readiness wait, dump capture, and
 scripted replay — and uploads the transcript, because the demo is the preview's front door and its script is
 not exercised by the test lanes. Every current test command runs all
-remaining tests in its selected category, and restore/build cover the complete current 28-project solution. Caveat:
+remaining tests in its selected category, and restore/build cover every project listed in `PhoenixInspect.sln`. Caveat:
 this establishes behavior only for the named fixture shapes. Third-party actions are pinned to verified release commit
 SHAs. A missing DAC or inability to write/load a required dump is a failing infrastructure signal, not a passing skip.
 

@@ -55,7 +55,7 @@ The objective is to pick technologies that maximize:
 **Decision (2026-07)**
 
 - Development and CI target `net10.0`.
-- `global.json` pins the stable .NET 10.0.2xx feature band and permits only later patches in that band.
+- `global.json` pins .NET SDK 10.0.400 and permits only later patches in the 10.0.4xx feature band.
 - Multi-targeting is deferred until an actual consumer requires it.
 
 **Lifecycle correction (2026-07)**
@@ -106,8 +106,9 @@ the same no-dialog process policy applies locally and in CI.
 
 W6.2 uses `Microsoft.CodeAnalysis.CSharp` as the sole production expression parser under the normative
 [C# Expression Front-End and Subset-Admission Contract](csharp-expression-front-end-contract-proposal.md). The initial
-package is centrally pinned at `5.3.0`, matching the Roslyn train in the repository's pinned .NET SDK 10.0.201. The
-front end calls `SyntaxFactory.ParseExpression` with explicit C# 14 regular-source options and full-text consumption.
+package is centrally pinned at `5.3.0` independently of the SDK-selected compiler. The front-end profile and its
+corpus tests, rather than incidental SDK bundling, govern package upgrades. The front end calls
+`SyntaxFactory.ParseExpression` with explicit C# 14 regular-source options and full-text consumption.
 
 The dependency is contained in `PhoenixInspect.Product.DumpQuery`. Workspaces, Scripting, compilation, semantic models,
 and emission are not part of the active product path. Internal tree visitors immediately project enabled W2/W5/W6/W7
@@ -412,13 +413,13 @@ thread-relative, one RVA-backed, and one exact memory-homed frame-value incident
 
 ## 13) Implementation snapshot
 
-> **Status notice:** The current solution is a reduced ten-source-project solution organized around executable evidence and a small set of dependency boundaries.
+> **Status notice:** The current solution is organized around executable evidence and explicit dependency boundaries; every tracked project is listed in `PhoenixInspect.sln`.
 > Project names, dependencies, and interfaces are exploratory and may change without compatibility guarantees.
 
 Current facts:
 
-- The solution retains ten `src/` projects with active code/contracts plus ten test/target/evidence projects; 33 empty placeholders and three later experimental projects were removed, and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
-- Handwritten source code exists in `PhoenixInspect.Core.Abstractions`, `PhoenixInspect.Core.Execution`, `PhoenixInspect.Domain.Concrete`, `PhoenixInspect.Metadata.Abstractions`, `PhoenixInspect.Metadata.SRM`, `PhoenixInspect.Host.Abstractions`, `PhoenixInspect.Host.Dump.ClrMD`, `PhoenixInspect.Product.DumpQuery`, `PhoenixInspect.Product.DumpDebugging`, and `PhoenixInspect.Headless.ReferenceConsumer`.
+- The solution retains project-owned `src/`, test/target/evidence, and sample projects; 33 empty placeholders and three later experimental projects were removed, and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
+- Handwritten source code exists in `PhoenixInspect.Cli`, `PhoenixInspect.Core.Abstractions`, `PhoenixInspect.Core.Execution`, `PhoenixInspect.Desktop`, `PhoenixInspect.Domain.Concrete`, `PhoenixInspect.Metadata.Abstractions`, `PhoenixInspect.Metadata.SRM`, `PhoenixInspect.Host.Abstractions`, `PhoenixInspect.Host.Dump.ClrMD`, `PhoenixInspect.Inspection`, `PhoenixInspect.Product.DumpQuery`, `PhoenixInspect.Product.DumpDebugging`, and `PhoenixInspect.Headless.ReferenceConsumer`.
 - Core execution now uses structural module/MethodDef/TypeDef/FieldDef identity, atomic method/signature/local projection,
   metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and a
   terminal typed-null target outcome. W4.4 adds a separate frozen graph-preparation mode for exactly one direct

@@ -121,9 +121,9 @@ It is placed only on `PhoenixInspect.Product.DumpQuery`, which owns the expressi
 not added to the interpreter kernel, metadata abstractions, dump host abstractions, or domain projects. Dependent
 executables receive the runtime assets through ordinary project dependency flow.
 
-The initial `5.3.0` pin matches the Roslyn train shipped by the repository's pinned .NET SDK 10.0.201. Workspaces,
-Scripting, Features, and an explicit Common package reference are unnecessary. A package upgrade is a parser-profile
-change with its own corpus diff and review; it is never a routine floating dependency update.
+The `5.3.0` package is pinned independently of the SDK-selected compiler. Workspaces, Scripting, Features, and an
+explicit Common package reference are unnecessary. A package upgrade is a parser-profile change with its own corpus
+diff and review; it is never a routine floating dependency update.
 
 ### 4.2 Exact parse operation
 
