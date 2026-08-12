@@ -124,6 +124,11 @@ explicit approval. If approved, record it only in the currently absent
 `tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` envelope bound to candidate SHA
 `a6b35b67d35c00449dac632dc61ed4b269e9bfd679552a1e8dbea4cc34a20450`; then run the complete W8.10 local and hosted
 exact-commit closure gates.
+Before that approval, `eng/Invoke-W8LocalReleaseValidation.ps1 -TechnicalPreflight` may run the exact shared
+22-command matrix only while the authority path is absent from the worktree and tracked `HEAD`. Its distinct
+`artifacts/w8-technical-preflight[-suffix]/technical-preflight.json` record is technical-only evidence with no owner,
+W8.9, W8.10-local-validation, hosted, or closure claim. It does not change the gap order: after authority is recorded,
+the normal authority-gated matrix and hosted jobs must still pass at the exact pushed closure commit.
 The paragraphs below preserve the completed W0-W7 evidence history.
 
 The W0 service-side gates are no longer an evidence gap: exact pushed completion commit

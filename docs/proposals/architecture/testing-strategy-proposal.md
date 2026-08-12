@@ -1085,8 +1085,14 @@ proposes retiring rows 20/21/22/26/27 and deferring 29/34, and proposes observed
 reports and computation remain no-authority evidence: the candidate is pending explicit owner approval and closes
 neither W8.9 nor W8.10. The separate future authority envelope
 `tests/corpus/w8-static-field-portfolio-decision-authority-v1.json` is absent and must bind that exact SHA if approved.
-Every managed process remains headless, every W1–W7 artifact remains golden, and only landed checkpoints may be cited
-as implementation or validation evidence.
+While it remains absent from both the worktree and tracked `HEAD`, the local validator's distinct
+`-TechnicalPreflight` mode can execute the same 22-command matrix against the tracked v1, v2, and candidate inputs. Its
+separate path, filename, schema, and all-false authority/W8.9/W8.10 claim fields make the result technical regression
+evidence only; it cannot be promoted into the authority-gated local-validation record. Once authority exists, preflight
+refuses to run, and the normal matrix must execute again at the exact prospective W8.10 closure commit.
+Every managed lane remains unattended, bounded, and free of prompts or user input; only the explicit nonactivating
+native Desktop startup smoke creates a window, while every other managed process remains headless. Every W1–W7
+artifact remains golden, and only landed checkpoints may be cited as implementation or validation evidence.
 
 ## 9) Deferred research suites
 

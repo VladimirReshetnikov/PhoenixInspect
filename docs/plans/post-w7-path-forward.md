@@ -1575,24 +1575,31 @@ evidence.
 
 Expected managed command shape:
 
-The committed local entry point is `eng/Invoke-W8LocalReleaseValidation.ps1`. `-List` emits its deterministic command
-contract without changing the workspace, and `-SelfTest` exercises the TRX parser, owner-authority gate, tracked-HEAD
-provenance, and exact command inventory without running the matrix. The full run requires a clean tree plus tracked,
-byte-identical v1, v2, decision-candidate, and separate owner-authority inputs before it creates or replaces output or
-starts any expensive command. The candidate must retain its no-authority/no-closure shape. The owner-authority envelope
-must bind the exact candidate path, identity, and SHA and approve the exact dispositions and proposed category/action;
-it cannot claim W8.10 closure. That authority path is currently absent, so the full run intentionally fails closed while
-`-List` and `-SelfTest` remain available:
+The committed local entry point is `eng/Invoke-W8LocalReleaseValidation.ps1`. `-List` emits its deterministic normal-run
+command contract without changing the workspace, and `-SelfTest` exercises the TRX parser, owner-authority gate,
+tracked-HEAD provenance, exact command inventory, and normal/preflight separation without running the matrix. The full
+run requires a clean tree plus tracked, byte-identical v1, v2, decision-candidate, and separate owner-authority inputs
+before it creates or replaces output or starts any expensive command. The candidate must retain its
+no-authority/no-closure shape. The owner-authority envelope must bind the exact candidate path, identity, and SHA and
+approve the exact dispositions and proposed category/action; it cannot claim W8.10 closure. That authority path is
+currently absent, so the full run intentionally fails closed. A distinct `-TechnicalPreflight` parameter set may run
+the same 22-command technical matrix only while that path is absent from both the worktree and tracked `HEAD`. It first
+validates the tracked v1, v2, and candidate inputs, uses only `artifacts/w8-technical-preflight[-suffix]`, and writes
+`technical-preflight.json` under a distinct non-promotable schema. It claims no owner authority, W8.9 closure, W8.10
+local-validation evidence, hosted evidence, or W8.10 closure:
 
 ```powershell
 .\eng\Invoke-W8LocalReleaseValidation.ps1 -List
 .\eng\Invoke-W8LocalReleaseValidation.ps1 -SelfTest
+.\eng\Invoke-W8LocalReleaseValidation.ps1 -TechnicalPreflight -Force
 .\eng\Invoke-W8LocalReleaseValidation.ps1 -OutputDirectory artifacts/w8-local-release-validation -Force
 ```
 
 Its deterministic `evidence.json` is explicitly `LocalOnly`, records hosted evidence as `NotRun`, and sets
 `closureClaim` to `false`. A successful local run is therefore necessary W8.10 evidence, never hosted proof or closure
-by itself. The underlying managed commands retain the following shape:
+by itself. Technical preflight never satisfies that local-run obligation: after owner approval, the authority-bound
+normal matrix must execute again at the exact prospective closure commit, and the required hosted jobs must pass at
+that exact pushed commit. The underlying managed commands retain the following shape:
 
 ```powershell
 .\eng\Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode

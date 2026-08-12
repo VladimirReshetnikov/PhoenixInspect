@@ -2,21 +2,29 @@
 
 <#
 .SYNOPSIS
-Runs the complete local W8.10 release-validation matrix headlessly.
+Runs the complete local W8.10 release-validation matrix, or its authority-absent technical preflight, headlessly.
 
 .DESCRIPTION
 Restores and builds the pinned solution, runs complete and focused test lanes into isolated TRX files, validates every
 TRX independently, runs the preview demo, builds and smoke-validates the non-distributed prerelease payloads, runs the
 repository guards, and writes deterministic local-only evidence to evidence.json. Focused lanes intentionally
 re-execute tests covered by complete lanes. The script never supplies hosted evidence and never claims milestone or
-release closure.
+release closure. The distinct TechnicalPreflight mode runs the same matrix only while the owner-authority envelope is
+absent; its separately named output is technical evidence only and cannot substitute for the authority-gated run.
 
 .PARAMETER OutputDirectory
-The direct artifacts child named w8-local-release-validation, or the same name with a bounded suffix. The default is
-artifacts/w8-local-release-validation.
+For a normal run, the direct artifacts child named w8-local-release-validation, or the same name with a bounded suffix.
+For TechnicalPreflight, the corresponding name is w8-technical-preflight. Each mode selects its own base name by
+default and rejects the other mode's namespace.
 
 .PARAMETER Force
 Replaces only the validated OutputDirectory. Reparse-point paths and paths outside artifacts are rejected.
+
+.PARAMETER TechnicalPreflight
+Runs the exact 22-command technical matrix only when the tracked owner-authority envelope is absent from both HEAD and
+the worktree. Writes technical-preflight.json under a separate output namespace. It claims no owner authority, W8.9
+closure, W8.10 local-validation evidence, hosted evidence, or W8.10 closure. After owner approval, the normal run must
+still execute again at the exact prospective closure commit.
 
 .PARAMETER List
 Prints the deterministic command plan as JSON without changing the workspace or running any command.
@@ -35,17 +43,25 @@ Validates one existing TRX file with the same fail-closed parser used by the rel
 ./eng/Invoke-W8LocalReleaseValidation.ps1 -SelfTest
 
 .EXAMPLE
+./eng/Invoke-W8LocalReleaseValidation.ps1 -TechnicalPreflight -Force
+
+.EXAMPLE
 ./eng/Invoke-W8LocalReleaseValidation.ps1 -OutputDirectory artifacts/w8-local-release-validation -Force
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'Run')]
 param(
     [Parameter(ParameterSetName = 'Run')]
+    [Parameter(ParameterSetName = 'TechnicalPreflight')]
     [ValidateNotNullOrEmpty()]
     [string] $OutputDirectory = 'artifacts/w8-local-release-validation',
 
     [Parameter(ParameterSetName = 'Run')]
+    [Parameter(ParameterSetName = 'TechnicalPreflight')]
     [switch] $Force,
+
+    [Parameter(Mandatory, ParameterSetName = 'TechnicalPreflight')]
+    [switch] $TechnicalPreflight,
 
     [Parameter(Mandatory, ParameterSetName = 'List')]
     [switch] $List,
@@ -78,6 +94,12 @@ $w8DecisionCandidateRelativePath = 'tests/corpus/w8-static-field-portfolio-decis
 $w8DecisionCandidateId = 'interpreter-w8-static-field-portfolio-decision-candidate-v1'
 $w8DecisionAuthorityRelativePath = 'tests/corpus/w8-static-field-portfolio-decision-authority-v1.json'
 $w8DecisionAuthorityId = 'interpreter-w8-static-field-portfolio-decision-authority-v1'
+$normalOutputDirectory = 'artifacts/w8-local-release-validation'
+$technicalPreflightOutputDirectory = 'artifacts/w8-technical-preflight'
+$normalEvidenceSchema = 'phoenixinspect.w8-local-release-validation/evidence-v1'
+$technicalPreflightEvidenceSchema = 'phoenixinspect.w8-technical-preflight/evidence-v1'
+$normalSummaryFileName = 'evidence.json'
+$technicalPreflightSummaryFileName = 'technical-preflight.json'
 [int[]] $w8OwnerDispositionOrdinals = @(20, 21, 22, 26, 27, 29, 34)
 [string[]] $w8OwnerDispositionActions = @(
     'retired-disproved-premise',
@@ -97,7 +119,10 @@ function ConvertTo-RepositoryRelativePath {
 }
 
 function Assert-PathIsInsideRepository {
-    param([Parameter(Mandatory)][string] $Path)
+    param(
+        [Parameter(Mandatory)][string] $Path,
+        [Parameter(Mandatory)][ValidateSet('Run', 'TechnicalPreflight')][string] $Mode
+    )
 
     $fullPath = [System.IO.Path]::GetFullPath($Path)
     $relativePath = ConvertTo-RepositoryRelativePath $fullPath
@@ -110,12 +135,21 @@ function Assert-PathIsInsideRepository {
         throw "The output directory must be a non-.git descendant of the repository root: '$fullPath'."
     }
 
+    $outputPattern = if ($Mode -ceq 'Run') {
+        '^artifacts/w8-local-release-validation(?:-[a-z0-9][a-z0-9._-]{0,63})?$'
+    }
+    else {
+        '^artifacts/w8-technical-preflight(?:-[a-z0-9][a-z0-9._-]{0,63})?$'
+    }
     if (-not [regex]::IsMatch(
             $relativePath,
-            '^artifacts/w8-local-release-validation(?:-[a-z0-9][a-z0-9._-]{0,63})?$',
+            $outputPattern,
             [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor
                 [System.Text.RegularExpressions.RegexOptions]::CultureInvariant)) {
-        throw "The output directory must be a direct artifacts/w8-local-release-validation[-suffix] path: '$fullPath'."
+        if ($Mode -ceq 'Run') {
+            throw "The output directory must be a direct artifacts/w8-local-release-validation[-suffix] path: '$fullPath'."
+        }
+        throw "The TechnicalPreflight output directory must be a direct artifacts/w8-technical-preflight[-suffix] path: '$fullPath'."
     }
 
     $currentPath = $fullPath
@@ -181,7 +215,7 @@ function Assert-ValidatorOwnedOutput {
         -not $evidence.Contains('scope') -or
         -not $evidence.Contains('commands') -or
         -not $evidence.Contains('repository') -or
-        [string]$evidence['schema'] -cne 'phoenixinspect.w8-local-release-validation/evidence-v1' -or
+        [string]$evidence['schema'] -cne $normalEvidenceSchema -or
         $evidence['scope'] -isnot [System.Collections.IDictionary]) {
         throw "Refusing to replace '$Path': evidence.json does not carry the validator-owned local-only identity."
     }
@@ -196,6 +230,128 @@ function Assert-ValidatorOwnedOutput {
         $null -eq $evidence['commands'] -or
         $null -eq $evidence['repository']) {
         throw "Refusing to replace '$Path': evidence.json does not carry the validator-owned local-only identity."
+    }
+}
+
+function Assert-TechnicalPreflightOwnedOutput {
+    param([Parameter(Mandatory)][string] $Path)
+
+    $item = Get-Item -LiteralPath $Path -Force
+    if ($item -isnot [System.IO.DirectoryInfo] -or
+        ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+        throw "Refusing to replace non-directory or reparse-point technical-preflight output '$Path'."
+    }
+
+    $children = @(Get-ChildItem -LiteralPath $Path -Force)
+    $summaryItems = @($children | Where-Object {
+        -not $_.PSIsContainer -and $_.Name -ceq $technicalPreflightSummaryFileName
+    })
+    $resultItems = @($children | Where-Object {
+        $_.PSIsContainer -and $_.Name -ceq 'test-results'
+    })
+    if ($children.Count -ne 2 -or $summaryItems.Count -ne 1 -or $resultItems.Count -ne 1) {
+        throw "Refusing to replace '$Path': prior technical-preflight output must contain exactly $technicalPreflightSummaryFileName and test-results."
+    }
+
+    $reparsePoints = @(Get-ChildItem -LiteralPath $Path -Recurse -Force | Where-Object {
+        ($_.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0
+    })
+    if ($reparsePoints.Count -ne 0) {
+        throw "Refusing to replace technical-preflight output containing a reparse point: '$($reparsePoints[0].FullName)'."
+    }
+
+    try {
+        $summaryJson = [System.IO.File]::ReadAllText($summaryItems[0].FullName)
+        Assert-NoDuplicateJsonProperties $summaryJson $summaryItems[0].FullName
+        $summary = $summaryJson | ConvertFrom-Json -AsHashtable
+    }
+    catch {
+        throw "Refusing to replace '$Path': $technicalPreflightSummaryFileName is not valid technical-preflight evidence. $($_.Exception.Message)"
+    }
+    if ($summary -isnot [System.Collections.IDictionary] -or
+        $summary.Count -ne 10 -or
+        -not $summary.Contains('schema') -or
+        -not $summary.Contains('mode') -or
+        -not $summary.Contains('scope') -or
+        -not $summary.Contains('status') -or
+        -not $summary.Contains('failure') -or
+        -not $summary.Contains('technicalInputs') -or
+        -not $summary.Contains('authorityBoundary') -or
+        -not $summary.Contains('commands') -or
+        -not $summary.Contains('repository') -or
+        -not $summary.Contains('counts') -or
+        [string]$summary['schema'] -cne $technicalPreflightEvidenceSchema -or
+        [string]$summary['mode'] -cne 'TechnicalPreflight' -or
+        $summary['scope'] -isnot [System.Collections.IDictionary]) {
+        throw "Refusing to replace '$Path': $technicalPreflightSummaryFileName does not carry the technical-preflight-only identity."
+    }
+
+    $scope = [System.Collections.IDictionary]$summary['scope']
+    if ($scope.Count -ne 9 -or
+        -not $scope.Contains('kind') -or
+        -not $scope.Contains('ownerAuthority') -or
+        -not $scope.Contains('ownerAuthorityClaimed') -or
+        -not $scope.Contains('w8_9ClosureClaimed') -or
+        -not $scope.Contains('w8_10LocalValidationClaimed') -or
+        -not $scope.Contains('w8_10ClosureClaimed') -or
+        -not $scope.Contains('hostedEvidence') -or
+        -not $scope.Contains('closureClaim') -or
+        -not $scope.Contains('focusedLaneOverlap') -or
+        [string]$scope['kind'] -cne 'TechnicalPreflightOnly' -or
+        [string]$scope['ownerAuthority'] -cne 'AbsentAtAdmission' -or
+        $scope['ownerAuthorityClaimed'] -isnot [bool] -or [bool]$scope['ownerAuthorityClaimed'] -or
+        $scope['w8_9ClosureClaimed'] -isnot [bool] -or [bool]$scope['w8_9ClosureClaimed'] -or
+        $scope['w8_10LocalValidationClaimed'] -isnot [bool] -or [bool]$scope['w8_10LocalValidationClaimed'] -or
+        $scope['w8_10ClosureClaimed'] -isnot [bool] -or [bool]$scope['w8_10ClosureClaimed'] -or
+        [string]$scope['hostedEvidence'] -cne 'NotRun' -or
+        $scope['closureClaim'] -isnot [bool] -or [bool]$scope['closureClaim'] -or
+        [string]$scope['focusedLaneOverlap'] -cne 'Intentional' -or
+        $null -eq $summary['commands'] -or
+        $null -eq $summary['repository']) {
+        throw "Refusing to replace '$Path': $technicalPreflightSummaryFileName does not carry the technical-preflight-only identity."
+    }
+
+    $technicalInputs = @($summary['technicalInputs'])
+    if ($technicalInputs.Count -ne 3 -or
+        $technicalInputs[0] -isnot [System.Collections.IDictionary] -or
+        $technicalInputs[1] -isnot [System.Collections.IDictionary] -or
+        $technicalInputs[2] -isnot [System.Collections.IDictionary] -or
+        [string]$technicalInputs[0]['role'] -cne 'FrozenPredeclaration' -or
+        [string]$technicalInputs[1]['role'] -cne 'ProducedOutcomeReconciliation' -or
+        [string]$technicalInputs[2]['role'] -cne 'DecisionCandidate') {
+        throw "Refusing to replace '$Path': $technicalPreflightSummaryFileName does not carry the exact three-input technical admission."
+    }
+
+    if ($summary['authorityBoundary'] -isnot [System.Collections.IDictionary]) {
+        throw "Refusing to replace '$Path': $technicalPreflightSummaryFileName has no authority-absence boundary."
+    }
+    $authorityBoundary = [System.Collections.IDictionary]$summary['authorityBoundary']
+    if ($authorityBoundary.Count -ne 6 -or
+        [string]$authorityBoundary['role'] -cne 'OwnerAuthorityEnvelope' -or
+        [string]$authorityBoundary['path'] -cne $w8DecisionAuthorityRelativePath -or
+        $authorityBoundary['requiredForNormalRun'] -isnot [bool] -or
+        -not [bool]$authorityBoundary['requiredForNormalRun'] -or
+        $authorityBoundary['initial'] -isnot [System.Collections.IDictionary]) {
+        throw "Refusing to replace '$Path': $technicalPreflightSummaryFileName has the wrong authority-absence boundary."
+    }
+    $initialBoundary = [System.Collections.IDictionary]$authorityBoundary['initial']
+    if ($initialBoundary.Count -ne 3 -or
+        [string]$initialBoundary['state'] -cne 'Absent' -or
+        $initialBoundary['trackedInHead'] -isnot [bool] -or [bool]$initialBoundary['trackedInHead'] -or
+        $initialBoundary['presentInWorktree'] -isnot [bool] -or [bool]$initialBoundary['presentInWorktree']) {
+        throw "Refusing to replace '$Path': $technicalPreflightSummaryFileName was not admitted under exact authority absence."
+    }
+    if ($null -ne $authorityBoundary['final']) {
+        if ($authorityBoundary['final'] -isnot [System.Collections.IDictionary]) {
+            throw "Refusing to replace '$Path': $technicalPreflightSummaryFileName has a malformed final authority check."
+        }
+        $finalBoundary = [System.Collections.IDictionary]$authorityBoundary['final']
+        if ($finalBoundary.Count -ne 3 -or
+            [string]$finalBoundary['state'] -cne 'Absent' -or
+            $finalBoundary['trackedInHead'] -isnot [bool] -or [bool]$finalBoundary['trackedInHead'] -or
+            $finalBoundary['presentInWorktree'] -isnot [bool] -or [bool]$finalBoundary['presentInWorktree']) {
+            throw "Refusing to replace '$Path': $technicalPreflightSummaryFileName has a malformed final authority check."
+        }
     }
 }
 
@@ -264,7 +420,7 @@ function Assert-TrackedHeadFile {
     $headBlobLines[0].ToLowerInvariant()
 }
 
-function Get-RequiredReleaseInputSpecs {
+function Get-TechnicalReleaseInputSpecs {
     @(
         [pscustomobject][ordered]@{
             Role = 'FrozenPredeclaration'
@@ -284,13 +440,57 @@ function Get-RequiredReleaseInputSpecs {
             Requirement = 'ProposedDecisionCandidate'
             Sha256 = $null
         }
-        [pscustomobject][ordered]@{
-            Role = 'OwnerAuthorityEnvelope'
-            Path = $w8DecisionAuthorityRelativePath
-            Requirement = 'CandidateBoundOwnerApproval'
-            Sha256 = $null
-        }
     )
+}
+
+function Get-OwnerAuthorityInputSpec {
+    [pscustomobject][ordered]@{
+        Role = 'OwnerAuthorityEnvelope'
+        Path = $w8DecisionAuthorityRelativePath
+        Requirement = 'CandidateBoundOwnerApproval'
+        Sha256 = $null
+    }
+}
+
+function Get-RequiredReleaseInputSpecs {
+    @(
+        Get-TechnicalReleaseInputSpecs
+        Get-OwnerAuthorityInputSpec
+    )
+}
+
+function Test-PathTrackedInHead {
+    param([Parameter(Mandatory)][string] $RelativePath)
+
+    $trackedPaths = @(Get-GitOutput @(
+        'ls-tree',
+        '--full-tree',
+        '-r',
+        '--name-only',
+        'HEAD'))
+    $matches = @($trackedPaths | Where-Object {
+        $_.Equals($RelativePath, [System.StringComparison]::OrdinalIgnoreCase)
+    })
+    if ($matches.Count -gt 1) {
+        throw "HEAD contains multiple case-insensitive matches for '$RelativePath'."
+    }
+
+    $matches.Count -eq 1
+}
+
+function Assert-OwnerAuthorityAbsent {
+    $fullPath = [System.IO.Path]::GetFullPath((Join-Path $repositoryRoot $w8DecisionAuthorityRelativePath))
+    $presentInWorktree = Test-Path -LiteralPath $fullPath
+    $trackedInHead = Test-PathTrackedInHead $w8DecisionAuthorityRelativePath
+    if ($presentInWorktree -or $trackedInHead) {
+        throw "Technical preflight is defined only for the absent-authority state. The owner-authority path exists in the worktree or is tracked in HEAD: '$w8DecisionAuthorityRelativePath'. Use the normal authority-gated run after resolving its validity; no technical-preflight output was changed."
+    }
+
+    [ordered]@{
+        state = 'Absent'
+        trackedInHead = $false
+        presentInWorktree = $false
+    }
 }
 
 function Get-Sha256Hex {
@@ -743,15 +943,12 @@ function Assert-OwnerAuthorityEnvelope {
     }
 }
 
-function Assert-RequiredReleaseInputs {
+function Assert-TechnicalReleaseInputs {
     $validatedInputs = [System.Collections.Generic.List[object]]::new()
     $candidateEvidence = $null
-    foreach ($spec in Get-RequiredReleaseInputSpecs) {
+    foreach ($spec in Get-TechnicalReleaseInputSpecs) {
         $fullPath = [System.IO.Path]::GetFullPath((Join-Path $repositoryRoot $spec.Path))
         if (-not [System.IO.File]::Exists($fullPath)) {
-            if ($spec.Role -ceq 'OwnerAuthorityEnvelope') {
-                throw "W8.9 owner-authority envelope is missing: '$($spec.Path)'. Owner approval remains absent; no W8.10 validation output was changed."
-            }
             throw "Required immutable W8.9 release input is missing: '$($spec.Path)'."
         }
 
@@ -775,16 +972,8 @@ function Assert-RequiredReleaseInputs {
             $candidateEvidence = Assert-DecisionCandidateRecord $candidate $spec.Path $sha256
             $semanticEvidence = $candidateEvidence
         }
-        elseif ($spec.Requirement -ceq 'CandidateBoundOwnerApproval') {
-            if ($null -eq $candidateEvidence) {
-                throw 'The validator release-input plan must validate the decision candidate before its owner-authority envelope.'
-            }
-            $authorityJson = [System.IO.File]::ReadAllText($fullPath)
-            $authority = ConvertFrom-StrictJsonObject $authorityJson $spec.Path 'owner-authority envelope'
-            $semanticEvidence = Assert-OwnerAuthorityEnvelope $authority $candidateEvidence $spec.Path
-        }
         else {
-            throw "Unknown W8.9 release-input requirement '$($spec.Requirement)'."
+            throw "Unknown technical W8.9 release-input requirement '$($spec.Requirement)'."
         }
 
         $validatedInputs.Add([ordered]@{
@@ -797,6 +986,71 @@ function Assert-RequiredReleaseInputs {
     }
 
     @($validatedInputs)
+}
+
+function Assert-RequiredReleaseInputs {
+    $validatedInputs = [System.Collections.Generic.List[object]]::new()
+    foreach ($technicalInput in @(Assert-TechnicalReleaseInputs)) {
+        $validatedInputs.Add($technicalInput)
+    }
+
+    if ($validatedInputs.Count -ne 3 -or
+        $validatedInputs[2]['role'] -cne 'DecisionCandidate' -or
+        $validatedInputs[2]['semanticValidation'] -isnot [System.Collections.IDictionary]) {
+        throw 'The validator release-input plan must validate the decision candidate before its owner-authority envelope.'
+    }
+    $candidateEvidence = [System.Collections.IDictionary]$validatedInputs[2]['semanticValidation']
+    $spec = Get-OwnerAuthorityInputSpec
+    $fullPath = [System.IO.Path]::GetFullPath((Join-Path $repositoryRoot $spec.Path))
+    if (-not [System.IO.File]::Exists($fullPath)) {
+        throw "W8.9 owner-authority envelope is missing: '$($spec.Path)'. Owner approval remains absent; no W8.10 validation output was changed."
+    }
+
+    $item = Get-Item -LiteralPath $fullPath -Force
+    if ($item -isnot [System.IO.FileInfo] -or
+        ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+        throw "Required W8.9 release input must be a regular non-reparse file: '$($spec.Path)'."
+    }
+
+    $headBlob = Assert-TrackedHeadFile $spec.Path
+    $sha256 = Get-Sha256Hex $fullPath
+    $authorityJson = [System.IO.File]::ReadAllText($fullPath)
+    $authority = ConvertFrom-StrictJsonObject $authorityJson $spec.Path 'owner-authority envelope'
+    $authorityEvidence = Assert-OwnerAuthorityEnvelope $authority $candidateEvidence $spec.Path
+    $validatedInputs.Add([ordered]@{
+        role = $spec.Role
+        path = $spec.Path
+        headBlob = $headBlob
+        sha256 = $sha256
+        semanticValidation = $authorityEvidence
+    })
+
+    @($validatedInputs)
+}
+
+function New-ValidationScope {
+    param([Parameter(Mandatory)][ValidateSet('Run', 'TechnicalPreflight')][string] $Mode)
+
+    if ($Mode -ceq 'Run') {
+        return [ordered]@{
+            kind = 'LocalOnly'
+            hostedEvidence = 'NotRun'
+            closureClaim = $false
+            focusedLaneOverlap = 'Intentional'
+        }
+    }
+
+    [ordered]@{
+        kind = 'TechnicalPreflightOnly'
+        ownerAuthority = 'AbsentAtAdmission'
+        ownerAuthorityClaimed = $false
+        w8_9ClosureClaimed = $false
+        w8_10LocalValidationClaimed = $false
+        w8_10ClosureClaimed = $false
+        hostedEvidence = 'NotRun'
+        closureClaim = $false
+        focusedLaneOverlap = 'Intentional'
+    }
 }
 
 function Read-RequiredCounter {
@@ -1384,6 +1638,7 @@ function Invoke-HeadProvenanceSelfTest {
 }
 
 function Invoke-ValidatorSelfTest {
+    $null = Invoke-TechnicalPreflightPolicySelfTest
     [ordered]@{
         schema = 'phoenixinspect.w8-local-release-validation/self-test-v1'
         trx = Invoke-TrxParserSelfTest
@@ -1803,6 +2058,186 @@ function Invoke-CommandPlanSelfTest {
     }
 }
 
+function Invoke-TechnicalPreflightPolicySelfTest {
+    function Assert-PolicyThrows {
+        param(
+            [Parameter(Mandatory)][scriptblock] $Action,
+            [Parameter(Mandatory)][string] $CaseName,
+            [Parameter(Mandatory)][string] $ExpectedFragment
+        )
+
+        try {
+            $null = & $Action
+        }
+        catch {
+            if (-not $_.Exception.Message.Contains($ExpectedFragment, [System.StringComparison]::Ordinal)) {
+                throw "Technical-preflight policy self-test '$CaseName' failed with an unexpected error: $($_.Exception.Message)"
+            }
+            return
+        }
+
+        throw "Technical-preflight policy self-test '$CaseName' was expected to be rejected."
+    }
+
+    $technicalSpecs = @(Get-TechnicalReleaseInputSpecs)
+    $normalSpecs = @(Get-RequiredReleaseInputSpecs)
+    [string[]] $expectedTechnicalRoles = @(
+        'FrozenPredeclaration',
+        'ProducedOutcomeReconciliation',
+        'DecisionCandidate')
+    [string[]] $expectedNormalRoles = @(
+        'FrozenPredeclaration',
+        'ProducedOutcomeReconciliation',
+        'DecisionCandidate',
+        'OwnerAuthorityEnvelope')
+    Assert-ExactStringArray 'technical-preflight input roles' @(
+        $technicalSpecs | ForEach-Object { [string]$_.Role }) $expectedTechnicalRoles
+    Assert-ExactStringArray 'normal input roles' @(
+        $normalSpecs | ForEach-Object { [string]$_.Role }) $expectedNormalRoles
+    if ($normalSpecs[3].Requirement -cne 'CandidateBoundOwnerApproval' -or
+        $normalSpecs[3].Path -cne $w8DecisionAuthorityRelativePath) {
+        throw 'The normal release-input plan no longer ends in the exact candidate-bound owner-authority requirement.'
+    }
+
+    if ($normalOutputDirectory -cne 'artifacts/w8-local-release-validation' -or
+        $technicalPreflightOutputDirectory -cne 'artifacts/w8-technical-preflight' -or
+        $normalOutputDirectory -ceq $technicalPreflightOutputDirectory -or
+        $normalSummaryFileName -cne 'evidence.json' -or
+        $technicalPreflightSummaryFileName -cne 'technical-preflight.json' -or
+        $normalEvidenceSchema -cne 'phoenixinspect.w8-local-release-validation/evidence-v1' -or
+        $technicalPreflightEvidenceSchema -cne 'phoenixinspect.w8-technical-preflight/evidence-v1') {
+        throw 'Normal and technical-preflight output identities must remain exact and distinct.'
+    }
+
+    $normalPath = Assert-PathIsInsideRepository (Join-Path $repositoryRoot $normalOutputDirectory) 'Run'
+    $technicalPath = Assert-PathIsInsideRepository (Join-Path $repositoryRoot $technicalPreflightOutputDirectory) 'TechnicalPreflight'
+    if ($normalPath.Equals($technicalPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Normal and technical-preflight output paths must remain distinct.'
+    }
+    Assert-PolicyThrows {
+        Assert-PathIsInsideRepository (Join-Path $repositoryRoot $technicalPreflightOutputDirectory) 'Run'
+    } 'normal mode rejects technical namespace' 'The output directory must be a direct artifacts/w8-local-release-validation[-suffix] path'
+    Assert-PolicyThrows {
+        Assert-PathIsInsideRepository (Join-Path $repositoryRoot $normalOutputDirectory) 'TechnicalPreflight'
+    } 'technical mode rejects normal namespace' 'TechnicalPreflight output directory'
+
+    $normalScope = New-ValidationScope 'Run'
+    Assert-ExactObjectKeys $normalScope @(
+        'kind', 'hostedEvidence', 'closureClaim', 'focusedLaneOverlap') 'normal validation scope' 'self-test'
+    if ($normalScope.kind -cne 'LocalOnly' -or
+        $normalScope.hostedEvidence -cne 'NotRun' -or
+        $normalScope.closureClaim -or
+        $normalScope.focusedLaneOverlap -cne 'Intentional') {
+        throw 'The normal local-only evidence scope changed.'
+    }
+
+    $technicalScope = New-ValidationScope 'TechnicalPreflight'
+    Assert-ExactObjectKeys $technicalScope @(
+        'kind',
+        'ownerAuthority',
+        'ownerAuthorityClaimed',
+        'w8_9ClosureClaimed',
+        'w8_10LocalValidationClaimed',
+        'w8_10ClosureClaimed',
+        'hostedEvidence',
+        'closureClaim',
+        'focusedLaneOverlap') 'technical-preflight scope' 'self-test'
+    if ($technicalScope.kind -cne 'TechnicalPreflightOnly' -or
+        $technicalScope.ownerAuthority -cne 'AbsentAtAdmission' -or
+        $technicalScope.ownerAuthorityClaimed -or
+        $technicalScope.w8_9ClosureClaimed -or
+        $technicalScope.w8_10LocalValidationClaimed -or
+        $technicalScope.w8_10ClosureClaimed -or
+        $technicalScope.hostedEvidence -cne 'NotRun' -or
+        $technicalScope.closureClaim -or
+        $technicalScope.focusedLaneOverlap -cne 'Intentional') {
+        throw 'The technical-preflight scope must deny every owner-authority, W8.9, W8.10, hosted, and closure claim.'
+    }
+
+    if (-not (Test-PathTrackedInHead $w8FrozenV1RelativePath) -or
+        -not (Test-PathTrackedInHead $w8FrozenV1RelativePath.ToUpperInvariant()) -or
+        (Test-PathTrackedInHead 'tests/corpus/__w8-technical-preflight-missing-probe__.json')) {
+        throw 'The authority-absence HEAD predicate did not case-insensitively distinguish a tracked input from a missing probe.'
+    }
+    $authorityFullPath = [System.IO.Path]::GetFullPath((Join-Path $repositoryRoot $w8DecisionAuthorityRelativePath))
+    $authorityPresent = Test-Path -LiteralPath $authorityFullPath
+    $authorityTracked = Test-PathTrackedInHead $w8DecisionAuthorityRelativePath
+    if (-not $authorityPresent -and -not $authorityTracked) {
+        $absence = Assert-OwnerAuthorityAbsent
+        if ($absence.state -cne 'Absent' -or $absence.trackedInHead -or $absence.presentInWorktree) {
+            throw 'The current absent owner-authority path did not produce the exact technical-preflight admission record.'
+        }
+    }
+    else {
+        Assert-PolicyThrows {
+            Assert-OwnerAuthorityAbsent
+        } 'present authority blocks technical preflight' 'Technical preflight is defined only for the absent-authority state.'
+    }
+
+    $normalResultRoot = 'artifacts/w8-local-release-validation/test-results'
+    $technicalResultRoot = 'artifacts/w8-technical-preflight/test-results'
+    $normalCommands = @(Get-CommandSpecs $normalResultRoot)
+    $technicalCommands = @(Get-CommandSpecs $technicalResultRoot)
+    if ($normalCommands.Count -ne 22 -or $technicalCommands.Count -ne 22) {
+        throw 'Normal and technical-preflight modes must share the exact 22-command inventory.'
+    }
+    for ($index = 0; $index -lt $normalCommands.Count; $index++) {
+        $normalCommand = $normalCommands[$index]
+        $technicalCommand = $technicalCommands[$index]
+        if ($normalCommand.Id -cne $technicalCommand.Id -or
+            $normalCommand.Kind -cne $technicalCommand.Kind -or
+            $normalCommand.Executable -cne $technicalCommand.Executable) {
+            throw "Technical-preflight command identity differs from the normal plan at index $index."
+        }
+
+        [string[]] $normalizedArguments = @($technicalCommand.ArgumentList | ForEach-Object {
+            ([string]$_).Replace($technicalResultRoot, $normalResultRoot, [System.StringComparison]::Ordinal)
+        })
+        Assert-ExactStringArray "technical-preflight command $index arguments" $normalizedArguments $normalCommand.ArgumentList
+        $normalizedTrx = if ($null -eq $technicalCommand.TrxPath) {
+            $null
+        }
+        else {
+            ([string]$technicalCommand.TrxPath).Replace(
+                $technicalResultRoot,
+                $normalResultRoot,
+                [System.StringComparison]::Ordinal)
+        }
+        if ($null -eq $normalCommand.TrxPath) {
+            if ($null -ne $normalizedTrx) {
+                throw "Technical-preflight non-test command '$($technicalCommand.Id)' unexpectedly claims a TRX path."
+            }
+        }
+        elseif ([string]$normalCommand.TrxPath -cne $normalizedTrx) {
+            throw "Technical-preflight TRX path differs from the normal plan for '$($technicalCommand.Id)'."
+        }
+    }
+
+    $metadata = Get-Command -Name $scriptPath
+    $runSets = @($metadata.ParameterSets | Where-Object { $_.Name -ceq 'Run' })
+    $technicalSets = @($metadata.ParameterSets | Where-Object { $_.Name -ceq 'TechnicalPreflight' })
+    if ($runSets.Count -ne 1 -or -not $runSets[0].IsDefault -or $technicalSets.Count -ne 1) {
+        throw 'Run must remain the sole default set and TechnicalPreflight must remain a distinct parameter set.'
+    }
+    [string[]] $technicalParameterNames = @($technicalSets[0].Parameters.Name)
+    foreach ($requiredParameter in @('OutputDirectory', 'Force', 'TechnicalPreflight')) {
+        if (@($technicalParameterNames | Where-Object { $_ -ceq $requiredParameter }).Count -ne 1) {
+            throw "TechnicalPreflight parameter set is missing '$requiredParameter'."
+        }
+    }
+    foreach ($prohibitedParameter in @('List', 'SelfTest', 'ValidateTrxPath', 'InternalGuard')) {
+        if (@($technicalParameterNames | Where-Object { $_ -ceq $prohibitedParameter }).Count -ne 0) {
+            throw "TechnicalPreflight parameter set must not include '$prohibitedParameter'."
+        }
+    }
+    $technicalSwitch = @($technicalSets[0].Parameters | Where-Object { $_.Name -ceq 'TechnicalPreflight' })
+    if ($technicalSwitch.Count -ne 1 -or -not $technicalSwitch[0].IsMandatory) {
+        throw 'The TechnicalPreflight switch must remain mandatory in its own parameter set.'
+    }
+
+    $null
+}
+
 function Format-Command {
     param([Parameter(Mandatory)] $Command)
 
@@ -1891,13 +2326,26 @@ if ($SelfTest) {
     exit 0
 }
 
-$outputCandidate = if ([System.IO.Path]::IsPathFullyQualified($OutputDirectory)) {
-    $OutputDirectory
+$executionMode = if ($PSCmdlet.ParameterSetName -ceq 'TechnicalPreflight') {
+    'TechnicalPreflight'
 }
 else {
-    Join-Path $repositoryRoot $OutputDirectory
+    'Run'
 }
-$defaultOutputPath = Assert-PathIsInsideRepository $outputCandidate
+$effectiveOutputDirectory = if ($executionMode -ceq 'TechnicalPreflight' -and
+    -not $PSBoundParameters.ContainsKey('OutputDirectory')) {
+    $technicalPreflightOutputDirectory
+}
+else {
+    $OutputDirectory
+}
+$outputCandidate = if ([System.IO.Path]::IsPathFullyQualified($effectiveOutputDirectory)) {
+    $effectiveOutputDirectory
+}
+else {
+    Join-Path $repositoryRoot $effectiveOutputDirectory
+}
+$defaultOutputPath = Assert-PathIsInsideRepository $outputCandidate $executionMode
 $defaultResultRoot = "$(ConvertTo-RepositoryRelativePath $defaultOutputPath)/test-results"
 $commandSpecs = @(Get-CommandSpecs $defaultResultRoot)
 
@@ -1951,6 +2399,9 @@ try {
         $outputMutexHeld = $true
     }
     if (-not $outputMutexHeld) {
+        if ($executionMode -ceq 'TechnicalPreflight') {
+            throw "Another W8 matrix process is already active for this checkout; '$outputPath' cannot start concurrently."
+        }
         throw "Another W8 local release validator is already targeting '$outputPath'."
     }
 
@@ -1959,7 +2410,16 @@ try {
         throw "The repository must be clean before validation starts ($($initialState.entryCount) status entries)."
     }
 
-    $requiredInputEvidence = @(Assert-RequiredReleaseInputs)
+    $initialAuthorityBoundary = $null
+    $finalAuthorityBoundary = $null
+    $authorityFinalCheckError = $null
+    if ($executionMode -ceq 'TechnicalPreflight') {
+        $requiredInputEvidence = @(Assert-TechnicalReleaseInputs)
+        $initialAuthorityBoundary = Assert-OwnerAuthorityAbsent
+    }
+    else {
+        $requiredInputEvidence = @(Assert-RequiredReleaseInputs)
+    }
 
     if (Test-Path -LiteralPath $outputPath) {
         $existingEntries = @(Get-ChildItem -LiteralPath $outputPath -Force)
@@ -1968,7 +2428,12 @@ try {
         }
 
         if ($existingEntries.Count -ne 0) {
-            Assert-ValidatorOwnedOutput $outputPath
+            if ($executionMode -ceq 'TechnicalPreflight') {
+                Assert-TechnicalPreflightOwnedOutput $outputPath
+            }
+            else {
+                Assert-ValidatorOwnedOutput $outputPath
+            }
             [System.IO.Directory]::Delete($outputPath, $true)
         }
     }
@@ -2044,6 +2509,16 @@ try {
         throw 'The final repository state is dirty despite the clean-tree command passing.'
     }
 
+    if ($executionMode -ceq 'TechnicalPreflight') {
+        try {
+            $finalAuthorityBoundary = Assert-OwnerAuthorityAbsent
+        }
+        catch {
+            $authorityFinalCheckError = $_.Exception.Message
+            throw
+        }
+    }
+
     $overallStatus = 'Passed'
     }
     catch {
@@ -2068,6 +2543,24 @@ try {
         }
     }
 
+    if ($executionMode -ceq 'TechnicalPreflight' -and
+        $null -eq $finalAuthorityBoundary -and
+        $null -eq $authorityFinalCheckError) {
+        try {
+            $finalAuthorityBoundary = Assert-OwnerAuthorityAbsent
+        }
+        catch {
+            $authorityFinalCheckError = $_.Exception.Message
+            $overallStatus = 'Failed'
+            if ($null -eq $failureMessage) {
+                $failureMessage = $authorityFinalCheckError
+            }
+            else {
+                $failureMessage = "$failureMessage Final authority-absence check failed: $authorityFinalCheckError"
+            }
+        }
+    }
+
     if ($null -eq $previousCi) {
         Remove-Item Env:CI -ErrorAction SilentlyContinue
     }
@@ -2084,49 +2577,84 @@ try {
         $testExecutionCount += $testCommand.testCounts.total
     }
 
-    $summary = [ordered]@{
-        schema = 'phoenixinspect.w8-local-release-validation/evidence-v1'
-        scope = [ordered]@{
-            kind = 'LocalOnly'
-            hostedEvidence = 'NotRun'
-            closureClaim = $false
-            focusedLaneOverlap = 'Intentional'
+    $repositoryEvidence = [ordered]@{
+        commit = if ($null -eq $initialState) { $null } else { $initialState.commit }
+        initialDirtyState = $initialState
+        finalDirtyState = $finalState
+    }
+    $countEvidence = [ordered]@{
+        plannedCommands = $commandSpecs.Count
+        executedCommands = @($commandEvidence | Where-Object { $_.status -ne 'NotRun' }).Count
+        passedCommands = @($commandEvidence | Where-Object { $_.status -eq 'Passed' }).Count
+        failedCommands = @($commandEvidence | Where-Object { $_.status -eq 'Failed' }).Count
+        notRunCommands = @($commandEvidence | Where-Object { $_.status -eq 'NotRun' }).Count
+        passedTestLanes = $passedTestCommands.Count
+        testExecutions = $testExecutionCount
+        skippedTests = if ($passedTestCommands.Count -eq $testCommands.Count) { 0 } else { $null }
+    }
+    if ($executionMode -ceq 'TechnicalPreflight') {
+        $summary = [ordered]@{
+            schema = $technicalPreflightEvidenceSchema
+            mode = 'TechnicalPreflight'
+            scope = (New-ValidationScope 'TechnicalPreflight')
+            status = $overallStatus
+            failure = $failureMessage
+            technicalInputs = @($requiredInputEvidence)
+            authorityBoundary = [ordered]@{
+                role = 'OwnerAuthorityEnvelope'
+                path = $w8DecisionAuthorityRelativePath
+                requiredForNormalRun = $true
+                initial = $initialAuthorityBoundary
+                final = $finalAuthorityBoundary
+                finalCheckError = $authorityFinalCheckError
+            }
+            repository = $repositoryEvidence
+            counts = $countEvidence
+            commands = @($commandEvidence)
         }
-        status = $overallStatus
-        failure = $failureMessage
-        requiredInputs = @($requiredInputEvidence)
-        repository = [ordered]@{
-            commit = if ($null -eq $initialState) { $null } else { $initialState.commit }
-            initialDirtyState = $initialState
-            finalDirtyState = $finalState
+        $summaryFileName = $technicalPreflightSummaryFileName
+    }
+    else {
+        $summary = [ordered]@{
+            schema = $normalEvidenceSchema
+            scope = (New-ValidationScope 'Run')
+            status = $overallStatus
+            failure = $failureMessage
+            requiredInputs = @($requiredInputEvidence)
+            repository = $repositoryEvidence
+            counts = $countEvidence
+            commands = @($commandEvidence)
         }
-        counts = [ordered]@{
-            plannedCommands = $commandSpecs.Count
-            executedCommands = @($commandEvidence | Where-Object { $_.status -ne 'NotRun' }).Count
-            passedCommands = @($commandEvidence | Where-Object { $_.status -eq 'Passed' }).Count
-            failedCommands = @($commandEvidence | Where-Object { $_.status -eq 'Failed' }).Count
-            notRunCommands = @($commandEvidence | Where-Object { $_.status -eq 'NotRun' }).Count
-            passedTestLanes = $passedTestCommands.Count
-            testExecutions = $testExecutionCount
-            skippedTests = if ($passedTestCommands.Count -eq $testCommands.Count) { 0 } else { $null }
-        }
-        commands = @($commandEvidence)
+        $summaryFileName = $normalSummaryFileName
     }
 
-    $summaryPath = Join-Path $outputPath 'evidence.json'
+    $summaryPath = Join-Path $outputPath $summaryFileName
     $json = $summary | ConvertTo-Json -Depth 16
     [System.IO.File]::WriteAllText(
         $summaryPath,
         $json + "`n",
         [System.Text.UTF8Encoding]::new($false))
-    Write-Output "Local-only evidence: $(ConvertTo-RepositoryRelativePath $summaryPath)"
+    if ($executionMode -ceq 'TechnicalPreflight') {
+        Write-Output "Technical-preflight-only record: $(ConvertTo-RepositoryRelativePath $summaryPath)"
+    }
+    else {
+        Write-Output "Local-only evidence: $(ConvertTo-RepositoryRelativePath $summaryPath)"
+    }
     }
 
     if ($overallStatus -ne 'Passed') {
+        if ($executionMode -ceq 'TechnicalPreflight') {
+            throw "W8 technical preflight failed: $failureMessage"
+        }
         throw "W8 local release validation failed: $failureMessage"
     }
 
-    Write-Output "W8 local release validation passed at $($initialState.commit). No hosted evidence or closure is claimed."
+    if ($executionMode -ceq 'TechnicalPreflight') {
+        Write-Output "W8 technical preflight passed at $($initialState.commit). This is not owner authority or W8.10 local-release-validation evidence; no hosted evidence or closure is claimed."
+    }
+    else {
+        Write-Output "W8 local release validation passed at $($initialState.commit). No hosted evidence or closure is claimed."
+    }
 }
 finally {
     if ($outputMutexHeld) {
