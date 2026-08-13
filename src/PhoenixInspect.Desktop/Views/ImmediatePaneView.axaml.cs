@@ -44,8 +44,10 @@ public partial class ImmediatePaneView : UserControl
         subscribedPanel = Tool?.Panel;
         if (subscribedPanel is not null)
         {
+            var panel = subscribedPanel;
             subscribedPanel.PropertyChanged += OnPanelChanged;
-            controller = new CompletionController(CompletionPopup, CompletionList, subscribedPanel.Completion);
+            controller = new CompletionController(
+                CompletionPopup, CompletionList, panel.Completion, () => panel.CompletionContext);
             ApplyTranscript();
         }
     }
@@ -97,6 +99,14 @@ public partial class ImmediatePaneView : UserControl
     {
         if (Tool is not { } tool)
         {
+            return;
+        }
+
+        if (e.Key == Key.Space && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            // Ctrl+Space asks for completion explicitly, IDE-style: even an empty prompt offers the universe.
+            controller?.Invoke(InputBox);
+            e.Handled = true;
             return;
         }
 

@@ -80,10 +80,17 @@ public sealed class CompletionSessionState
     /// </summary>
     /// <param name="text">The expression text being edited.</param>
     /// <param name="caretOffset">The caret offset within <paramref name="text"/>.</param>
+    /// <param name="context">The editor-specific context, or null for a plain expression editor.</param>
+    /// <param name="explicitInvocation">Whether the user asked for completion, which completes an empty token.</param>
     /// <returns>The completion result, possibly empty.</returns>
-    public CompletionResult Complete(string text, int caretOffset)
+    public CompletionResult Complete(
+        string text,
+        int caretOffset,
+        CompletionContext? context = null,
+        bool explicitInvocation = false)
     {
-        var result = ExpressionCompletionService.Complete(Catalog, text ?? string.Empty, caretOffset);
+        var result = ExpressionCompletionService.Complete(
+            Catalog, text ?? string.Empty, caretOffset, context, explicitInvocation);
         if (result.PendingTypeMembers is { } typeFullName)
         {
             _ = RealizeTypeMembersAsync(typeFullName);

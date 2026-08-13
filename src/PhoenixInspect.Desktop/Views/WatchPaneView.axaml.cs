@@ -35,6 +35,14 @@ public partial class WatchPaneView : UserControl
             return;
         }
 
+        if (e.Key == Key.Space && e.KeyModifiers.HasFlag(KeyModifiers.Control) && sender is TextBox box)
+        {
+            // Ctrl+Space asks for completion explicitly, IDE-style: even an empty entry offers the universe.
+            controller?.Invoke(box);
+            e.Handled = true;
+            return;
+        }
+
         if (controller?.HandleKey(e) == true)
         {
             e.Handled = true;

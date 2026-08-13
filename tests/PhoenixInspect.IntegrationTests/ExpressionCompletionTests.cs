@@ -65,8 +65,11 @@ public sealed class ExpressionCompletionTests
     [Fact]
     public void Members_complete_after_a_dot()
     {
+        // The prefix match ranks first; the camel-hump match on the same token follows it.
         var math = ExpressionCompletionService.Complete(CompletionCatalog.Empty, "Math.Sq", 7);
-        Assert.Equal(["Sqrt"], math.Items.Select(static item => item.Text).ToArray());
+        Assert.Equal(
+            ["Sqrt", "ReciprocalSqrtEstimate"],
+            math.Items.Select(static item => item.Text).ToArray());
         Assert.Equal(5, math.ReplaceStart);
 
         Assert.Contains(
@@ -96,10 +99,88 @@ public sealed class ExpressionCompletionTests
     public void Acceptance_replaces_the_partial_token()
     {
         var result = ExpressionCompletionService.Complete(CompletionCatalog.Empty, "1 + Math.Sq + 2", 11);
-        var item = Assert.Single(result.Items);
+        var item = result.Items[0];
+        Assert.Equal("Sqrt", item.Text);
         var (newText, newCaret) = result.Apply("1 + Math.Sq + 2", item);
         Assert.Equal("1 + Math.Sqrt + 2", newText);
         Assert.Equal(13, newCaret);
+    }
+
+    /// <summary>Proves camel-hump and substring matching, ranked below prefix matches, IDE-style.</summary>
+    [Fact]
+    public void Humps_and_substrings_match_and_rank_below_prefixes()
+    {
+        // Camel humps: 'DTO' and 'dto' both find DateTimeOffset, like ReSharper and Rider.
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "DTO", 3).Items,
+            static item => item.Text == "DateTimeOffset");
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "dto", 3).Items,
+            static item => item.Text == "DateTimeOffset");
+
+        // Middle humps match too: 'SqEs' finds ReciprocalSqrtEstimate among Math's members.
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "Math.SqEs", 9).Items,
+            static item => item.Text == "ReciprocalSqrtEstimate");
+
+        // Substring matching finds a token buried mid-name.
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "double.finity", 13).Items,
+            static item => item.Text == "NegativeInfinity");
+
+        // A numeric literal is not an identifier: typing '32' must not surface Int32-shaped names.
+        Assert.Empty(ExpressionCompletionService.Complete(CompletionCatalog.Empty, "32", 2).Items);
+
+        // A single character stays strict, so one keystroke never floods the list with loose matches.
+        Assert.DoesNotContain(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "Math.q", 6).Items,
+            static item => item.Text == "Sqrt");
+    }
+
+    /// <summary>Proves the immediate-window context: locals, statement keywords, and explicit invocation.</summary>
+    [Fact]
+    public void Immediate_context_offers_locals_and_statement_keywords()
+    {
+        var context = new CompletionContext
+        {
+            AllowsStatements = true,
+            Locals =
+            [
+                new CompletionItem("total", CompletionItemKind.Local, "Int32"),
+                new CompletionItem("x", CompletionItemKind.Local, "Double"),
+            ],
+        };
+
+        // Declared variables complete as identifiers, annotated with their value types.
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "tot", 3, context).Items,
+            static item => item is { Text: "total", Kind: CompletionItemKind.Local, Detail: "Int32" });
+
+        // Statement keywords offer at the start of a line, and only in editors that admit statements.
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "va", 2, context).Items,
+            static item => item is { Text: "var", Kind: CompletionItemKind.Keyword });
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "  us", 4, context).Items,
+            static item => item is { Text: "using", Kind: CompletionItemKind.Keyword });
+        Assert.DoesNotContain(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "1 + va", 6, context).Items,
+            static item => item.Text == "var");
+        Assert.DoesNotContain(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "va", 2).Items,
+            static item => item.Text == "var");
+
+        // An explicit ask (Ctrl+Space) completes an empty token, offering the whole applicable universe.
+        var explicitAll = ExpressionCompletionService.Complete(
+            SampleCatalog, "", 0, context, explicitInvocation: true);
+        Assert.Contains(explicitAll.Items, static item => item is { Text: "root", Kind: CompletionItemKind.Root });
+        Assert.Contains(explicitAll.Items, static item => item is { Text: "total", Kind: CompletionItemKind.Local });
+        Assert.Contains(explicitAll.Items, static item => item is { Text: "true", Kind: CompletionItemKind.Keyword });
+        Assert.Equal(0, explicitAll.ReplaceStart);
+        Assert.Equal(0, explicitAll.ReplaceLength);
+
+        // As-you-type completion still waits for a first character.
+        Assert.Empty(ExpressionCompletionService.Complete(SampleCatalog, "", 0, context).Items);
     }
 
     /// <summary>Proves namespace drill-down and the pending type-member handshake.</summary>

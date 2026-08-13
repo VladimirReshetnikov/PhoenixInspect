@@ -29,6 +29,15 @@ public sealed class ImmediateVariableStore
             ? stored.Value
             : ConstantOperandResolution.OutsideDomain();
 
+    /// <summary>Lists the declared variables as completion items, annotated with their value types.</summary>
+    /// <returns>The items, ordered by name.</returns>
+    public ImmutableArray<CompletionItem> ListCompletions() =>
+    [
+        .. variables
+            .Select(static pair => new CompletionItem(pair.Key, CompletionItemKind.Local, pair.Value.TypeName))
+            .OrderBy(static item => item.Text, StringComparer.OrdinalIgnoreCase),
+    ];
+
     /// <summary>Gets whether one submitted line is a declaration or an assignment statement.</summary>
     /// <param name="line">The submitted line, already trimmed.</param>
     /// <returns><see langword="true"/> when the line is a variable statement.</returns>

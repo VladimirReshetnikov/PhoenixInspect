@@ -1,6 +1,9 @@
+using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Media;
+using Avalonia.Threading;
 using PhoenixInspect.Inspection;
 
 namespace PhoenixInspect.Desktop;
@@ -12,22 +15,33 @@ namespace PhoenixInspect.Desktop;
 /// </summary>
 public sealed class CompletionController
 {
+    private const int PageSize = 8;
+
     private readonly Popup popup;
     private readonly ListBox list;
     private readonly CompletionSessionState completion;
+    private readonly Func<CompletionContext>? contextProvider;
     private TextBox? owner;
+    private TextBox? measuredBox;
+    private double measuredCharWidth;
     private CompletionResult result = CompletionResult.Empty;
 
     /// <summary>Creates the controller over one popup and list pair.</summary>
     /// <param name="popup">The drop-down popup, placed under the active editor.</param>
     /// <param name="list">The item list inside the popup.</param>
     /// <param name="completion">The shared completion state that computes items.</param>
-    /// <exception cref="ArgumentNullException">An argument is null.</exception>
-    public CompletionController(Popup popup, ListBox list, CompletionSessionState completion)
+    /// <param name="contextProvider">The editor-specific completion context, or null for plain expressions.</param>
+    /// <exception cref="ArgumentNullException">A required argument is null.</exception>
+    public CompletionController(
+        Popup popup,
+        ListBox list,
+        CompletionSessionState completion,
+        Func<CompletionContext>? contextProvider = null)
     {
         this.popup = popup ?? throw new ArgumentNullException(nameof(popup));
         this.list = list ?? throw new ArgumentNullException(nameof(list));
         this.completion = completion ?? throw new ArgumentNullException(nameof(completion));
+        this.contextProvider = contextProvider;
         completion.Changed += (_, _) => RefreshIfOpen();
         list.PointerReleased += (_, _) =>
         {
@@ -41,10 +55,16 @@ public sealed class CompletionController
     /// <summary>Gets whether the drop-down is currently open.</summary>
     public bool IsOpen => popup.IsOpen;
 
-    /// <summary>Recomputes and shows (or hides) the drop-down for one editor's current text and caret.</summary>
+    /// <summary>Opens the drop-down on the user's explicit ask (Ctrl+Space), completing even an empty token.</summary>
     /// <param name="box">The editor being typed into.</param>
     /// <exception cref="ArgumentNullException"><paramref name="box"/> is null.</exception>
-    public void Update(TextBox box)
+    public void Invoke(TextBox box) => Update(box, explicitInvocation: true);
+
+    /// <summary>Recomputes and shows (or hides) the drop-down for one editor's current text and caret.</summary>
+    /// <param name="box">The editor being typed into.</param>
+    /// <param name="explicitInvocation">Whether the user asked for completion, which completes an empty token.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="box"/> is null.</exception>
+    public void Update(TextBox box, bool explicitInvocation = false)
     {
         ArgumentNullException.ThrowIfNull(box);
         var text = box.Text ?? string.Empty;
@@ -55,7 +75,7 @@ public sealed class CompletionController
             caret = text.Length;
         }
 
-        result = completion.Complete(text, caret);
+        result = completion.Complete(text, caret, contextProvider?.Invoke(), explicitInvocation);
         owner = box;
         if (result.Items.IsDefaultOrEmpty)
         {
@@ -65,7 +85,9 @@ public sealed class CompletionController
 
         list.ItemsSource = result.Items;
         list.SelectedIndex = 0;
+        list.ScrollIntoView(result.Items[0]);
         popup.PlacementTarget = box;
+        popup.HorizontalOffset = box.Padding.Left + (result.ReplaceStart * MeasureCharWidth(box));
         popup.IsOpen = true;
     }
 
@@ -89,6 +111,12 @@ public sealed class CompletionController
             case Key.Up:
                 MoveSelection(-1);
                 return true;
+            case Key.PageDown:
+                MoveSelection(PageSize);
+                return true;
+            case Key.PageUp:
+                MoveSelection(-PageSize);
+                return true;
             case Key.Enter:
             case Key.Tab:
                 Accept();
@@ -96,6 +124,16 @@ public sealed class CompletionController
             case Key.Escape:
                 Close();
                 return true;
+            case Key.OemPeriod or Key.Decimal when SelectionExtendsTypedToken():
+                // Committing on '.' chains completions the IDE way: 'root.Cur' + '.' inserts 'CurrentBatch'
+                // and the dot then opens its members. The key stays unconsumed so the dot itself still types.
+                Accept();
+                return false;
+            case Key.Left or Key.Right or Key.Home or Key.End:
+                // The caret is about to move without a text change; recompute for its new position afterwards,
+                // so the list follows the token under the caret instead of going stale.
+                Dispatcher.UIThread.Post(RefreshIfOpen);
+                return false;
             default:
                 return false;
         }
@@ -129,6 +167,42 @@ public sealed class CompletionController
         {
             list.ScrollIntoView(item);
         }
+    }
+
+    private bool SelectionExtendsTypedToken()
+    {
+        // A dot only commits a selection that begins with the typed token, so a loose match — a substring or
+        // camel-hump candidate — never hijacks a dot typed after a complete, deliberate name.
+        if (owner is not { } box || list.SelectedItem is not CompletionItem item)
+        {
+            return false;
+        }
+
+        var text = box.Text ?? string.Empty;
+        var start = Math.Clamp(result.ReplaceStart, 0, text.Length);
+        var length = Math.Clamp(result.ReplaceLength, 0, text.Length - start);
+        var token = text.Substring(start, length);
+        return token.Length > 0 && item.Text.StartsWith(token, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private double MeasureCharWidth(TextBox box)
+    {
+        if (!ReferenceEquals(measuredBox, box))
+        {
+            // The expression editors use a monospace font, so one measured glyph places the drop-down under the
+            // token being completed, the way the IDEs anchor their lists at the caret.
+            var formatted = new FormattedText(
+                new string('M', 16),
+                CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight,
+                new Typeface(box.FontFamily, box.FontStyle, box.FontWeight),
+                box.FontSize,
+                Brushes.Black);
+            measuredCharWidth = formatted.Width / 16;
+            measuredBox = box;
+        }
+
+        return measuredCharWidth;
     }
 
     private void Accept()

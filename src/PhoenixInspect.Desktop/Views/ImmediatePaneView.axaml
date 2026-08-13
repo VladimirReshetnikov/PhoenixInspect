@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ae="using:AvaloniaEdit"
+             xmlns:conv="using:PhoenixInspect.Desktop.Converters"
              x:Class="PhoenixInspect.Desktop.Views.ImmediatePaneView"
              Background="{DynamicResource Phoenix.EditorBackground}">
     <!-- DataContext: ImmediateTool -->
@@ -22,6 +23,19 @@
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <DockPanel>
+                                <Border DockPanel.Dock="Left"
+                                        Width="14" Height="14"
+                                        CornerRadius="3"
+                                        Margin="0,0,6,0"
+                                        VerticalAlignment="Center"
+                                        Background="{Binding Kind, Converter={x:Static conv:CompletionKindToBrushConverter.Instance}}">
+                                    <TextBlock Text="{Binding Kind, Converter={x:Static conv:CompletionKindToGlyphConverter.Instance}}"
+                                               FontSize="9"
+                                               FontWeight="Bold"
+                                               Foreground="White"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                </Border>
                                 <TextBlock DockPanel.Dock="Right"
                                            Text="{Binding Detail}"
                                            Classes="secondary"
@@ -30,7 +44,8 @@
                                            VerticalAlignment="Center" />
                                 <TextBlock Text="{Binding Text}"
                                            FontSize="12"
-                                           FontFamily="Cascadia Mono,Consolas,monospace" />
+                                           FontFamily="Cascadia Mono,Consolas,monospace"
+                                           VerticalAlignment="Center" />
                             </DockPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>

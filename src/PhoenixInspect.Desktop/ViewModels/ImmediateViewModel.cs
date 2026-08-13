@@ -55,6 +55,16 @@ public sealed class ImmediateViewModel : ObservableObject
     /// <summary>Gets the shell's shared completion state; the drop-down renders exactly what it returns.</summary>
     public CompletionSessionState Completion => shell.Completion;
 
+    /// <summary>
+    /// Gets the immediate window's completion context: the declared variables complete as identifiers, and the
+    /// statement keywords offer at the start of a line, because the prompt accepts declarations and directives.
+    /// </summary>
+    public CompletionContext CompletionContext => new()
+    {
+        Locals = variables.ListCompletions(),
+        AllowsStatements = true,
+    };
+
     /// <summary>Gets a statement of the context immediate expressions currently evaluate under.</summary>
     public string Summary => shell.IsDumpOpen
         ? evaluate.WatchContextSummary

@@ -26,6 +26,25 @@ public enum CompletionItemKind
 
     /// <summary>The adopted root identifier.</summary>
     Root = 5,
+
+    /// <summary>A variable declared in the immediate window.</summary>
+    Local = 6,
+}
+
+/// <summary>
+/// The editor-specific completion facts one query runs under: the declared immediate variables, and whether the
+/// editor admits statements, which offers the statement keywords at the start of a line.
+/// </summary>
+public sealed record CompletionContext
+{
+    /// <summary>Gets the plain expression context: no locals, no statements. Watch entries use this.</summary>
+    public static CompletionContext Expression { get; } = new();
+
+    /// <summary>Gets the editor's declared variables, completed as identifiers.</summary>
+    public ImmutableArray<CompletionItem> Locals { get; init; } = [];
+
+    /// <summary>Gets whether the editor admits statements, such as the immediate window's declarations.</summary>
+    public bool AllowsStatements { get; init; }
 }
 
 /// <summary>One completion candidate.</summary>
@@ -95,9 +114,11 @@ public sealed record CompletionCatalog
 /// <summary>
 /// Computes keyword, identifier, and member completions for watch expressions, the way Visual Studio's Watch
 /// window completes as you type. The candidate universe is the evaluator's own: C# keywords the expression grammar
-/// admits, the modeled type receivers and their dispatched members, the adopted root's declared fields, and the
-/// namespaces, types, and static fields read from dump-module metadata. Completion never invents a name — every
-/// candidate either evaluates or produces its own explained stop.
+/// admits, the modeled type receivers and their dispatched members, the adopted root's declared fields, the
+/// immediate window's declared variables, and the namespaces, types, and static fields read from dump-module
+/// metadata. Completion never invents a name — every candidate either evaluates or produces its own explained stop.
+/// Matching follows the IDE conventions: a typed token matches by prefix first, then by camel humps
+/// (<c>DTO</c> finds <c>DateTimeOffset</c>), then by substring, and items order by that match quality.
 /// </summary>
 public static class ExpressionCompletionService
 {
@@ -112,6 +133,14 @@ public static class ExpressionCompletionService
         "and", "bool", "byte", "char", "checked", "decimal", "default", "double", "false", "float", "global",
         "int", "is", "long", "nameof", "new", "not", "null", "object", "or", "sbyte", "short", "sizeof", "string",
         "switch", "true", "typeof", "uint", "ulong", "unchecked", "ushort", "when",
+    ];
+
+    // Statement keywords complete only at the start of a line, and only in editors that admit statements: the
+    // immediate window's declarations ('var x = …') and scope directives ('using System;').
+    private static readonly ImmutableArray<CompletionItem> StatementKeywords =
+    [
+        new("using", CompletionItemKind.Keyword, "import a namespace"),
+        new("var", CompletionItemKind.Keyword, "declare a variable"),
     ];
 
     private static readonly ImmutableArray<string> ModeledTypeNames =
@@ -402,12 +431,23 @@ public static class ExpressionCompletionService
     /// <param name="catalog">The session-derived catalog; <see cref="CompletionCatalog.Empty"/> works context-free.</param>
     /// <param name="text">The expression text being edited.</param>
     /// <param name="caretOffset">The caret offset within <paramref name="text"/>.</param>
+    /// <param name="context">The editor-specific context, or null for <see cref="CompletionContext.Expression"/>.</param>
+    /// <param name="explicitInvocation">
+    /// Whether the user asked for completion (Ctrl+Space); an explicit ask completes an empty token, offering the
+    /// whole applicable universe, where as-you-type completion waits for a first character.
+    /// </param>
     /// <returns>The completion result, possibly empty.</returns>
     /// <exception cref="ArgumentNullException">An argument is null.</exception>
-    public static CompletionResult Complete(CompletionCatalog catalog, string text, int caretOffset)
+    public static CompletionResult Complete(
+        CompletionCatalog catalog,
+        string text,
+        int caretOffset,
+        CompletionContext? context = null,
+        bool explicitInvocation = false)
     {
         ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(text);
+        context ??= CompletionContext.Expression;
         var caret = Math.Clamp(caretOffset, 0, text.Length);
         var prefixStart = caret;
         while (prefixStart > 0 && IsIdentifierChar(text[prefixStart - 1]))
@@ -416,6 +456,12 @@ public static class ExpressionCompletionService
         }
 
         var prefix = text[prefixStart..caret];
+        if (prefix.Length > 0 && char.IsAsciiDigit(prefix[0]))
+        {
+            // The token is a numeric literal, not an identifier; '32' must not surface 'Int32'.
+            return CompletionResult.Empty;
+        }
+
         if (prefixStart > 0 && text[prefixStart - 1] == '.')
         {
             var segments = ReadReceiverSegments(text, prefixStart - 1);
@@ -424,31 +470,35 @@ public static class ExpressionCompletionService
                 : CompleteMembers(catalog, segments, prefix, prefixStart, caret);
         }
 
-        if (prefix.Length == 0)
+        if (prefix.Length == 0 && !explicitInvocation)
         {
             return CompletionResult.Empty;
         }
 
-        var items = ImmutableArray.CreateBuilder<CompletionItem>();
-        items.AddRange(Keywords
-            .Where(keyword => StartsWith(keyword, prefix))
-            .Select(static keyword => new CompletionItem(keyword, CompletionItemKind.Keyword)));
-        items.AddRange(ModeledTypeNames
-            .Where(name => StartsWith(name, prefix))
-            .Select(static name => new CompletionItem(name, CompletionItemKind.Type)));
-        if (catalog.HasRoot && catalog.RootIdentifier.Length > 0 && StartsWith(catalog.RootIdentifier, prefix))
+        var items = new List<ScoredItem>();
+        items.AddRange(Score(
+            Keywords.Select(static keyword => new CompletionItem(keyword, CompletionItemKind.Keyword)), prefix));
+        if (context.AllowsStatements && text.AsSpan(0, prefixStart).IsWhiteSpace())
         {
-            items.Add(new CompletionItem(catalog.RootIdentifier, CompletionItemKind.Root, "adopted root"));
+            items.AddRange(Score(StatementKeywords, prefix));
         }
 
-        foreach (var segment in catalog.TypeFullNames
-            .Select(static fullName => FirstSegment(fullName))
-            .Distinct(StringComparer.Ordinal)
-            .Where(segment => StartsWith(segment, prefix)))
+        items.AddRange(Score(context.Locals, prefix));
+        items.AddRange(Score(
+            ModeledTypeNames.Select(static name => new CompletionItem(name, CompletionItemKind.Type)), prefix));
+        if (catalog.HasRoot && catalog.RootIdentifier.Length > 0)
         {
-            items.Add(new CompletionItem(segment, CompletionItemKind.Namespace, "from dump modules"));
+            items.AddRange(Score(
+                [new CompletionItem(catalog.RootIdentifier, CompletionItemKind.Root, "adopted root")], prefix));
         }
 
+        items.AddRange(Score(
+            catalog.TypeFullNames
+                .Select(static fullName => FirstSegment(fullName))
+                .Distinct(StringComparer.Ordinal)
+                .Select(static segment => new CompletionItem(
+                    segment, CompletionItemKind.Namespace, "from dump modules")),
+            prefix));
         return Finish(items, prefixStart, caret - prefixStart);
     }
 
@@ -465,7 +515,7 @@ public static class ExpressionCompletionService
             if (catalog.HasRoot && string.Equals(single, catalog.RootIdentifier, StringComparison.Ordinal))
             {
                 return Finish(
-                    Filter(catalog.RootMembers, prefix),
+                    Score(catalog.RootMembers, prefix),
                     prefixStart,
                     replaceLength);
             }
@@ -473,7 +523,7 @@ public static class ExpressionCompletionService
             if (ReceiverMembers.TryGetValue(single, out var members))
             {
                 return Finish(
-                    Filter(members.Select(static member => new CompletionItem(member, CompletionItemKind.Member)),
+                    Score(members.Select(static member => new CompletionItem(member, CompletionItemKind.Member)),
                         prefix),
                     prefixStart,
                     replaceLength);
@@ -483,12 +533,12 @@ public static class ExpressionCompletionService
         var dotted = string.Join('.', segments);
         if (catalog.TypeMembers.TryGetValue(dotted, out var realized))
         {
-            return Finish(Filter(realized, prefix), prefixStart, replaceLength);
+            return Finish(Score(realized, prefix), prefixStart, replaceLength);
         }
 
         var isKnownType = catalog.TypeFullNames.Contains(dotted, StringComparer.Ordinal);
         var namespacePrefix = dotted + ".";
-        var items = ImmutableArray.CreateBuilder<CompletionItem>();
+        var items = new List<ScoredItem>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var fullName in catalog.TypeFullNames)
         {
@@ -500,11 +550,11 @@ public static class ExpressionCompletionService
             var rest = fullName[namespacePrefix.Length..];
             var next = FirstSegment(rest);
             var isLeaf = next.Length == rest.Length;
-            if (StartsWith(next, prefix) && seen.Add(next))
+            if (Rank(next, prefix) is { } rank && seen.Add(next))
             {
-                items.Add(new CompletionItem(
-                    next,
-                    isLeaf ? CompletionItemKind.Type : CompletionItemKind.Namespace));
+                items.Add(new ScoredItem(
+                    new CompletionItem(next, isLeaf ? CompletionItemKind.Type : CompletionItemKind.Namespace),
+                    rank));
             }
         }
 
@@ -547,27 +597,128 @@ public static class ExpressionCompletionService
         return [.. segments];
     }
 
-    private static IEnumerable<CompletionItem> Filter(IEnumerable<CompletionItem> items, string prefix) =>
-        prefix.Length == 0 ? items : items.Where(item => StartsWith(item.Text, prefix));
+    private readonly record struct ScoredItem(CompletionItem Item, int Rank);
+
+    private static IEnumerable<ScoredItem> Score(IEnumerable<CompletionItem> items, string prefix)
+    {
+        foreach (var item in items)
+        {
+            if (Rank(item.Text, prefix) is { } rank)
+            {
+                yield return new ScoredItem(item, rank);
+            }
+        }
+    }
 
     private static CompletionResult Finish(
-        IEnumerable<CompletionItem> items,
+        IEnumerable<ScoredItem> items,
         int replaceStart,
         int replaceLength)
     {
         var ordered = items
-            .GroupBy(static item => item.Text, StringComparer.Ordinal)
-            .Select(static group => group.First())
-            .OrderBy(static item => item.Text, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(static item => item.Kind)
+            .GroupBy(static scored => scored.Item.Text, StringComparer.Ordinal)
+            .Select(static group => group.OrderBy(static scored => scored.Rank).First())
+            .OrderBy(static scored => scored.Rank)
+            .ThenBy(static scored => scored.Item.Text, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(static scored => scored.Item.Kind)
+            .Select(static scored => scored.Item)
             .Take(MaximumItems)
             .ToImmutableArray();
         return new CompletionResult(ordered, replaceStart, replaceLength);
     }
 
-    private static bool StartsWith(string candidate, string prefix) =>
-        candidate.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
-        && !string.Equals(candidate, prefix, StringComparison.Ordinal);
+    /// <summary>
+    /// Ranks how well a candidate matches the typed token, IDE-style: a case-sensitive prefix beats a
+    /// case-insensitive one, which beats a camel-hump match, which beats a plain substring. A candidate the user
+    /// already typed in full is not offered, and the looser modes need two characters, so a single keystroke never
+    /// floods the list.
+    /// </summary>
+    /// <returns>The rank, lower matching better, or null when the candidate does not match.</returns>
+    private static int? Rank(string candidate, string prefix)
+    {
+        if (prefix.Length == 0)
+        {
+            return 0;
+        }
+
+        if (string.Equals(candidate, prefix, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        if (candidate.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            return 0;
+        }
+
+        if (candidate.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return 1;
+        }
+
+        if (prefix.Length >= 2)
+        {
+            if (MatchesCamelHumps(candidate, prefix))
+            {
+                return 2;
+            }
+
+            if (candidate.Contains(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return 3;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Matches a pattern against a candidate's camel humps, the way ReSharper and Rider do: each pattern character
+    /// either starts a hump — the candidate's start, an upper-case letter, or a character after '_' — or continues
+    /// the run begun by the previous one, so <c>DTO</c> and <c>dto</c> both find <c>DateTimeOffset</c>, and
+    /// <c>SqEs</c> finds <c>ReciprocalSqrtEstimate</c> from its middle humps.
+    /// </summary>
+    private static bool MatchesCamelHumps(string candidate, string pattern)
+    {
+        return MatchFrom(0, 0, inRun: false);
+
+        bool MatchFrom(int candidateIndex, int patternIndex, bool inRun)
+        {
+            if (patternIndex == pattern.Length)
+            {
+                return true;
+            }
+
+            if (inRun
+                && candidateIndex < candidate.Length
+                && CharsEqualIgnoreCase(candidate[candidateIndex], pattern[patternIndex])
+                && MatchFrom(candidateIndex + 1, patternIndex + 1, inRun: true))
+            {
+                return true;
+            }
+
+            for (var index = candidateIndex; index < candidate.Length; index++)
+            {
+                if (IsHumpStart(candidate, index)
+                    && CharsEqualIgnoreCase(candidate[index], pattern[patternIndex])
+                    && MatchFrom(index + 1, patternIndex + 1, inRun: true))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    private static bool IsHumpStart(string candidate, int index) =>
+        index == 0
+        || char.IsUpper(candidate[index])
+        || candidate[index - 1] is '_' or '@'
+        || (char.IsAsciiDigit(candidate[index]) && !char.IsAsciiDigit(candidate[index - 1]));
+
+    private static bool CharsEqualIgnoreCase(char left, char right) =>
+        char.ToUpperInvariant(left) == char.ToUpperInvariant(right);
 
     private static bool IsIdentifierChar(char value) => char.IsLetterOrDigit(value) || value is '_' or '@';
 
