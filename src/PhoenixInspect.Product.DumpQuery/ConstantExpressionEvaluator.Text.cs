@@ -325,6 +325,13 @@ public static partial class ConstantExpressionEvaluator
                 "RegexOptions.IgnoreCase | RegexOptions.CultureInvariant");
         }
 
+        // A regex step is bounded by the one-second matching budget; checking here keeps a loop of regex folds
+        // responsive to cancellation between steps.
+        if (CancellationStop() is { } cancelled)
+        {
+            return cancelled;
+        }
+
         return GuardRegex(() => run(new Regex(pattern, options, RegexFoldTimeout)));
     }
 
@@ -343,18 +350,29 @@ public static partial class ConstantExpressionEvaluator
     };
 
     /// <summary>
-    /// Boxes one fully evaluated match collection. Counting forces the lazy matcher to run to completion under
-    /// the budget, so every later member read is a pure read of finished evidence.
+    /// Boxes one fully evaluated match collection. The lazy matcher runs one match per step, so each step is a
+    /// cooperative cancellation boundary and the sequence bound stops the walk before excess matches are ever
+    /// computed; every later member read is then a pure read of finished evidence.
     /// </summary>
     private static FoldOutcome CreateMatchCollectionValue(MatchCollection matches)
     {
-        var count = matches.Count;
-        if (count > MaximumSequenceLength)
+        var count = 0;
+        foreach (var unused in matches)
         {
-            return FoldOutcome.Error(
-                SequenceBoundCode,
-                $"The pattern produced {count.ToString(CultureInfo.InvariantCulture)} matches, beyond the "
-                + $"deterministic bound of {MaximumSequenceLength.ToString(CultureInfo.InvariantCulture)}.");
+            if (CancellationStop() is { } cancelled)
+            {
+                return cancelled;
+            }
+
+            count++;
+            if (count > MaximumSequenceLength)
+            {
+                return FoldOutcome.Error(
+                    SequenceBoundCode,
+                    $"The pattern produced more than "
+                    + $"{MaximumSequenceLength.ToString(CultureInfo.InvariantCulture)} matches, beyond the "
+                    + "deterministic bound.");
+            }
         }
 
         return BclValue(BclValueKind.MatchCollection, matches);

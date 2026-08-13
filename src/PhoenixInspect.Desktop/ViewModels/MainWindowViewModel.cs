@@ -23,6 +23,8 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
     private readonly RelayCommand attachCommand;
     private readonly RelayCommand closeCommand;
     private readonly RelayCommand restoreLayoutCommand;
+    private readonly RelayCommand cancelBusyCommand;
+    private readonly List<CancellationTokenSource> busyCancellations = [];
     private IRootDock layout;
     private int busyDepth;
     private string busyMessage = string.Empty;
@@ -67,6 +69,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
         attachCommand = new RelayCommand(ShowProcesses, () => !IsBusy);
         closeCommand = new RelayCommand(() => _ = CloseDumpAsync(), () => IsDumpOpen && !IsBusy);
         restoreLayoutCommand = new RelayCommand(RestoreDefaultLayout);
+        cancelBusyCommand = new RelayCommand(CancelBusyWork, () => busyCancellations.Count > 0);
         Evaluate.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(EvaluateViewModel.RootSelection) or nameof(EvaluateViewModel.RootIdentifier))
@@ -348,6 +351,99 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
         {
             ExitBusy();
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<TResult?> RunCancellableAsync<TResult>(
+        string busyMessage,
+        Func<ClrmdDumpSession, CancellationToken, TResult> work)
+    {
+        ArgumentNullException.ThrowIfNull(work);
+        if (!host.IsOpen)
+        {
+            return default;
+        }
+
+        using var cancellation = new CancellationTokenSource();
+        busyCancellations.Add(cancellation);
+        cancelBusyCommand.RaiseCanExecuteChanged();
+        Raise(nameof(IsBusyCancellable));
+        EnterBusy(busyMessage);
+        try
+        {
+            return await host.QueryAsync(work, cancellation.Token).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            // The request was cancelled while still queued; a run already in progress reports its own
+            // result-shaped cancellation instead of throwing.
+            SetStatus($"Cancelled — {busyMessage}");
+            return default;
+        }
+        catch (Exception exception)
+        {
+            ReportError(exception.Message);
+            return default;
+        }
+        finally
+        {
+            busyCancellations.Remove(cancellation);
+            cancelBusyCommand.RaiseCanExecuteChanged();
+            Raise(nameof(IsBusyCancellable));
+            ExitBusy();
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<TResult?> RunCancellableAsync<TResult>(
+        string busyMessage,
+        Func<CancellationToken, TResult> work)
+    {
+        ArgumentNullException.ThrowIfNull(work);
+        using var cancellation = new CancellationTokenSource();
+        busyCancellations.Add(cancellation);
+        cancelBusyCommand.RaiseCanExecuteChanged();
+        Raise(nameof(IsBusyCancellable));
+        EnterBusy(busyMessage);
+        try
+        {
+            var token = cancellation.Token;
+            return await Task.Run(() => work(token), CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            SetStatus($"Cancelled — {busyMessage}");
+            return default;
+        }
+        catch (Exception exception)
+        {
+            ReportError(exception.Message);
+            return default;
+        }
+        finally
+        {
+            busyCancellations.Remove(cancellation);
+            cancelBusyCommand.RaiseCanExecuteChanged();
+            Raise(nameof(IsBusyCancellable));
+            ExitBusy();
+        }
+    }
+
+    /// <summary>Gets the command the busy overlay's Cancel action invokes.</summary>
+    public RelayCommand CancelBusyCommand => cancelBusyCommand;
+
+    /// <summary>Gets whether the running busy work cooperates with cancellation, which shows the Cancel action.</summary>
+    public bool IsBusyCancellable => busyCancellations.Count > 0;
+
+    private void CancelBusyWork()
+    {
+        // Cancellation is a request, never an abort: each token is observed by its projection at safe points.
+        foreach (var cancellation in busyCancellations)
+        {
+            cancellation.Cancel();
+        }
+
+        SetStatus("Cancelling…");
     }
 
     /// <inheritdoc />

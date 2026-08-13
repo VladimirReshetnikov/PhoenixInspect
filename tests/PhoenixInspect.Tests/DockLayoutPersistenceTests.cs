@@ -30,6 +30,16 @@ public sealed class DockLayoutPersistenceTests
         public Task<TResult?> RunAsync<TResult>(string busyMessage, Func<ClrmdDumpSession, TResult> work) =>
             Task.FromResult<TResult?>(default);
 
+        public Task<TResult?> RunCancellableAsync<TResult>(
+            string busyMessage,
+            Func<ClrmdDumpSession, CancellationToken, TResult> work) =>
+            Task.FromResult<TResult?>(default);
+
+        public Task<TResult?> RunCancellableAsync<TResult>(
+            string busyMessage,
+            Func<CancellationToken, TResult> work) =>
+            Task.FromResult<TResult?>(default);
+
         public Task<TResult?> RunQuietAsync<TResult>(Func<ClrmdDumpSession, TResult> work) =>
             Task.FromResult<TResult?>(default);
 

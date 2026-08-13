@@ -12,6 +12,15 @@ namespace PhoenixInspect.Product.DumpQuery;
 public static partial class ConstantExpressionEvaluator
 {
     /// <summary>
+    /// The greatest BigInteger exponent or shift count one fold admits. These are single library calls a
+    /// cooperative checkpoint cannot reach inside, so their arguments carry a deterministic bound: 65536 bits
+    /// computes instantly, while an unbounded count can outlive the process.
+    /// </summary>
+    private const int MaximumBigIntegerOperationBits = 65_536;
+
+    private const string NumericMagnitudeCode = "CONSTANT_NUMERIC_MAGNITUDE_BOUND_EXCEEDED";
+
+    /// <summary>
     /// The numeric value domains the fold engine computes over. <c>nint</c>/<c>nuint</c> fold at 64 bits, matching
     /// the x64 processes the preview targets; the result states its kind so the assumption is visible.
     /// </summary>
@@ -404,6 +413,16 @@ public static partial class ConstantExpressionEvaluator
             if (kind == SyntaxKind.UnsignedRightShiftExpression)
             {
                 return FoldOutcome.Error(OperandTypeCode, "BigInteger does not define the unsigned right shift.");
+            }
+
+            // A BigInteger shift is one uninterruptible library call whose cost grows with the count, so the
+            // count carries a deterministic bound instead of a cooperative checkpoint.
+            if (Math.Abs((long)count) > MaximumBigIntegerOperationBits)
+            {
+                return FoldOutcome.Error(
+                    NumericMagnitudeCode,
+                    $"A BigInteger shift count beyond {MaximumBigIntegerOperationBits.ToString(
+                        CultureInfo.InvariantCulture)} bits does not complete within the evaluator's budget.");
             }
 
             var big = ToBigInteger(target, BoxOf(left));
@@ -1665,6 +1684,16 @@ public static partial class ConstantExpressionEvaluator
                         BigInteger.Parse(text.String!, CultureInfo.InvariantCulture)));
                 case "Pow" when arguments is [{ IsNumeric: true } value, { } exponent] &&
                     TryImplicitInt32(exponent, out var power):
+                    // Pow is one uninterruptible library call whose result size grows with the exponent, so the
+                    // exponent carries a deterministic bound instead of a cooperative checkpoint.
+                    if (power > MaximumBigIntegerOperationBits)
+                    {
+                        return FoldOutcome.Error(
+                            NumericMagnitudeCode,
+                            $"A BigInteger exponent beyond {MaximumBigIntegerOperationBits.ToString(
+                                CultureInfo.InvariantCulture)} does not complete within the evaluator's budget.");
+                    }
+
                     return FoldOutcome.Folded(Operand.FromNumeric(
                         NumericKind.BigInteger,
                         BigInteger.Pow(ToTruncatedBigInteger(NumericKindOf(value), BoxOf(value)), power)));

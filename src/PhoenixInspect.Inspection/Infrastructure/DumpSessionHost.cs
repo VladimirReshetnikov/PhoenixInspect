@@ -178,6 +178,32 @@ public sealed class DumpSessionHost : IDisposable
             session ?? throw new InvalidOperationException("No dump session is open.")));
     }
 
+    /// <summary>
+    /// Runs one read-only projection on the adapter thread with a cooperative cancellation token. The token never
+    /// aborts the worker; the projection observes it at its own safe points and returns (or throws
+    /// <see cref="OperationCanceledException"/>), after which the worker simply pumps the next request.
+    /// </summary>
+    /// <typeparam name="TResult">The immutable projection produced by <paramref name="work"/>.</typeparam>
+    /// <param name="work">The projection to run; it receives the token to observe.</param>
+    /// <param name="cancellationToken">The token the projection cooperates with.</param>
+    /// <returns>A task producing the projection result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="work"/> is null.</exception>
+    public Task<TResult> QueryAsync<TResult>(
+        Func<ClrmdDumpSession, CancellationToken, TResult> work,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(work);
+        return InvokeAsync(() =>
+        {
+            // A request cancelled while still queued never starts; one cancelled mid-run returns through the
+            // projection's own cooperative checks.
+            cancellationToken.ThrowIfCancellationRequested();
+            return work(
+                session ?? throw new InvalidOperationException("No dump session is open."),
+                cancellationToken);
+        });
+    }
+
     /// <inheritdoc />
     public void Dispose()
     {

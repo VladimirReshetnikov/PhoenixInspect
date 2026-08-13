@@ -850,6 +850,12 @@ public static partial class ConstantExpressionEvaluator
         Evaluate(session, expression, resolvers: null);
 
     /// <summary>
+    /// The stable diagnostic code of a cooperatively cancelled evaluation: the fold engine observed the host's
+    /// cancellation request at one of its safe boundaries and stopped with this typed outcome instead of a value.
+    /// </summary>
+    public const string CancellationCode = "CONSTANT_EVALUATION_CANCELLED";
+
+    /// <summary>
     /// Attempts to evaluate one raw expression as a constant, optionally consuming values extracted from the dump
     /// as operands through caller-supplied resolvers.
     /// </summary>
@@ -872,6 +878,35 @@ public static partial class ConstantExpressionEvaluator
             expression,
             resolvers,
             recordDeferredSessionAuthority: false).Evaluation;
+
+    /// <summary>
+    /// Attempts to evaluate one raw expression as a constant, cooperating with a host cancellation token: the
+    /// fold engine observes the token at its safe boundaries — every sub-expression fold, every per-element
+    /// lambda application, every delegate entry, and the comparison loops of the set operators — and stops with
+    /// the typed <see cref="CancellationCode"/> outcome. Nothing is aborted; the pass simply unwinds.
+    /// </summary>
+    /// <param name="session">The open dump session, or null when only references and literals may resolve.</param>
+    /// <param name="expression">The raw expression text, submitted without normalization.</param>
+    /// <param name="resolvers">Bridges to the frozen dump pipelines, or null.</param>
+    /// <param name="references">Caller-referenced assemblies, empty by default.</param>
+    /// <param name="usings">The active using directives, or null for none.</param>
+    /// <param name="cancellationToken">The token the fold engine cooperates with.</param>
+    /// <returns>An exact value, a typed constant-domain error, or a not-constant disposition.</returns>
+    public static ConstantExpressionEvaluation Evaluate(
+        ClrmdDumpSession? session,
+        string? expression,
+        ConstantOperandResolvers? resolvers,
+        ImmutableArray<ConstantReferenceAssembly> references,
+        ConstantUsingDirectiveSet? usings,
+        CancellationToken cancellationToken) =>
+        RunEvaluationPass(
+            session,
+            expression,
+            resolvers,
+            recordDeferredSessionAuthority: false,
+            references,
+            usings,
+            cancellationToken).Evaluation;
 
     /// <summary>
     /// Attempts to evaluate one raw expression as a constant, additionally resolving names through caller-referenced
@@ -925,18 +960,53 @@ public static partial class ConstantExpressionEvaluator
     [ThreadStatic]
     private static bool onEvaluationThread;
 
+    // The evaluation thread's ambient cancellation token. The fold engine's hot paths — element-comparison loops,
+    // regex dispatch — sit several static hops below any context-carrying frame, so the token rides the dedicated
+    // evaluation thread instead of every signature. Each pass owns its thread, and a nested pass on the same
+    // thread restores the outer token, so the scope is exactly one evaluation.
+    [ThreadStatic]
+    private static CancellationToken evaluationCancellation;
+
+    /// <summary>
+    /// Produces the typed cancellation stop when the host has requested cancellation, or null to continue. Every
+    /// safe boundary calls this; the resulting error outcome unwinds through the ordinary disposition checks, so
+    /// cancellation is always a returned result, never an abort.
+    /// </summary>
+    private static FoldOutcome? CancellationStop() =>
+        evaluationCancellation.IsCancellationRequested
+            ? FoldOutcome.Error(
+                CancellationCode,
+                "The evaluation observed the host's cancellation request at a safe boundary; no value was produced.")
+            : null;
+
     private static EvaluationPassResult RunEvaluationPass(
         ClrmdDumpSession? session,
         string? expression,
         ConstantOperandResolvers? resolvers,
         bool recordDeferredSessionAuthority,
         ImmutableArray<ConstantReferenceAssembly> references = default,
-        ConstantUsingDirectiveSet? usings = null)
+        ConstantUsingDirectiveSet? usings = null,
+        CancellationToken cancellationToken = default)
     {
         if (onEvaluationThread)
         {
-            return RunEvaluationPassCore(
-                session, expression, resolvers, recordDeferredSessionAuthority, references, usings);
+            // A nested pass — a resolver re-entering the evaluator — keeps the outer pass's token unless it
+            // carries its own, and always restores the outer one on the way out.
+            var outerCancellation = evaluationCancellation;
+            if (cancellationToken.CanBeCanceled)
+            {
+                evaluationCancellation = cancellationToken;
+            }
+
+            try
+            {
+                return RunEvaluationPassCore(
+                    session, expression, resolvers, recordDeferredSessionAuthority, references, usings);
+            }
+            finally
+            {
+                evaluationCancellation = outerCancellation;
+            }
         }
 
         var result = default(EvaluationPassResult);
@@ -945,6 +1015,7 @@ public static partial class ConstantExpressionEvaluator
             () =>
             {
                 onEvaluationThread = true;
+                evaluationCancellation = cancellationToken;
                 try
                 {
                     result = RunEvaluationPassCore(
@@ -1746,6 +1817,13 @@ public static partial class ConstantExpressionEvaluator
 
     private static FoldOutcome Fold(ExpressionSyntax syntax, FoldContext context)
     {
+        // Every sub-expression, lambda body, delegate entry, and operand resolution re-enters here, so this one
+        // check is the fold engine's principal cooperative-cancellation boundary.
+        if (CancellationStop() is { } cancelled)
+        {
+            return cancelled;
+        }
+
         // A member chain anchored at the root identifier is one operand: the frozen root-relative pipeline
         // evaluates the whole chain — including its ?. short-circuit semantics — and hands back the exact value.
         // A chain ending in '.Length' that has no value of its own falls back to the receiver chain's value, so

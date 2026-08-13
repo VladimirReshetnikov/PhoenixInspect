@@ -139,6 +139,15 @@
                         <ProgressBar IsIndeterminate="True" Height="4" Width="240"
                                      Foreground="{DynamicResource Phoenix.AccentOlive}" />
                         <TextBlock Text="{Binding BusyMessage}" HorizontalAlignment="Center" />
+                        <!-- Cancellation is cooperative: the running evaluation observes the request at its own
+                             safe points and reports a typed cancelled outcome; nothing is aborted. -->
+                        <Button Content="Cancel"
+                                HorizontalAlignment="Center"
+                                Padding="14,3"
+                                FontSize="11"
+                                IsVisible="{Binding IsBusyCancellable}"
+                                Command="{Binding CancelBusyCommand}"
+                                AutomationProperties.AutomationId="CancelBusyWork" />
                     </StackPanel>
                 </Border>
             </Border>

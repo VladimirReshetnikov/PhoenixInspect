@@ -27,6 +27,33 @@ public interface IShellServices
     Task<TResult?> RunAsync<TResult>(string busyMessage, Func<ClrmdDumpSession, TResult> work);
 
     /// <summary>
+    /// Runs a cancellable read-only projection on the session thread while the shell shows a busy indicator with
+    /// a Cancel action. Cancellation is cooperative: the projection receives the token and observes it at its own
+    /// safe points, returning a result-shaped cancellation outcome; nothing is ever aborted.
+    /// </summary>
+    /// <typeparam name="TResult">The immutable display projection produced by <paramref name="work"/>.</typeparam>
+    /// <param name="busyMessage">The message shown while the projection runs.</param>
+    /// <param name="work">The projection to run on the session thread, observing the token.</param>
+    /// <returns>
+    /// The projection result, or <see langword="default"/> when no dump is open, the adapter threw, or the
+    /// request was cancelled before it started.
+    /// </returns>
+    Task<TResult?> RunCancellableAsync<TResult>(
+        string busyMessage,
+        Func<ClrmdDumpSession, CancellationToken, TResult> work);
+
+    /// <summary>
+    /// Runs a cancellable sessionless computation off the UI thread while the shell shows a busy indicator with
+    /// a Cancel action, keeping a long constant fold as responsive as a session projection. Cancellation is
+    /// cooperative: the computation observes the token at its own safe points.
+    /// </summary>
+    /// <typeparam name="TResult">The immutable result produced by <paramref name="work"/>.</typeparam>
+    /// <param name="busyMessage">The message shown while the computation runs.</param>
+    /// <param name="work">The computation, observing the token; it must not touch the session or the UI.</param>
+    /// <returns>The result, or <see langword="default"/> when the computation threw.</returns>
+    Task<TResult?> RunCancellableAsync<TResult>(string busyMessage, Func<CancellationToken, TResult> work);
+
+    /// <summary>
     /// Runs a read-only projection on the session thread without the busy indicator or the error banner, for
     /// ambient work such as completion catalogs that must never interrupt typing.
     /// </summary>

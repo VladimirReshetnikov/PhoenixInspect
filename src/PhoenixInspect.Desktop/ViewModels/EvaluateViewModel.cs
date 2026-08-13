@@ -595,8 +595,12 @@ public sealed class EvaluateViewModel : ObservableObject
         if (!shell.IsDumpOpen)
         {
             // The sessionless entry consults no session surface: pure constants fold, and anything beyond the
-            // evidence-free subset reports the typed no-snapshot stop.
-            produced = ExpressionEvaluationService.EvaluateWithoutSnapshot(submitted);
+            // evidence-free subset reports the typed no-snapshot stop. The fold runs off the UI thread under
+            // the shared Cancel affordance, so a long constant fold stays cancellable.
+            produced = await shell.RunCancellableAsync(
+                "Evaluating expression…",
+                cancellationToken => ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                    submitted, cancellationToken: cancellationToken)).ConfigureAwait(true);
         }
         else if (path == ExpressionPath.StaticField)
         {
@@ -605,14 +609,14 @@ public sealed class EvaluateViewModel : ObservableObject
             // only the console host makes that probe an explicit command ('pdb auto'). Identity is still validated
             // per candidate before any name binds through it.
             var explicitCandidates = SourceNavigationService.ParseCandidateList(portablePdbCandidates);
-            produced = await shell.RunAsync(
+            produced = await shell.RunCancellableAsync(
                 "Evaluating static-field expression…",
-                session => ExpressionEvaluationService.EvaluateStaticField(
+                (session, cancellationToken) => ExpressionEvaluationService.EvaluateStaticField(
                     session,
                     submitted,
                     selector,
-                    SourceNavigationService.AssemblePortablePdbCandidates(
-                        session, explicitCandidates))).ConfigureAwait(true);
+                    SourceNavigationService.AssemblePortablePdbCandidates(session, explicitCandidates),
+                    cancellationToken)).ConfigureAwait(true);
         }
         else
         {
@@ -626,14 +630,15 @@ public sealed class EvaluateViewModel : ObservableObject
                 LogicalDepthLimit = logicalDepthLimit,
                 TraversalLimit = traversalLimit,
             };
-            produced = await shell.RunAsync(
+            produced = await shell.RunCancellableAsync(
                 "Evaluating root-relative expression…",
-                session => ExpressionEvaluationService.EvaluateRootRelative(
+                (session, cancellationToken) => ExpressionEvaluationService.EvaluateRootRelative(
                     session,
                     submitted,
                     root,
                     identifier,
-                    options)).ConfigureAwait(true);
+                    options,
+                    cancellationToken)).ConfigureAwait(true);
         }
 
         if (produced is null)

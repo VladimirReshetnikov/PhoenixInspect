@@ -137,15 +137,27 @@ public sealed class ImmediateViewModel : ObservableObject
 
         // A declaration or assignment stores a variable for later expressions rather than producing a value; the
         // initializer is evaluated with the variables already in scope, so 'var y = x * 2;' composes with 'x'.
+        // The fold runs off the UI thread under the shared Cancel affordance, so a long initializer stays
+        // cancellable and never freezes the prompt.
         if (ImmediateVariableStore.IsStatement(text))
         {
             var pinnedReferencesForStatement = references;
             var pinnedUsingsForStatement = usings;
-            var applied = variables.TryApply(
-                text,
-                initializer => EvaluateForValue(initializer, pinnedReferencesForStatement, pinnedUsingsForStatement),
-                out var statementMessage);
-            AppendLine($"// {statementMessage}");
+            var (applied, statementMessage) = await shell.RunCancellableAsync(
+                "Evaluating immediate declaration…",
+                cancellationToken =>
+                {
+                    var ok = variables.TryApply(
+                        text,
+                        initializer => EvaluateForValue(
+                            initializer,
+                            pinnedReferencesForStatement,
+                            pinnedUsingsForStatement,
+                            cancellationToken),
+                        out var message);
+                    return (Applied: ok, Message: message);
+                }).ConfigureAwait(true);
+            AppendLine($"// {statementMessage ?? "The statement produced no result; the status bar states why."}");
             AppendLine(string.Empty);
             shell.SetStatus($"Immediate: variable — {(applied ? "assigned" : "not assigned")}");
             return;
@@ -155,9 +167,27 @@ public sealed class ImmediateViewModel : ObservableObject
         {
             // The sessionless entry folds the evidence-free constant subset and refuses everything beyond it
             // with the typed no-snapshot stop, so the prompt is useful before any dump opens. References,
-            // using directives, and declared variables contribute their values even with no snapshot.
-            RenderReport(ExpressionEvaluationService.EvaluateWithoutSnapshot(
-                text, references, usings, variables.LocalNameResolver));
+            // using directives, and declared variables contribute their values even with no snapshot. The fold
+            // runs off the UI thread under the shared Cancel affordance, exactly like a session projection.
+            var pinnedSessionlessReferences = references;
+            var pinnedSessionlessUsings = usings;
+            var pinnedResolver = variables.LocalNameResolver;
+            var sessionless = await shell.RunCancellableAsync(
+                "Evaluating immediate expression…",
+                cancellationToken => ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                    text,
+                    pinnedSessionlessReferences,
+                    pinnedSessionlessUsings,
+                    pinnedResolver,
+                    cancellationToken)).ConfigureAwait(true);
+            if (sessionless is null)
+            {
+                AppendLine("// The evaluation produced no result; the status bar states why.");
+                AppendLine(string.Empty);
+                return;
+            }
+
+            RenderReport(sessionless);
             return;
         }
 
@@ -165,19 +195,20 @@ public sealed class ImmediateViewModel : ObservableObject
         var pinnedReferences = references;
         var pinnedUsings = usings;
         var pinnedVariables = variables.LocalNameResolver;
-        var report = await shell.RunAsync(
+        var report = await shell.RunCancellableAsync(
             "Evaluating immediate expression…",
-            session => ExpressionEvaluationService.EvaluateWatch(
+            (session, cancellationToken) => ExpressionEvaluationService.EvaluateWatch(
                 session,
                 text,
                 contextFactory(session),
                 pinnedReferences,
                 pinnedUsings,
-                pinnedVariables))
+                pinnedVariables,
+                cancellationToken))
             .ConfigureAwait(true);
         if (report is null)
         {
-            AppendLine("// The evaluation failed; the shell reported the error.");
+            AppendLine("// The evaluation produced no result; the status bar states why.");
             AppendLine(string.Empty);
             return;
         }
@@ -188,12 +219,14 @@ public sealed class ImmediateViewModel : ObservableObject
     private ConstantExpressionEvaluation EvaluateForValue(
         string initializer,
         ImmutableArray<ConstantReferenceAssembly> pinnedReferences,
-        ConstantUsingDirectiveSet pinnedUsings) =>
+        ConstantUsingDirectiveSet pinnedUsings,
+        CancellationToken cancellationToken) =>
         ExpressionEvaluationService.EvaluateConstantValue(
             initializer,
             pinnedReferences,
             pinnedUsings,
-            variables.LocalNameResolver);
+            variables.LocalNameResolver,
+            cancellationToken);
 
     private void RenderReport(EvaluationReport report)
     {

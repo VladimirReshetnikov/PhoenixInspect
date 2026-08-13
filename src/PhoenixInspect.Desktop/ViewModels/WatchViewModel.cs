@@ -441,15 +441,18 @@ public sealed class WatchViewModel : ObservableObject
 
         var expressions = targets.Select(static entry => entry.Expression).ToImmutableArray();
         var contextFactory = evaluate.CreateWatchContextFactory();
-        var reports = await shell.RunAsync(
+        var reports = await shell.RunCancellableAsync(
             targets.Count == 1
                 ? "Evaluating watch expression…"
                 : $"Refreshing {targets.Count} watch expressions…",
-            session =>
+            (session, cancellationToken) =>
             {
+                // Each expression observes the token itself, so a cancellation mid-batch reports the remaining
+                // entries as cancelled instead of leaving them running.
                 var context = contextFactory(session);
                 return expressions
-                    .Select(expression => ExpressionEvaluationService.EvaluateWatch(session, expression, context))
+                    .Select(expression => ExpressionEvaluationService.EvaluateWatch(
+                        session, expression, context, cancellationToken))
                     .ToImmutableArray();
             }).ConfigureAwait(true);
         if (reports.IsDefault || reports.Length != targets.Count)

@@ -515,6 +515,13 @@ public static partial class ConstantExpressionEvaluator
                 + "recursion this deep does not terminate within the evaluator's budget.");
         }
 
+        // The depth guard bounds nesting, not breadth: a branching recursion stays shallow while multiplying
+        // invocations, so every entry is also a cancellation boundary.
+        if (CancellationStop() is { } cancelled)
+        {
+            return cancelled;
+        }
+
         context.DelegateInvocationDepth++;
         try
         {

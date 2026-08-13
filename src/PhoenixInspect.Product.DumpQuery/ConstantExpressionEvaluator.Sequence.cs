@@ -543,6 +543,12 @@ public static partial class ConstantExpressionEvaluator
         var kept = ImmutableArray.CreateBuilder<Operand>();
         foreach (var item in payload.Items)
         {
+            // The quadratic comparison loops never re-enter Fold, so each outer element is its own boundary.
+            if (CancellationStop() is { } cancelled)
+            {
+                return cancelled;
+            }
+
             var seen = false;
             foreach (var existing in kept)
             {
@@ -579,6 +585,11 @@ public static partial class ConstantExpressionEvaluator
         var kept = ImmutableArray.CreateBuilder<Operand>();
         foreach (var item in PayloadOf(distinct.Operand).Items)
         {
+            if (CancellationStop() is { } cancelled)
+            {
+                return cancelled;
+            }
+
             var member = false;
             foreach (var other in right.Items)
             {

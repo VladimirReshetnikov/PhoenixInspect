@@ -98,6 +98,7 @@ public static class ExpressionEvaluationService
     /// <param name="root">The selected root, resolved to a product binding on the session thread.</param>
     /// <param name="rootIdentifier">The case-sensitive identifier the expression uses for the root.</param>
     /// <param name="options">The evaluation options; the service maps them onto product policy contracts.</param>
+    /// <param name="cancellationToken">The token the evaluation cooperates with at its safe boundaries.</param>
     /// <returns>A complete display report for whichever path the classifier selected.</returns>
     /// <exception cref="ArgumentNullException">A required argument is null.</exception>
     public static EvaluationReport EvaluateRootRelative(
@@ -105,7 +106,8 @@ public static class ExpressionEvaluationService
         string expression,
         RootSelection root,
         string rootIdentifier,
-        RootRelativeEvaluationOptions options)
+        RootRelativeEvaluationOptions options,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(options);
         return EvaluateRootRelative(
@@ -120,7 +122,8 @@ public static class ExpressionEvaluationService
                 Math.Clamp(options.TraversalLimit, 0, MaximumTraversalUnits)),
             options.AdmitMemberChain
                 ? DumpExpressionLanguageProfile.MemberChainV2
-                : DumpExpressionLanguageProfile.FrozenW5);
+                : DumpExpressionLanguageProfile.FrozenW5,
+            cancellationToken);
     }
 
     /// <summary>
@@ -131,6 +134,7 @@ public static class ExpressionEvaluationService
     /// <param name="session">The open dump session.</param>
     /// <param name="expression">The raw expression text, submitted without normalization.</param>
     /// <param name="context">The complete watch context: name context, candidates, root, and options.</param>
+    /// <param name="cancellationToken">The token the evaluation cooperates with at its safe boundaries.</param>
     /// <returns>A complete display report from whichever entry point answered.</returns>
     /// <remarks>
     /// The routing rule is deliberately lexical and total: it never parses, so it can never fail, and the report
@@ -141,8 +145,10 @@ public static class ExpressionEvaluationService
     public static EvaluationReport EvaluateWatch(
         ClrmdDumpSession session,
         string expression,
-        WatchEvaluationContext context) =>
-        EvaluateWatch(session, expression, context, references: default, usings: null);
+        WatchEvaluationContext context,
+        CancellationToken cancellationToken = default) =>
+        EvaluateWatch(
+            session, expression, context, references: default, usings: null, cancellationToken: cancellationToken);
 
     /// <summary>Evaluates a watch expression, additionally resolving names through caller-referenced assemblies.</summary>
     /// <param name="session">The open dump session.</param>
@@ -151,6 +157,7 @@ public static class ExpressionEvaluationService
     /// <param name="references">Caller-referenced assemblies, empty by default.</param>
     /// <param name="usings">The active using directives, or null for none.</param>
     /// <param name="localVariables">The declared-variable resolver, or null when none are declared.</param>
+    /// <param name="cancellationToken">The token the evaluation cooperates with at its safe boundaries.</param>
     /// <returns>A complete display report for whichever path the classifier selected.</returns>
     /// <exception cref="ArgumentNullException">A required argument is null.</exception>
     public static EvaluationReport EvaluateWatch(
@@ -159,13 +166,21 @@ public static class ExpressionEvaluationService
         WatchEvaluationContext context,
         ImmutableArray<ConstantReferenceAssembly> references,
         ConstantUsingDirectiveSet? usings,
-        Func<string, ConstantOperandResolution>? localVariables = null)
+        Func<string, ConstantOperandResolution>? localVariables = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(context);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            // A batch refresh checks per expression, so the entries after a cancellation report it uniformly
+            // instead of running.
+            return CancelledReport(expression, "Watch routing");
+        }
+
         var identifier = context.RootIdentifier.Trim();
         return context.Root is { } root && identifier.Length > 0 && ReferencesIdentifier(expression, identifier)
-            ? EvaluateRootRelative(session, expression, root, identifier, context.Options)
+            ? EvaluateRootRelative(session, expression, root, identifier, context.Options, cancellationToken)
             : EvaluateStaticField(
                 session,
                 expression,
@@ -173,8 +188,27 @@ public static class ExpressionEvaluationService
                 context.PortablePdbCandidates,
                 references,
                 usings,
-                localVariables);
+                localVariables,
+                cancellationToken);
     }
+
+    private static EvaluationReport CancelledReport(string expression, string path) => new()
+    {
+        Expression = expression,
+        Path = path,
+        Severity = EvaluationSeverity.Stopped,
+        Status = "Cancelled",
+        Stage = "The evaluation stopped before consulting any evidence, on the host's cancellation request",
+        Value = "No value was produced.",
+        Facts = [new PropertyRow("Routing", "Entry point", "ExpressionEvaluationService")],
+        Diagnostics =
+        [
+            new DiagnosticRow(
+                ConstantExpressionEvaluator.CancellationCode,
+                "The host cancelled the request before this expression was evaluated."),
+        ],
+        Duration = TimeSpan.Zero,
+    };
 
     /// <summary>
     /// States whether the expression text contains the identifier as a standalone token: an occurrence not
@@ -228,13 +262,15 @@ public static class ExpressionEvaluationService
     /// </param>
     /// <param name="usings">The active using directives, or null for none.</param>
     /// <param name="localVariables">The declared-variable resolver, or null when none are declared.</param>
+    /// <param name="cancellationToken">The token the evaluation cooperates with at its safe boundaries.</param>
     /// <returns>A complete display report: an exact constant value or the typed no-snapshot stop.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="expression"/> is null.</exception>
     public static EvaluationReport EvaluateWithoutSnapshot(
         string expression,
         ImmutableArray<ConstantReferenceAssembly> references = default,
         ConstantUsingDirectiveSet? usings = null,
-        Func<string, ConstantOperandResolution>? localVariables = null)
+        Func<string, ConstantOperandResolution>? localVariables = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(expression);
         var effectiveReferences = references.IsDefault ? [] : references;
@@ -244,7 +280,8 @@ public static class ExpressionEvaluationService
             expression,
             localVariables is null ? null : new ConstantOperandResolvers { LocalName = localVariables },
             effectiveReferences,
-            usings);
+            usings,
+            cancellationToken);
         stopwatch.Stop();
         if (pureConstant.Status != ConstantExpressionStatus.NotConstant)
         {
@@ -287,13 +324,15 @@ public static class ExpressionEvaluationService
     /// <param name="references">Caller-referenced assemblies, empty by default.</param>
     /// <param name="usings">The active using directives, or null for none.</param>
     /// <param name="localVariables">The declared-variable resolver, or null when none are declared.</param>
+    /// <param name="cancellationToken">The token the evaluation cooperates with at its safe boundaries.</param>
     /// <returns>The raw constant evaluation, whose exact value the caller may store.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="expression"/> is null.</exception>
     public static ConstantExpressionEvaluation EvaluateConstantValue(
         string expression,
         ImmutableArray<ConstantReferenceAssembly> references = default,
         ConstantUsingDirectiveSet? usings = null,
-        Func<string, ConstantOperandResolution>? localVariables = null)
+        Func<string, ConstantOperandResolution>? localVariables = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(expression);
         return ConstantExpressionEvaluator.Evaluate(
@@ -301,7 +340,8 @@ public static class ExpressionEvaluationService
             expression,
             localVariables is null ? null : new ConstantOperandResolvers { LocalName = localVariables },
             references.IsDefault ? [] : references,
-            usings);
+            usings,
+            cancellationToken);
     }
 
     /// <summary>Evaluates a static-field expression, optionally consulting one selected frame for name context.</summary>
@@ -312,6 +352,7 @@ public static class ExpressionEvaluationService
     /// require a context-independent fully qualified name.
     /// </param>
     /// <param name="portablePdbCandidates">Caller-discovered Portable-PDB candidate paths, possibly empty.</param>
+    /// <param name="cancellationToken">The token the evaluation cooperates with at its safe boundaries.</param>
     /// <returns>
     /// A complete display report for the outcome. When the field held a validated object reference the report also
     /// carries that object, because the strong-handle catalog cannot reach an object that no handle roots and
@@ -322,14 +363,16 @@ public static class ExpressionEvaluationService
         ClrmdDumpSession session,
         string expression,
         DumpSelectedFrameSelector? contextSelector,
-        ImmutableArray<string> portablePdbCandidates) =>
+        ImmutableArray<string> portablePdbCandidates,
+        CancellationToken cancellationToken = default) =>
         EvaluateStaticField(
             session,
             expression,
             contextSelector,
             portablePdbCandidates,
             references: default,
-            usings: null);
+            usings: null,
+            cancellationToken: cancellationToken);
 
     /// <summary>Evaluates a static-field expression, additionally resolving through caller-referenced assemblies.</summary>
     /// <param name="session">The open dump session.</param>
@@ -339,6 +382,7 @@ public static class ExpressionEvaluationService
     /// <param name="references">Caller-referenced assemblies, empty by default.</param>
     /// <param name="usings">The active using directives, or null for none.</param>
     /// <param name="localVariables">The declared-variable resolver, or null when none are declared.</param>
+    /// <param name="cancellationToken">The token the evaluation cooperates with at its safe boundaries.</param>
     /// <returns>A complete display report for the outcome.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="session"/> is null.</exception>
     public static EvaluationReport EvaluateStaticField(
@@ -348,9 +392,15 @@ public static class ExpressionEvaluationService
         ImmutableArray<string> portablePdbCandidates,
         ImmutableArray<ConstantReferenceAssembly> references,
         ConstantUsingDirectiveSet? usings,
-        Func<string, ConstantOperandResolution>? localVariables = null)
+        Func<string, ConstantOperandResolution>? localVariables = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(session);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return CancelledReport(expression, "Static-field evaluation");
+        }
+
         var candidates = portablePdbCandidates.IsDefault ? [] : portablePdbCandidates;
         var effectiveReferences = references.IsDefault ? [] : references;
         var stopwatch = Stopwatch.StartNew();
@@ -365,7 +415,8 @@ public static class ExpressionEvaluationService
             expression,
             localVariables is null ? null : new ConstantOperandResolvers { LocalName = localVariables },
             effectiveReferences,
-            usings);
+            usings,
+            cancellationToken);
         if (pureConstant.Status != ConstantExpressionStatus.NotConstant)
         {
             stopwatch.Stop();
@@ -394,7 +445,8 @@ public static class ExpressionEvaluationService
             expression,
             resolvers,
             effectiveReferences,
-            usings);
+            usings,
+            cancellationToken);
         if (constant.Status != ConstantExpressionStatus.NotConstant)
         {
             stopwatch.Stop();
@@ -428,6 +480,7 @@ public static class ExpressionEvaluationService
     /// <param name="rootIdentifier">The case-sensitive identifier the expression uses for the root.</param>
     /// <param name="policy">The closed policy applied to the method path; field paths retain its limits unused.</param>
     /// <param name="languageProfile">The frozen or opt-in fixed-depth member-chain admission profile.</param>
+    /// <param name="cancellationToken">The token the evaluation cooperates with at its safe boundaries.</param>
     /// <returns>
     /// A complete display report for whichever path the classifier selected, or a report describing why the selected
     /// root could not be bound.
@@ -439,17 +492,24 @@ public static class ExpressionEvaluationService
         RootSelection root,
         string rootIdentifier,
         DumpExpressionPolicy policy,
-        DumpExpressionLanguageProfile languageProfile)
+        DumpExpressionLanguageProfile languageProfile,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(root);
         ArgumentNullException.ThrowIfNull(policy);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return CancelledReport(expression, "Root-relative expression");
+        }
+
         var stopwatch = Stopwatch.StartNew();
 
         // Evaluate the evidence-free subset before resolving the root. EvaluateWatch deliberately routes a lexical
         // root token even inside a string/interpolation to this entry point, so a genuinely pure constant must not
         // become unavailable merely because the surrounding session contains edits.
-        var pureConstant = ConstantExpressionEvaluator.Evaluate(session: null, expression);
+        var pureConstant = ConstantExpressionEvaluator.Evaluate(
+            session: null, expression, resolvers: null, references: default, usings: null, cancellationToken);
         if (pureConstant.Status != ConstantExpressionStatus.NotConstant)
         {
             stopwatch.Stop();
@@ -491,13 +551,15 @@ public static class ExpressionEvaluationService
                 session,
                 rootBinding,
                 chain,
-                DumpExpressionEvaluator.Evaluate(session, chain, rootBinding, policy, languageProfile)),
+                DumpExpressionEvaluator.Evaluate(
+                    session, chain, rootBinding, policy, languageProfile, cancellationToken)),
             StaticName = name => MapStaticOperand(
                 session,
                 name,
                 StaticFieldExpressionEvaluator.Evaluate(session, name)),
         };
-        var constant = ConstantExpressionEvaluator.Evaluate(session, expression, resolvers);
+        var constant = ConstantExpressionEvaluator.Evaluate(
+            session, expression, resolvers, references: default, usings: null, cancellationToken);
         if (constant.Status != ConstantExpressionStatus.NotConstant)
         {
             stopwatch.Stop();
@@ -506,7 +568,8 @@ public static class ExpressionEvaluationService
                 admittedModuleCount);
         }
 
-        var outcome = DumpExpressionEvaluator.Evaluate(session, expression, rootBinding, policy, languageProfile);
+        var outcome = DumpExpressionEvaluator.Evaluate(
+            session, expression, rootBinding, policy, languageProfile, cancellationToken);
         stopwatch.Stop();
         return WithModuleEditAdmission(
             BuildRootRelativeReport(expression, rootBinding, languageProfile, outcome, stopwatch.Elapsed),
@@ -936,13 +999,21 @@ public static class ExpressionEvaluationService
 
         if (constant.Status == ConstantExpressionStatus.Invalid)
         {
+            // A cooperatively cancelled fold is its own outcome, not a semantic block: the user asked the
+            // evaluation to stop, and it stopped at a safe boundary without producing a value.
+            var cancelled = string.Equals(
+                constant.DiagnosticCode,
+                ConstantExpressionEvaluator.CancellationCode,
+                StringComparison.Ordinal);
             return new EvaluationReport
             {
                 Expression = expression,
                 Path = "Constant expression",
                 Severity = EvaluationSeverity.Stopped,
-                Status = "Blocked",
-                Stage = "The expression is constant-shaped but has no value under C# constant semantics",
+                Status = cancelled ? "Cancelled" : "Blocked",
+                Stage = cancelled
+                    ? "The evaluation stopped at a safe fold boundary on the host's cancellation request"
+                    : "The expression is constant-shaped but has no value under C# constant semantics",
                 Value = "No value was produced.",
                 Facts = facts.ToImmutable(),
                 Diagnostics = [new DiagnosticRow(constant.DiagnosticCode!, constant.DiagnosticMessage!)],
