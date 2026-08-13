@@ -240,6 +240,13 @@ public sealed class ImmediateVariableTests
         var partial = ExpressionEvaluationService.EvaluateWithoutSnapshot(
             "addFive(37)", localVariables: store.LocalNameResolver);
         Assert.Equal("42", partial.Value);
+
+        // A self-referential declaration recurses through the store's late-bound name resolution.
+        Assert.True(Apply(store, "Func<int, int> fact = n => n <= 1 ? 1 : n * fact(n - 1);", out _));
+        var recursed = ExpressionEvaluationService.EvaluateWithoutSnapshot(
+            "fact(10)", localVariables: store.LocalNameResolver);
+        Assert.Equal(EvaluationSeverity.Exact, recursed.Severity);
+        Assert.Equal("3628800", recursed.Value);
     }
 
     /// <summary>The statement classifier distinguishes statements from expressions.</summary>

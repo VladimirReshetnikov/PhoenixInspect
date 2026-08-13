@@ -289,7 +289,7 @@ public sealed class ConstantExpressionEvaluatorTests
     [InlineData("\"a\" < \"b\"", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
     [InlineData("!1", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
     [InlineData("1 && true", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
-    [InlineData("true ? 1 : \"x\"", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
+    [InlineData("1 ? 1 : 2", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
     [InlineData("1 ? 2 : 3", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
     public void Errors_are_typed_stops(string expression, string expectedCode)
     {

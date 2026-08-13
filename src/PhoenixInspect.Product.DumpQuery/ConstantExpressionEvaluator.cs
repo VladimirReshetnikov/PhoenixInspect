@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.ExceptionServices;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -904,7 +905,68 @@ public static partial class ConstantExpressionEvaluator
             references,
             usings).Evaluation;
 
+    /// <summary>
+    /// The constant evaluator's own input bounds, wider than the dump-query wire profile's: the wire profile is
+    /// a frozen replay contract over snapshot requests, while these bound only the in-process interpreter,
+    /// whose expressions — combinators, nested delegates — legitimately outgrow the query grammar's budget.
+    /// </summary>
+    private const int EvaluatorMaximumExpressionLength = 2048;
+
+    private const int EvaluatorMaximumNodeTokenCount = 2048;
+
+    /// <summary>The stack size of the dedicated evaluation thread.</summary>
+    /// <remarks>
+    /// Folding is recursive descent, and delegate recursion multiplies its depth; a controlled 16 MB stack plus
+    /// the delegate-invocation depth bound gives a deterministic budget — the typed depth stop always fires
+    /// before the physical stack can, which a caller-thread stack of unknown size could not guarantee.
+    /// </remarks>
+    private const int EvaluationStackBytes = 16 * 1024 * 1024;
+
+    [ThreadStatic]
+    private static bool onEvaluationThread;
+
     private static EvaluationPassResult RunEvaluationPass(
+        ClrmdDumpSession? session,
+        string? expression,
+        ConstantOperandResolvers? resolvers,
+        bool recordDeferredSessionAuthority,
+        ImmutableArray<ConstantReferenceAssembly> references = default,
+        ConstantUsingDirectiveSet? usings = null)
+    {
+        if (onEvaluationThread)
+        {
+            return RunEvaluationPassCore(
+                session, expression, resolvers, recordDeferredSessionAuthority, references, usings);
+        }
+
+        var result = default(EvaluationPassResult);
+        ExceptionDispatchInfo? failure = null;
+        var evaluation = new Thread(
+            () =>
+            {
+                onEvaluationThread = true;
+                try
+                {
+                    result = RunEvaluationPassCore(
+                        session, expression, resolvers, recordDeferredSessionAuthority, references, usings);
+                }
+                catch (Exception exception)
+                {
+                    failure = ExceptionDispatchInfo.Capture(exception);
+                }
+            },
+            EvaluationStackBytes)
+        {
+            IsBackground = true,
+            Name = "PhoenixInspect.ConstantEvaluation",
+        };
+        evaluation.Start();
+        evaluation.Join();
+        failure?.Throw();
+        return result;
+    }
+
+    private static EvaluationPassResult RunEvaluationPassCore(
         ClrmdDumpSession? session,
         string? expression,
         ConstantOperandResolvers? resolvers,
@@ -914,7 +976,7 @@ public static partial class ConstantExpressionEvaluator
     {
         var effectiveUsings = usings ?? ConstantUsingDirectiveSet.Empty;
         if (string.IsNullOrWhiteSpace(expression) ||
-            expression.Length > CSharpExpressionFrontEnd.MaximumExpressionLength)
+            expression.Length > EvaluatorMaximumExpressionLength)
         {
             return EvaluationPassResult.Completed(
                 ConstantExpressionEvaluation.NotConstantResult(expression ?? string.Empty));
@@ -937,7 +999,7 @@ public static partial class ConstantExpressionEvaluator
         }
 
         if (syntax.DescendantNodesAndTokensAndSelf(descendIntoTrivia: false).Count() >
-            CSharpExpressionFrontEnd.MaximumNodeTokenCount)
+            EvaluatorMaximumNodeTokenCount)
         {
             return EvaluationPassResult.Completed(ConstantExpressionEvaluation.NotConstantResult(expression));
         }
@@ -1092,6 +1154,9 @@ public static partial class ConstantExpressionEvaluator
         /// <summary>Caches enum-shape resolutions so one expression scans module metadata at most once per name.</summary>
         internal Dictionary<string, (EnumShape? Shape, FoldOutcome? Error)> EnumShapes { get; } =
             new(StringComparer.Ordinal);
+
+        /// <summary>Gets or sets the current delegate-invocation nesting depth, bounding recursion.</summary>
+        internal int DelegateInvocationDepth { get; set; }
 
         internal void PushBinding(string name, Operand value) => bindings.Add((name, value));
 
@@ -2122,32 +2187,10 @@ public static partial class ConstantExpressionEvaluator
             return FoldOutcome.Error(OperandTypeCode, "The conditional operator requires a Boolean condition.");
         }
 
-        // Both branches fold, matching C# constant semantics where an erroneous unselected branch is still an error.
-        var whenTrue = Fold(conditional.WhenTrue, context);
-        if (whenTrue.Disposition != FoldDisposition.Folded)
-        {
-            return whenTrue;
-        }
-
-        var whenFalse = Fold(conditional.WhenFalse, context);
-        if (whenFalse.Disposition != FoldDisposition.Folded)
-        {
-            return whenFalse;
-        }
-
-        var selected = condition.Operand.Boolean ? whenTrue.Operand : whenFalse.Operand;
-        var other = condition.Operand.Boolean ? whenFalse.Operand : whenTrue.Operand;
-        if (selected.Kind == other.Kind ||
-            (selected.IsNumeric && other.IsNumeric) ||
-            selected.Kind == OperandKind.Null ||
-            other.Kind == OperandKind.Null)
-        {
-            return FoldOutcome.Folded(selected);
-        }
-
-        return FoldOutcome.Error(
-            OperandTypeCode,
-            "Both branches of a constant conditional must produce the same value domain.");
+        // Only the selected branch evaluates, exactly as the conditional operator executes at run time. The
+        // unselected branch may stop, stay outside the constant domain, or recurse without bound — a recursive
+        // delegate reaches its base case precisely because the recursive arm is never entered there.
+        return Fold(condition.Operand.Boolean ? conditional.WhenTrue : conditional.WhenFalse, context);
     }
 
     private static FoldOutcome FoldElementAccess(ElementAccessExpressionSyntax elementAccess, FoldContext context)

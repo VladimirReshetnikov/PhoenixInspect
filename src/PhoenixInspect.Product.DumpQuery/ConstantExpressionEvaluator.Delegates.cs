@@ -479,6 +479,15 @@ public static partial class ConstantExpressionEvaluator
 
     // ---- Invocation -------------------------------------------------------------------------------------------------
 
+    /// <summary>The greatest delegate-invocation nesting depth one evaluation may reach.</summary>
+    /// <remarks>
+    /// Recursion through delegates is real computation on the evaluator's own stack; the bound turns a
+    /// non-terminating recursion into a typed stop instead of exhausting the process stack.
+    /// </remarks>
+    private const int MaximumDelegateInvocationDepth = 512;
+
+    private const string InvocationDepthCode = "CONSTANT_INVOCATION_DEPTH_EXCEEDED";
+
     /// <summary>
     /// Invokes one delegate with multicast semantics: every entry runs in list order, and the last entry's
     /// value is the answer — exactly null for the void delegate shapes.
@@ -495,18 +504,35 @@ public static partial class ConstantExpressionEvaluator
                 + $"{arguments.Count.ToString(CultureInfo.InvariantCulture)} were supplied.");
         }
 
-        var last = FoldOutcome.Folded(Operand.Null());
-        var returnDelegateType = DelegateReturnDelegateTypeOf(payload.Type);
-        foreach (var entry in payload.Invocations)
+        if (context.DelegateInvocationDepth >= MaximumDelegateInvocationDepth)
         {
-            last = InvokeDelegateEntry(entry, arguments, returnDelegateType, context);
-            if (last.Disposition != FoldDisposition.Folded)
-            {
-                return last;
-            }
+            return FoldOutcome.Error(
+                InvocationDepthCode,
+                $"The delegate invocation exceeded the recursion bound of "
+                + $"{MaximumDelegateInvocationDepth.ToString(CultureInfo.InvariantCulture)} nested calls; a "
+                + "recursion this deep does not terminate within the evaluator's budget.");
         }
 
-        return signature.ReturnsValue ? last : FoldOutcome.Folded(Operand.Null());
+        context.DelegateInvocationDepth++;
+        try
+        {
+            var last = FoldOutcome.Folded(Operand.Null());
+            var returnDelegateType = DelegateReturnDelegateTypeOf(payload.Type);
+            foreach (var entry in payload.Invocations)
+            {
+                last = InvokeDelegateEntry(entry, arguments, returnDelegateType, context);
+                if (last.Disposition != FoldDisposition.Folded)
+                {
+                    return last;
+                }
+            }
+
+            return signature.ReturnsValue ? last : FoldOutcome.Folded(Operand.Null());
+        }
+        finally
+        {
+            context.DelegateInvocationDepth--;
+        }
     }
 
     /// <summary>The delegate's return type when that type is itself a delegate — the curried case — or null.</summary>

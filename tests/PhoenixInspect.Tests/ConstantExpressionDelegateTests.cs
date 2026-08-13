@@ -245,6 +245,59 @@ public sealed class ConstantExpressionDelegateTests
         Assert.Equal("CONSTANT_NONDETERMINISTIC_UNSUPPORTED", invoked.DiagnosticCode);
     }
 
+    /// <summary>
+    /// The Y combinator: anonymous recursion through self-application computes factorial exactly, which
+    /// exercises curried conversions, object-typed self-reference, delegate casts of bound values, lazy
+    /// conditional branches, and the recursion machinery end to end.
+    /// </summary>
+    [Fact]
+    public void The_Y_combinator_computes_factorial()
+    {
+        const string Y =
+            "((Func<Func<Func<int, int>, Func<int, int>>, Func<int, int>>)(f => "
+            + "((Func<object, Func<int, int>>)(x => f(n => ((Func<object, Func<int, int>>)x)(x)(n)))) "
+            + "((Func<object, Func<int, int>>)(x => f(n => ((Func<object, Func<int, int>>)x)(x)(n))))))"
+            + "(f => n => n == 0 ? 1 : n * f(n - 1))";
+
+        var five = Evaluate(Y + "(5)");
+        Assert.Equal(ConstantExpressionStatus.Exact, five.Status);
+        Assert.Equal(120, five.Int32Value);
+
+        var ten = Evaluate(Y + "(10)");
+        Assert.Equal(ConstantExpressionStatus.Exact, ten.Status);
+        Assert.Equal(3628800, ten.Int32Value);
+    }
+
+    /// <summary>
+    /// The conditional operator evaluates only its selected branch, as at run time — a recursive delegate
+    /// reaches its base case precisely because the recursive arm is never entered there.
+    /// </summary>
+    [Fact]
+    public void Conditionals_evaluate_only_the_selected_branch()
+    {
+        var guarded = Evaluate("true ? 1 : 1 / 0");
+        Assert.Equal(ConstantExpressionStatus.Exact, guarded.Status);
+        Assert.Equal(1, guarded.Int32Value);
+
+        var selectedError = Evaluate("false ? 1 : 1 / 0");
+        Assert.Equal(ConstantExpressionStatus.Invalid, selectedError.Status);
+        Assert.Equal("System.DivideByZeroException", selectedError.DiagnosticCode);
+    }
+
+    /// <summary>A recursion that never reaches a base case stops with the typed depth bound.</summary>
+    [Fact]
+    public void Divergent_recursion_stops_with_the_depth_bound()
+    {
+        var diverged = Evaluate(
+            "((Func<Func<Func<int, int>, Func<int, int>>, Func<int, int>>)(f => "
+            + "((Func<object, Func<int, int>>)(x => f(n => ((Func<object, Func<int, int>>)x)(x)(n)))) "
+            + "((Func<object, Func<int, int>>)(x => f(n => ((Func<object, Func<int, int>>)x)(x)(n))))))"
+            + "(f => n => f(n))(1)");
+        Assert.Equal(ConstantExpressionStatus.Invalid, diverged.Status);
+        Assert.Equal("CONSTANT_INVOCATION_DEPTH_EXCEEDED", diverged.DiagnosticCode);
+        Assert.NotNull(diverged.DiagnosticMessage);
+    }
+
     /// <summary>A curried result is a first-class delegate: its identity renders and its closure holds.</summary>
     [Fact]
     public void Curried_results_carry_their_closures()
