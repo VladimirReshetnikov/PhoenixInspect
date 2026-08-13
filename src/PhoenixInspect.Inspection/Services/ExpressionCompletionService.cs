@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -56,6 +57,31 @@ public sealed record CompletionContext
     /// <summary>Gets the '#r'-referenced assemblies' completion facts, or null with no references.</summary>
     public ReferenceCompletionIndex? References { get; init; }
 }
+
+/// <summary>One parameter of a shown method signature.</summary>
+/// <param name="Name">The parameter name.</param>
+/// <param name="TypeText">The parameter type, spelled the C# way.</param>
+public sealed record SignatureParameter(string Name, string TypeText);
+
+/// <summary>One method overload shown by signature help.</summary>
+/// <param name="MethodName">The method name.</param>
+/// <param name="Parameters">The parameters, in order.</param>
+/// <param name="ReturnTypeText">The return type, spelled the C# way.</param>
+public sealed record MethodSignature(
+    string MethodName,
+    ImmutableArray<SignatureParameter> Parameters,
+    string ReturnTypeText);
+
+/// <summary>The signature help for one call in progress.</summary>
+/// <param name="ReceiverDisplay">The receiver's display name, such as <c>Math</c> or <c>String</c>.</param>
+/// <param name="Signatures">The modeled method's overloads.</param>
+/// <param name="ActiveParameter">The zero-based parameter the caret sits in, by comma count.</param>
+/// <param name="OpenParenOffset">The offset of the call's opening parenthesis, for popup alignment.</param>
+public sealed record SignatureHelp(
+    string ReceiverDisplay,
+    ImmutableArray<MethodSignature> Signatures,
+    int ActiveParameter,
+    int OpenParenOffset);
 
 /// <summary>
 /// The completion facts of the immediate window's <c>#r</c> references: top-level type names scanned once at
@@ -940,6 +966,323 @@ public static class ExpressionCompletionService
             return type;
         }
     }
+
+    // ---- Signature help ----------------------------------------------------------------------------------------
+
+    private const int MaximumSignatureOverloads = 12;
+
+    private static readonly ConcurrentDictionary<(string TypeName, string Method, bool IsStatic),
+        ImmutableArray<MethodSignature>> SignatureCache = new();
+
+    /// <summary>
+    /// Computes the signature help for one caret position: when the caret sits inside the argument list of a
+    /// modeled method — a static receiver's, or an instance method on a resolved value chain — the method's
+    /// overloads are read from the live BCL surface the evaluator mirrors, with the active parameter counted
+    /// from commas. Anywhere else, including grouping parentheses and unmodeled calls, yields null.
+    /// </summary>
+    /// <param name="context">The editor-specific context, or null for a plain expression editor.</param>
+    /// <param name="text">The expression text being edited.</param>
+    /// <param name="caretOffset">The caret offset within <paramref name="text"/>.</param>
+    /// <returns>The signature help, or null.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is null.</exception>
+    public static SignatureHelp? GetSignatureHelp(CompletionContext? context, string text, int caretOffset)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        context ??= CompletionContext.Expression;
+        var caret = Math.Clamp(caretOffset, 0, text.Length);
+
+        // The innermost unclosed '(' owns the caret; commas at its own depth count the active parameter.
+        var parenDepth = 0;
+        var bracketDepth = 0;
+        var commas = 0;
+        var open = -1;
+        for (var scan = caret - 1; scan >= 0; scan--)
+        {
+            var current = text[scan];
+            if (current == ')')
+            {
+                parenDepth++;
+            }
+            else if (current == ']')
+            {
+                bracketDepth++;
+            }
+            else if (current == '[')
+            {
+                if (bracketDepth == 0)
+                {
+                    return null;
+                }
+
+                bracketDepth--;
+            }
+            else if (current == '(')
+            {
+                if (parenDepth == 0 && bracketDepth == 0)
+                {
+                    open = scan;
+                    break;
+                }
+
+                if (parenDepth > 0)
+                {
+                    parenDepth--;
+                }
+            }
+            else if (current == ',' && parenDepth == 0 && bracketDepth == 0)
+            {
+                commas++;
+            }
+        }
+
+        if (open < 0)
+        {
+            return null;
+        }
+
+        var nameStart = open;
+        while (nameStart > 0 && IsIdentifierChar(text[nameStart - 1]))
+        {
+            nameStart--;
+        }
+
+        if (nameStart == open || char.IsAsciiDigit(text[nameStart]))
+        {
+            return null;
+        }
+
+        var methodName = text[nameStart..open];
+        if (nameStart == 0 || text[nameStart - 1] != '.')
+        {
+            return null;
+        }
+
+        var chain = ReadReceiverChain(text, nameStart - 1);
+        if (chain.Length == 0)
+        {
+            return null;
+        }
+
+        // A single plain receiver that is not a local names a modeled static surface: 'Math.Sqrt(…'.
+        if (chain is [{ IsInvocation: false, IndexCount: 0, LiteralType: null } receiver]
+            && !context.Locals.Any(local => string.Equals(local.Text, receiver.Name, StringComparison.Ordinal))
+            && ReceiverMembers.TryGetValue(receiver.Name, out var staticMembers)
+            && staticMembers.Contains(methodName, StringComparer.Ordinal))
+        {
+            var signatures = LookupSignatures(receiver.Name, methodName, isStatic: true);
+            return signatures.IsEmpty ? null : new SignatureHelp(receiver.Name, signatures, commas, open);
+        }
+
+        // Otherwise the receiver must fold to a modeled value whose surface dispatches the method.
+        if (ResolveChainValueType(context, chain) is { } receiverType
+            && InstanceMethodExists(receiverType, methodName))
+        {
+            var signatures = LookupSignatures(receiverType, methodName, isStatic: false);
+            return signatures.IsEmpty ? null : new SignatureHelp(receiverType, signatures, commas, open);
+        }
+
+        return null;
+    }
+
+    private static bool InstanceMethodExists(string receiverType, string member)
+    {
+        if (receiverType.EndsWith("[]", StringComparison.Ordinal))
+        {
+            return SequenceSurfaceTemplate.Members.TryGetValue(member, out var sequenceMember)
+                && sequenceMember.IsMethod;
+        }
+
+        var key = IsDelegateTypeName(receiverType) ? "Delegate"
+            : receiverType.Contains('.', StringComparison.Ordinal) ? "Int32"
+            : receiverType;
+        return InstanceReceiverSurfaces.TryGetValue(key, out var surface)
+            && surface.Members.TryGetValue(member, out var info)
+            && info.IsMethod;
+    }
+
+    private static ImmutableArray<MethodSignature> LookupSignatures(
+        string typeName,
+        string methodName,
+        bool isStatic) =>
+        SignatureCache.GetOrAdd((typeName, methodName, isStatic), static key => ComputeSignatures(key));
+
+    private static ImmutableArray<MethodSignature> ComputeSignatures(
+        (string TypeName, string Method, bool IsStatic) key)
+    {
+        var (typeName, methodName, isStatic) = key;
+        var candidates = new List<MethodSignature>();
+        if (!isStatic && typeName.EndsWith("[]", StringComparison.Ordinal))
+        {
+            // A sequence dispatches array instance members, the LINQ operators, and the Array helpers the
+            // evaluator renames onto sequences; the extension-style source parameter is not shown.
+            AddSignatures(candidates, typeof(Array), methodName, BindingFlags.Public | BindingFlags.Instance, 0);
+            AddSignatures(candidates, typeof(Enumerable), methodName, BindingFlags.Public | BindingFlags.Static, 1);
+            AddSignatures(candidates, typeof(Array), methodName, BindingFlags.Public | BindingFlags.Static, 1);
+        }
+        else
+        {
+            var normalized = !isStatic && IsDelegateTypeName(typeName) ? "Delegate"
+                : !isStatic && typeName.Contains('.', StringComparison.Ordinal) ? "Int32"
+                : typeName;
+            if (RuntimeTypeFor(normalized) is not { } runtimeType)
+            {
+                return [];
+            }
+
+            var flags = BindingFlags.Public
+                | (isStatic ? BindingFlags.Static | BindingFlags.FlattenHierarchy : BindingFlags.Instance);
+            AddSignatures(candidates, runtimeType, methodName, flags, 0);
+        }
+
+        return
+        [
+            .. candidates
+                .GroupBy(static signature => string.Join(
+                    "|", signature.Parameters.Select(static parameter => parameter.TypeText)))
+                .Select(static group => group.First())
+                .OrderBy(static signature => signature.Parameters.Length)
+                .ThenBy(
+                    static signature => string.Join(
+                        "|", signature.Parameters.Select(static parameter => parameter.TypeText)),
+                    StringComparer.Ordinal)
+                .Take(MaximumSignatureOverloads),
+        ];
+    }
+
+    private static void AddSignatures(
+        List<MethodSignature> candidates,
+        Type runtimeType,
+        string methodName,
+        BindingFlags flags,
+        int skipParameters)
+    {
+        foreach (var method in runtimeType.GetMethods(flags))
+        {
+            if (!string.Equals(method.Name, methodName, StringComparison.Ordinal)
+                || method.IsSpecialName
+                || method.GetParameters().Length < skipParameters)
+            {
+                continue;
+            }
+
+            candidates.Add(new MethodSignature(
+                method.Name,
+                [
+                    .. method.GetParameters()
+                        .Skip(skipParameters)
+                        .Select(static parameter => new SignatureParameter(
+                            parameter.Name ?? "value", FormatTypeText(parameter.ParameterType))),
+                ],
+                FormatTypeText(method.ReturnType)));
+        }
+    }
+
+    private static string FormatTypeText(Type type)
+    {
+        if (type.IsByRef)
+        {
+            return "ref " + FormatTypeText(type.GetElementType()!);
+        }
+
+        if (type.IsArray)
+        {
+            return FormatTypeText(type.GetElementType()!) + "[]";
+        }
+
+        if (Nullable.GetUnderlyingType(type) is { } underlying)
+        {
+            return FormatTypeText(underlying) + "?";
+        }
+
+        if (type.IsGenericType)
+        {
+            var name = type.Name;
+            var tick = name.IndexOf('`', StringComparison.Ordinal);
+            if (tick >= 0)
+            {
+                name = name[..tick];
+            }
+
+            return $"{name}<{string.Join(", ", type.GetGenericArguments().Select(FormatTypeText))}>";
+        }
+
+        return type switch
+        {
+            _ when type == typeof(void) => "void",
+            _ when type == typeof(object) => "object",
+            _ when type == typeof(string) => "string",
+            _ when type == typeof(char) => "char",
+            _ when type == typeof(bool) => "bool",
+            _ when type == typeof(int) => "int",
+            _ when type == typeof(uint) => "uint",
+            _ when type == typeof(long) => "long",
+            _ when type == typeof(ulong) => "ulong",
+            _ when type == typeof(short) => "short",
+            _ when type == typeof(ushort) => "ushort",
+            _ when type == typeof(byte) => "byte",
+            _ when type == typeof(sbyte) => "sbyte",
+            _ when type == typeof(double) => "double",
+            _ when type == typeof(float) => "float",
+            _ when type == typeof(decimal) => "decimal",
+            _ => type.Name,
+        };
+    }
+
+    private static Type? RuntimeTypeFor(string name) => name switch
+    {
+        "String" or "string" => typeof(string),
+        "Char" or "char" => typeof(char),
+        "Boolean" or "bool" => typeof(bool),
+        "Int32" or "int" => typeof(int),
+        "UInt32" or "uint" => typeof(uint),
+        "Int64" or "long" => typeof(long),
+        "UInt64" or "ulong" => typeof(ulong),
+        "Int16" or "short" => typeof(short),
+        "UInt16" or "ushort" => typeof(ushort),
+        "Byte" or "byte" => typeof(byte),
+        "SByte" or "sbyte" => typeof(sbyte),
+        "Double" or "double" => typeof(double),
+        "Single" or "float" => typeof(float),
+        "Decimal" or "decimal" => typeof(decimal),
+        "IntPtr" => typeof(nint),
+        "UIntPtr" => typeof(nuint),
+        "Int128" => typeof(Int128),
+        "UInt128" => typeof(UInt128),
+        "BigInteger" => typeof(System.Numerics.BigInteger),
+        "DateTime" => typeof(DateTime),
+        "DateTimeOffset" => typeof(DateTimeOffset),
+        "TimeSpan" => typeof(TimeSpan),
+        "DateOnly" => typeof(DateOnly),
+        "TimeOnly" => typeof(TimeOnly),
+        "Guid" => typeof(Guid),
+        "Version" => typeof(Version),
+        "Rune" => typeof(System.Text.Rune),
+        "Encoding" => typeof(System.Text.Encoding),
+        "Regex" => typeof(System.Text.RegularExpressions.Regex),
+        "Match" => typeof(System.Text.RegularExpressions.Match),
+        "Group" => typeof(System.Text.RegularExpressions.Group),
+        "Capture" => typeof(System.Text.RegularExpressions.Capture),
+        "MatchCollection" => typeof(System.Text.RegularExpressions.MatchCollection),
+        "GroupCollection" => typeof(System.Text.RegularExpressions.GroupCollection),
+        "CaptureCollection" => typeof(System.Text.RegularExpressions.CaptureCollection),
+        "MethodInfo" => typeof(MethodInfo),
+        "ConstructorInfo" => typeof(ConstructorInfo),
+        "PropertyInfo" => typeof(PropertyInfo),
+        "FieldInfo" => typeof(FieldInfo),
+        "ParameterInfo" => typeof(ParameterInfo),
+        "Type" => typeof(Type),
+        "Enum" => typeof(Enum),
+        "Delegate" => typeof(Delegate),
+        "MulticastDelegate" => typeof(MulticastDelegate),
+        "DBNull" => typeof(DBNull),
+        "Math" => typeof(Math),
+        "Array" => typeof(Array),
+        "Convert" => typeof(Convert),
+        "Activator" => typeof(Activator),
+        "Enumerable" => typeof(Enumerable),
+        "CharUnicodeInfo" => typeof(System.Globalization.CharUnicodeInfo),
+        _ => null,
+    };
 
     /// <summary>
     /// Builds the session-derived completion catalog: the adopted root's declared fields and the top-level type

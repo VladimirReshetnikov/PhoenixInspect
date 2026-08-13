@@ -52,6 +52,20 @@
                 </ListBox>
             </Border>
         </Popup>
+        <!-- Signature help renders the modeled overloads while an argument list is typed; it yields to the
+             completion drop-down and reappears between arguments. -->
+        <Popup x:Name="SignaturePopup"
+               DockPanel.Dock="Top"
+               Placement="BottomEdgeAlignedLeft"
+               IsLightDismissEnabled="False"
+               ShouldUseOverlayLayer="True">
+            <Border Background="{DynamicResource Phoenix.PaneBackground}"
+                    BorderBrush="{DynamicResource Phoenix.SubtleBorder}"
+                    BorderThickness="1"
+                    Padding="8,4">
+                <StackPanel x:Name="SignatureStack" Spacing="2" />
+            </Border>
+        </Popup>
         <Border DockPanel.Dock="Top"
                 BorderBrush="{DynamicResource Phoenix.SubtleBorder}"
                 BorderThickness="0,0,0,1"

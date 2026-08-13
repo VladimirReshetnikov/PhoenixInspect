@@ -447,6 +447,50 @@ public sealed class ExpressionCompletionTests
         Assert.True(new ReferenceCompletionIndex([aliased!]).IsEmpty);
     }
 
+    /// <summary>Proves signature help resolves modeled calls, counts parameters, and stays quiet elsewhere.</summary>
+    [Fact]
+    public void Signature_help_describes_modeled_calls()
+    {
+        // A static receiver's method shows its overloads, aligned at the opening parenthesis.
+        var sqrt = ExpressionCompletionService.GetSignatureHelp(null, "Math.Sqrt(", 10);
+        Assert.NotNull(sqrt);
+        Assert.Equal("Math", sqrt!.ReceiverDisplay);
+        Assert.Equal(0, sqrt.ActiveParameter);
+        Assert.Equal(9, sqrt.OpenParenOffset);
+        var overload = Assert.Single(sqrt.Signatures);
+        Assert.Equal("Sqrt", overload.MethodName);
+        Assert.Equal("double", Assert.Single(overload.Parameters).TypeText);
+
+        // Commas advance the active parameter; nested calls bind to the innermost open parenthesis.
+        Assert.Equal(1, ExpressionCompletionService.GetSignatureHelp(null, "Math.Clamp(1, ", 14)!.ActiveParameter);
+        var inner = ExpressionCompletionService.GetSignatureHelp(null, "Math.Max(Math.Min(1, ", 21);
+        Assert.Equal("Min", inner!.Signatures[0].MethodName);
+
+        // Instance methods resolve through the typed chain, including literal heads.
+        var context = new CompletionContext
+        {
+            Locals = [new CompletionItem("s", CompletionItemKind.Local, "String")],
+        };
+        var substring = ExpressionCompletionService.GetSignatureHelp(context, "s.Substring(", 12);
+        Assert.Equal("String", substring!.ReceiverDisplay);
+        Assert.Contains(substring.Signatures, static signature => signature.Parameters.Length == 2);
+        Assert.NotNull(ExpressionCompletionService.GetSignatureHelp(null, "\"abc\".Substring(", 16));
+
+        // A sequence operator shows its LINQ shape without the extension-method source parameter.
+        var whereContext = new CompletionContext
+        {
+            Locals = [new CompletionItem("xs", CompletionItemKind.Local, "Int32[]")],
+        };
+        var where = ExpressionCompletionService.GetSignatureHelp(whereContext, "xs.Where(", 9);
+        Assert.NotNull(where);
+        Assert.All(where!.Signatures, static signature => Assert.Single(signature.Parameters));
+
+        // A grouping parenthesis, an unmodeled call, and a closed call all stay quiet.
+        Assert.Null(ExpressionCompletionService.GetSignatureHelp(null, "(1 + 2", 6));
+        Assert.Null(ExpressionCompletionService.GetSignatureHelp(null, "mystery.Frob(", 13));
+        Assert.Null(ExpressionCompletionService.GetSignatureHelp(null, "Math.Sqrt(4) + ", 15));
+    }
+
     /// <summary>Proves the immediate-window context: locals, statement keywords, and explicit invocation.</summary>
     [Fact]
     public void Immediate_context_offers_locals_and_statement_keywords()

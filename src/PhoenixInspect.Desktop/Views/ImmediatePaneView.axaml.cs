@@ -14,6 +14,7 @@ namespace PhoenixInspect.Desktop.Views;
 public partial class ImmediatePaneView : UserControl
 {
     private CompletionController? controller;
+    private SignatureHelpController? signatureController;
     private ImmediateViewModel? subscribedPanel;
 
     /// <summary>Creates the view and configures the read-only transcript editor.</summary>
@@ -48,6 +49,8 @@ public partial class ImmediatePaneView : UserControl
             subscribedPanel.PropertyChanged += OnPanelChanged;
             controller = new CompletionController(
                 CompletionPopup, CompletionList, panel.Completion, () => panel.CompletionContext);
+            signatureController = new SignatureHelpController(
+                SignaturePopup, SignatureStack, () => panel.CompletionContext);
             ApplyTranscript();
         }
     }
@@ -89,6 +92,7 @@ public partial class ImmediatePaneView : UserControl
     private void OnSubmitClick(object? sender, RoutedEventArgs e)
     {
         controller?.Close();
+        signatureController?.Close();
         if (Tool is { } tool)
         {
             _ = tool.Panel.SubmitAsync();
@@ -116,10 +120,17 @@ public partial class ImmediatePaneView : UserControl
             return;
         }
 
+        if (signatureController?.HandleKey(e) == true)
+        {
+            e.Handled = true;
+            return;
+        }
+
         switch (e.Key)
         {
             case Key.Enter:
                 e.Handled = true;
+                signatureController?.Close();
                 _ = tool.Panel.SubmitAsync();
                 break;
             case Key.Up when tool.Panel.HistoryPrevious() is { } previous:
@@ -129,6 +140,10 @@ public partial class ImmediatePaneView : UserControl
             case Key.Down when tool.Panel.HistoryNext() is { } next:
                 e.Handled = true;
                 SetInput(next);
+                break;
+            case Key.Left or Key.Right or Key.Home or Key.End:
+                // The caret is about to move without a text change; the active parameter may change with it.
+                signatureController?.ScheduleUpdate(InputBox);
                 break;
             default:
                 break;
@@ -140,14 +155,29 @@ public partial class ImmediatePaneView : UserControl
         if (sender is TextBox box)
         {
             controller?.Update(box);
+
+            // Signature help yields to the completion drop-down and reappears between arguments.
+            if (controller?.IsOpen == true)
+            {
+                signatureController?.Close();
+            }
+            else
+            {
+                signatureController?.Update(box);
+            }
         }
     }
 
-    private void OnInputLostFocus(object? sender, RoutedEventArgs e) => controller?.Close();
+    private void OnInputLostFocus(object? sender, RoutedEventArgs e)
+    {
+        controller?.Close();
+        signatureController?.Close();
+    }
 
     private void SetInput(string text)
     {
         controller?.Close();
+        signatureController?.Close();
         InputBox.Text = text;
         InputBox.CaretIndex = text.Length;
     }

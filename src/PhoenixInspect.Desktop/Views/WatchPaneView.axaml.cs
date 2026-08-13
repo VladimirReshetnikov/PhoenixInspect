@@ -12,6 +12,7 @@ namespace PhoenixInspect.Desktop.Views;
 public partial class WatchPaneView : UserControl
 {
     private CompletionController? controller;
+    private SignatureHelpController? signatureController;
 
     /// <summary>Creates the view.</summary>
     public WatchPaneView()
@@ -22,6 +23,7 @@ public partial class WatchPaneView : UserControl
             if (Tool is { } tool)
             {
                 controller = new CompletionController(CompletionPopup, CompletionList, tool.Panel.Completion);
+                signatureController = new SignatureHelpController(SignaturePopup, SignatureStack);
             }
         };
     }
@@ -49,10 +51,22 @@ public partial class WatchPaneView : UserControl
             return;
         }
 
+        if (signatureController?.HandleKey(e) == true)
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key == Key.Enter)
         {
             e.Handled = true;
+            signatureController?.Close();
             _ = tool.Panel.CommitAsync(entry);
+        }
+        else if (e.Key is Key.Left or Key.Right or Key.Home or Key.End && sender is TextBox caretBox)
+        {
+            // The caret is about to move without a text change; the active parameter may change with it.
+            signatureController?.ScheduleUpdate(caretBox);
         }
     }
 
@@ -61,12 +75,23 @@ public partial class WatchPaneView : UserControl
         if (sender is TextBox box)
         {
             controller?.Update(box);
+
+            // Signature help yields to the completion drop-down and reappears between arguments.
+            if (controller?.IsOpen == true)
+            {
+                signatureController?.Close();
+            }
+            else
+            {
+                signatureController?.Update(box);
+            }
         }
     }
 
     private void OnExpressionLostFocus(object? sender, RoutedEventArgs e)
     {
         controller?.Close();
+        signatureController?.Close();
         if (sender is Control { DataContext: WatchEntry entry } && Tool is { } tool)
         {
             tool.Panel.CommitOnFocusLoss(entry);
