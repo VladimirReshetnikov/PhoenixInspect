@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using PhoenixInspect.Host.Dump.ClrMD;
 using PhoenixInspect.Inspection;
+using PhoenixInspect.Product.DumpQuery;
 using Xunit;
 
 namespace PhoenixInspect.IntegrationTests;
@@ -227,6 +228,96 @@ public sealed class ExpressionCompletionTests
 
         // An unknown hop offers nothing rather than guessing.
         Assert.Empty(ExpressionCompletionService.Complete(realized, "root.Mystery.", 13).Items);
+    }
+
+    /// <summary>Proves a static member with a modeled value completes that value's instance surface.</summary>
+    [Fact]
+    public void Static_value_chains_complete_instance_surfaces()
+    {
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "Guid.Empty.", 11).Items,
+            static item => item is { Text: "Variant", Detail: "property" });
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "Encoding.UTF8.Get", 17).Items,
+            static item => item.Text == "GetBytes");
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "TimeSpan.Zero.Tot", 17).Items,
+            static item => item.Text == "TotalSeconds");
+
+        // An enum member offers the enum value surface; a numeric bound the universal scalar members.
+        Assert.Equal(
+            ["CompareTo", "GetType", "HasFlag", "ToString"],
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "DayOfWeek.Monday.", 17)
+                .Items.Select(static item => item.Text).ToArray());
+        Assert.Equal(
+            ["GetType", "ToString"],
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "int.MaxValue.", 13)
+                .Items.Select(static item => item.Text).ToArray());
+
+        // A member that produces an explained stop folds no value, so nothing chains after it.
+        Assert.Empty(ExpressionCompletionService.Complete(CompletionCatalog.Empty, "DateTime.Now.", 13).Items);
+        Assert.Empty(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "Guid.Empty.Version.", 19).Items);
+    }
+
+    /// <summary>Proves using directives admit prefix-less completion: namespaces, aliases, static imports.</summary>
+    [Fact]
+    public void Using_directives_admit_prefixless_names()
+    {
+        var usings = ConstantUsingDirectiveSet.Empty
+            .WithImportedNamespace("Contoso.OrderService.Diagnostics")
+            .WithImportedNamespace("Contoso")
+            .WithAlias("D", "Contoso.OrderService.Dispatching")
+            .WithAlias("S", "System.String")
+            .WithStaticImport("Contoso.OrderService.Diagnostics.ServiceState");
+        var context = new CompletionContext { Usings = usings };
+        var realizedCatalog = SampleCatalog with
+        {
+            TypeMembers = SampleCatalog.TypeMembers.SetItem(
+                "Contoso.OrderService.Diagnostics.ServiceState",
+                [new CompletionItem("Dispatcher", CompletionItemKind.Field, "static field")]),
+        };
+
+        // A type from an imported namespace completes bare, annotated with the namespace that admits it;
+        // a shallower import offers its next namespace segment.
+        Assert.Contains(
+            ExpressionCompletionService.Complete(SampleCatalog, "ServiceSt", 9, context).Items,
+            static item => item is
+            { Text: "ServiceState", Kind: CompletionItemKind.Type, Detail: "Contoso.OrderService.Diagnostics" });
+        Assert.Contains(
+            ExpressionCompletionService.Complete(SampleCatalog, "OrderSer", 8, context).Items,
+            static item => item is { Text: "OrderService", Kind: CompletionItemKind.Namespace });
+
+        // A prefix-less member access resolves through the import: unrealized pends, realized answers.
+        Assert.Equal(
+            "Contoso.OrderService.Diagnostics.ServiceState",
+            ExpressionCompletionService.Complete(SampleCatalog, "ServiceState.", 13, context).PendingTypeMembers);
+        Assert.Contains(
+            ExpressionCompletionService.Complete(realizedCatalog, "ServiceState.", 13, context).Items,
+            static item => item.Text == "Dispatcher");
+
+        // A namespace alias completes as an identifier and drills down like its target; a type alias pends
+        // its target's members.
+        Assert.Contains(
+            ExpressionCompletionService.Complete(SampleCatalog, "D", 1, context).Items,
+            static item => item is { Text: "D", Detail: "Contoso.OrderService.Dispatching" });
+        Assert.Contains(
+            ExpressionCompletionService.Complete(SampleCatalog, "D.", 2, context).Items,
+            static item => item is { Text: "CarrierGateway", Kind: CompletionItemKind.Type });
+        Assert.Equal(
+            "System.String",
+            ExpressionCompletionService.Complete(SampleCatalog, "S.", 2, context).PendingTypeMembers);
+
+        // A static import offers the type's members bare once realized, and pends their fetch before.
+        Assert.Equal(
+            "Contoso.OrderService.Diagnostics.ServiceState",
+            ExpressionCompletionService.Complete(SampleCatalog, "Disp", 4, context).PendingTypeMembers);
+        Assert.Contains(
+            ExpressionCompletionService.Complete(realizedCatalog, "Disp", 4, context).Items,
+            static item => item.Text == "Dispatcher");
+
+        // Without the directives, none of those spellings complete.
+        Assert.Empty(ExpressionCompletionService.Complete(SampleCatalog, "ServiceState.", 13).Items);
     }
 
     /// <summary>Proves the immediate-window context: locals, statement keywords, and explicit invocation.</summary>

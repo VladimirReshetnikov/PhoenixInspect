@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using PhoenixInspect.Host.Abstractions;
 using PhoenixInspect.Host.Dump.ClrMD;
+using PhoenixInspect.Product.DumpQuery;
 
 namespace PhoenixInspect.Inspection;
 
@@ -45,6 +46,12 @@ public sealed record CompletionContext
 
     /// <summary>Gets whether the editor admits statements, such as the immediate window's declarations.</summary>
     public bool AllowsStatements { get; init; }
+
+    /// <summary>
+    /// Gets the active using directives: imported namespaces and aliases let dump-metadata names complete and
+    /// resolve without their prefixes, and static imports offer their members as bare identifiers.
+    /// </summary>
+    public ConstantUsingDirectiveSet Usings { get; init; } = ConstantUsingDirectiveSet.Empty;
 }
 
 /// <summary>One completion candidate.</summary>
@@ -475,6 +482,108 @@ public static class ExpressionCompletionService
         return typeName.Contains('.', StringComparison.Ordinal) ? ScalarInstanceMembers : [];
     }
 
+    // An enum value dispatches exactly these instance members.
+    private static readonly ImmutableArray<CompletionItem> EnumValueInstanceMembers = BuildInstanceItems(
+        [],
+        ["CompareTo", "GetType", "HasFlag", "ToString"]);
+
+    // The modeled receivers whose members are enum values, so 'DayOfWeek.Monday.' completes the enum surface.
+    private static readonly ImmutableHashSet<string> EnumReceivers = ImmutableHashSet.Create(
+        StringComparer.Ordinal,
+        "DayOfWeek", "DateTimeKind", "StringComparison", "StringSplitOptions", "TypeCode", "MemberTypes",
+        "RegexOptions");
+
+    // Static members whose folded value's type the evaluator models, so 'Guid.Empty.' or 'Encoding.UTF8.'
+    // completes that value's instance surface. Members that produce explained stops (Now, NewGuid) fold no value,
+    // so they map nothing here.
+    private static readonly ImmutableDictionary<string, string> StaticMemberResultTypes =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["Guid.Empty"] = "Guid",
+            ["string.Empty"] = "String",
+            ["DBNull.Value"] = "DBNull",
+            ["Convert.DBNull"] = "DBNull",
+            ["Rune.ReplacementChar"] = "Rune",
+            ["DateTime.MaxValue"] = "DateTime",
+            ["DateTime.MinValue"] = "DateTime",
+            ["DateTime.UnixEpoch"] = "DateTime",
+            ["DateTimeOffset.MaxValue"] = "DateTimeOffset",
+            ["DateTimeOffset.MinValue"] = "DateTimeOffset",
+            ["DateTimeOffset.UnixEpoch"] = "DateTimeOffset",
+            ["TimeSpan.MaxValue"] = "TimeSpan",
+            ["TimeSpan.MinValue"] = "TimeSpan",
+            ["TimeSpan.Zero"] = "TimeSpan",
+            ["TimeSpan.TicksPerDay"] = "Int64",
+            ["TimeSpan.TicksPerHour"] = "Int64",
+            ["TimeSpan.TicksPerMicrosecond"] = "Int64",
+            ["TimeSpan.TicksPerMillisecond"] = "Int64",
+            ["TimeSpan.TicksPerMinute"] = "Int64",
+            ["TimeSpan.TicksPerSecond"] = "Int64",
+            ["DateOnly.MaxValue"] = "DateOnly",
+            ["DateOnly.MinValue"] = "DateOnly",
+            ["TimeOnly.MaxValue"] = "TimeOnly",
+            ["TimeOnly.MinValue"] = "TimeOnly",
+            ["Encoding.ASCII"] = "Encoding",
+            ["Encoding.BigEndianUnicode"] = "Encoding",
+            ["Encoding.Default"] = "Encoding",
+            ["Encoding.Latin1"] = "Encoding",
+            ["Encoding.Unicode"] = "Encoding",
+            ["Encoding.UTF32"] = "Encoding",
+            ["Encoding.UTF8"] = "Encoding",
+            ["Math.E"] = "Double",
+            ["Math.PI"] = "Double",
+            ["Math.Tau"] = "Double",
+            ["int.MaxValue"] = "Int32",
+            ["int.MinValue"] = "Int32",
+            ["uint.MaxValue"] = "UInt32",
+            ["uint.MinValue"] = "UInt32",
+            ["long.MaxValue"] = "Int64",
+            ["long.MinValue"] = "Int64",
+            ["ulong.MaxValue"] = "UInt64",
+            ["ulong.MinValue"] = "UInt64",
+            ["short.MaxValue"] = "Int16",
+            ["short.MinValue"] = "Int16",
+            ["ushort.MaxValue"] = "UInt16",
+            ["ushort.MinValue"] = "UInt16",
+            ["byte.MaxValue"] = "Byte",
+            ["byte.MinValue"] = "Byte",
+            ["sbyte.MaxValue"] = "SByte",
+            ["sbyte.MinValue"] = "SByte",
+            ["decimal.MaxValue"] = "Decimal",
+            ["decimal.MinValue"] = "Decimal",
+            ["decimal.MinusOne"] = "Decimal",
+            ["decimal.One"] = "Decimal",
+            ["decimal.Zero"] = "Decimal",
+            ["double.Epsilon"] = "Double",
+            ["double.MaxValue"] = "Double",
+            ["double.MinValue"] = "Double",
+            ["double.NaN"] = "Double",
+            ["double.NegativeInfinity"] = "Double",
+            ["double.Pi"] = "Double",
+            ["double.PositiveInfinity"] = "Double",
+            ["double.Tau"] = "Double",
+            ["float.Epsilon"] = "Single",
+            ["float.MaxValue"] = "Single",
+            ["float.MinValue"] = "Single",
+            ["float.NaN"] = "Single",
+            ["float.NegativeInfinity"] = "Single",
+            ["float.PositiveInfinity"] = "Single",
+        }.ToImmutableDictionary(StringComparer.Ordinal);
+
+    private static ImmutableArray<CompletionItem> StaticMemberInstanceSurface(string receiver, string member)
+    {
+        if (EnumReceivers.Contains(receiver)
+            && ReceiverMembers.TryGetValue(receiver, out var enumMembers)
+            && enumMembers.Contains(member, StringComparer.Ordinal))
+        {
+            return EnumValueInstanceMembers;
+        }
+
+        return StaticMemberResultTypes.TryGetValue($"{receiver}.{member}", out var resultType)
+            ? InstanceMembersForStoredType(resultType)
+            : [];
+    }
+
     /// <summary>
     /// Builds the session-derived completion catalog: the adopted root's declared fields and the top-level type
     /// names of dump modules. Modules contribute in ascending metadata size, so when the type bound bites, the
@@ -746,7 +855,67 @@ public static class ExpressionCompletionService
                 .Select(static segment => new CompletionItem(
                     segment, CompletionItemKind.Namespace, "from dump modules")),
             prefix));
-        return Finish(items, prefixStart, caret - prefixStart);
+
+        var pendingStaticImport = (string?)null;
+        if (!context.Usings.IsEmpty)
+        {
+            // Imported namespaces make their contents spellable bare: their types complete as types, and deeper
+            // sub-namespace segments as namespaces, each annotated with the namespace that admits it.
+            var seenImported = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var importedNamespace in context.Usings.ImportedNamespaces)
+            {
+                var namespacePrefix = importedNamespace + ".";
+                foreach (var fullName in catalog.TypeFullNames)
+                {
+                    if (!fullName.StartsWith(namespacePrefix, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    var rest = fullName[namespacePrefix.Length..];
+                    var next = FirstSegment(rest);
+                    var isLeaf = next.Length == rest.Length;
+                    if (Rank(next, prefix) is { } rank && seenImported.Add(next))
+                    {
+                        items.Add(new ScoredItem(
+                            new CompletionItem(
+                                next,
+                                isLeaf ? CompletionItemKind.Type : CompletionItemKind.Namespace,
+                                importedNamespace),
+                            rank));
+                    }
+                }
+            }
+
+            // Alias names complete as identifiers, annotated with their targets.
+            items.AddRange(Score(
+                context.Usings.Aliases
+                    .OrderBy(static pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(pair => new CompletionItem(
+                        pair.Key,
+                        catalog.TypeFullNames.Contains(pair.Value, StringComparer.Ordinal)
+                            ? CompletionItemKind.Type
+                            : CompletionItemKind.Namespace,
+                        pair.Value)),
+                prefix));
+
+            // Statically imported members complete bare once realized; the first unrealized import asks the
+            // host to fetch, and the refreshed catalog answers the next query.
+            foreach (var staticType in context.Usings.StaticImportedTypes)
+            {
+                if (catalog.TypeMembers.TryGetValue(staticType, out var importedMembers))
+                {
+                    items.AddRange(Score(importedMembers, prefix));
+                }
+                else if (pendingStaticImport is null
+                    && catalog.TypeFullNames.Contains(staticType, StringComparer.Ordinal))
+                {
+                    pendingStaticImport = staticType;
+                }
+            }
+        }
+
+        return Finish(items, prefixStart, caret - prefixStart) with { PendingTypeMembers = pendingStaticImport };
     }
 
     private static CompletionResult CompleteMembers(
@@ -809,41 +978,60 @@ public static class ExpressionCompletionService
             }
         }
 
-        var dotted = string.Join('.', segments);
-        if (catalog.TypeMembers.TryGetValue(dotted, out var realized))
+        // A static member with a modeled folded value completes that value's instance surface: 'Guid.Empty.',
+        // 'Encoding.UTF8.', 'TimeSpan.Zero.', an enum member, or a numeric bound.
+        if (segments is [var staticReceiver, var staticMember]
+            && StaticMemberInstanceSurface(staticReceiver, staticMember) is { IsDefaultOrEmpty: false } surface)
         {
-            return Finish(Score(realized, prefix), prefixStart, replaceLength);
+            return Finish(Score(surface, prefix), prefixStart, replaceLength);
         }
 
-        var isKnownType = catalog.TypeFullNames.Contains(dotted, StringComparer.Ordinal);
-        var namespacePrefix = dotted + ".";
-        var items = new List<ScoredItem>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var fullName in catalog.TypeFullNames)
+        // A qualified receiver resolves as written first; with using directives active, the alias-substituted
+        // and namespace-prefixed spellings then get their chance, in evaluation's own candidate order.
+        var candidates = context.Usings.IsEmpty
+            ? ImmutableArray.Create(string.Join('.', segments))
+            : context.Usings.ExpandTypeCandidates(segments);
+        foreach (var dotted in candidates)
         {
-            if (!fullName.StartsWith(namespacePrefix, StringComparison.Ordinal))
+            if (catalog.TypeMembers.TryGetValue(dotted, out var realized))
             {
-                continue;
+                return Finish(Score(realized, prefix), prefixStart, replaceLength);
             }
 
-            var rest = fullName[namespacePrefix.Length..];
-            var next = FirstSegment(rest);
-            var isLeaf = next.Length == rest.Length;
-            if (Rank(next, prefix) is { } rank && seen.Add(next))
+            var namespacePrefix = dotted + ".";
+            var items = new List<ScoredItem>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var fullName in catalog.TypeFullNames)
             {
-                items.Add(new ScoredItem(
-                    new CompletionItem(next, isLeaf ? CompletionItemKind.Type : CompletionItemKind.Namespace),
-                    rank));
+                if (!fullName.StartsWith(namespacePrefix, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                var rest = fullName[namespacePrefix.Length..];
+                var next = FirstSegment(rest);
+                var isLeaf = next.Length == rest.Length;
+                if (Rank(next, prefix) is { } rank && seen.Add(next))
+                {
+                    items.Add(new ScoredItem(
+                        new CompletionItem(next, isLeaf ? CompletionItemKind.Type : CompletionItemKind.Namespace),
+                        rank));
+                }
+            }
+
+            if (items.Count > 0)
+            {
+                return Finish(items, prefixStart, replaceLength);
+            }
+
+            if (catalog.TypeFullNames.Contains(dotted, StringComparer.Ordinal))
+            {
+                // The receiver is a realizable metadata type; the host fetches its members and re-queries.
+                return new CompletionResult([], prefixStart, replaceLength, PendingTypeMembers: dotted);
             }
         }
 
-        if (items.Count == 0 && isKnownType)
-        {
-            // The receiver is a realizable metadata type; the host fetches its members and re-queries.
-            return new CompletionResult([], prefixStart, replaceLength, PendingTypeMembers: dotted);
-        }
-
-        return Finish(items, prefixStart, replaceLength);
+        return Finish([], prefixStart, replaceLength);
     }
 
     private static ImmutableArray<string> ReadReceiverSegments(string text, int dotOffset)

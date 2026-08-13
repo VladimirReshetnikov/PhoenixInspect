@@ -36,6 +36,15 @@ public sealed class ConstantUsingDirectiveSet
     public bool IsEmpty =>
         importedNamespaces.IsEmpty && staticImportedTypes.IsEmpty && aliases.IsEmpty;
 
+    /// <summary>Gets the imported namespaces, in declaration order.</summary>
+    public ImmutableArray<string> ImportedNamespaces => importedNamespaces;
+
+    /// <summary>Gets the statically imported type full names, in declaration order.</summary>
+    public ImmutableArray<string> StaticImportedTypes => staticImportedTypes;
+
+    /// <summary>Gets the alias bindings, keyed by alias identifier.</summary>
+    public IReadOnlyDictionary<string, string> Aliases => aliases;
+
     /// <summary>Adds one imported namespace: <c>using Namespace;</c>.</summary>
     /// <param name="namespaceName">The namespace whose members become prefix-less.</param>
     /// <returns>A new set with the namespace imported.</returns>

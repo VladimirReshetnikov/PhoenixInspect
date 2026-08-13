@@ -63,6 +63,7 @@ public sealed class ImmediateViewModel : ObservableObject
     {
         Locals = variables.ListCompletions(),
         AllowsStatements = true,
+        Usings = usings,
     };
 
     /// <summary>Gets a statement of the context immediate expressions currently evaluate under.</summary>
