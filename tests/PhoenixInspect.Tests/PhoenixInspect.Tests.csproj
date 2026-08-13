@@ -22,5 +22,6 @@
     <ProjectReference Include="../../src/PhoenixInspect.Domain.Concrete/PhoenixInspect.Domain.Concrete.csproj" />
     <ProjectReference Include="../../src/PhoenixInspect.Metadata.SRM/PhoenixInspect.Metadata.SRM.csproj" />
     <ProjectReference Include="../../src/PhoenixInspect.Product.DumpDebugging/PhoenixInspect.Product.DumpDebugging.csproj" />
+    <ProjectReference Include="../../src/PhoenixInspect.Desktop/PhoenixInspect.Desktop.csproj" />
   </ItemGroup>
 </Project>

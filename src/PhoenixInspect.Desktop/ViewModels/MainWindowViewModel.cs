@@ -22,6 +22,8 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
     private readonly RelayCommand openCommand;
     private readonly RelayCommand attachCommand;
     private readonly RelayCommand closeCommand;
+    private readonly RelayCommand restoreLayoutCommand;
+    private IRootDock layout;
     private int busyDepth;
     private string busyMessage = string.Empty;
     private string statusMessage = "Ready. Open a dump to begin.";
@@ -58,12 +60,13 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
             new EvaluateTool(Evaluate),
             new ResultTool(Evaluate),
             new WelcomeDocument(Overview));
-        Layout = factory.CreateLayout();
-        factory.InitLayout(Layout);
+        layout = TryRestoreLayout() ?? factory.CreateLayout();
+        factory.InitLayout(layout);
 
         openCommand = new RelayCommand(() => OpenDumpRequested?.Invoke(this, EventArgs.Empty), () => !IsBusy);
         attachCommand = new RelayCommand(ShowProcesses, () => !IsBusy);
         closeCommand = new RelayCommand(() => _ = CloseDumpAsync(), () => IsDumpOpen && !IsBusy);
+        restoreLayoutCommand = new RelayCommand(RestoreDefaultLayout);
         Evaluate.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(EvaluateViewModel.RootSelection) or nameof(EvaluateViewModel.RootIdentifier))
@@ -89,7 +92,38 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
     public event EventHandler? OpenDumpRequested;
 
     /// <summary>Gets the docking layout rendered by the window's DockControl.</summary>
-    public IRootDock Layout { get; }
+    public IRootDock Layout
+    {
+        get => layout;
+        private set => Set(ref layout, value);
+    }
+
+    /// <summary>Gets the command that discards the current panel arrangement for the default layout.</summary>
+    public RelayCommand RestoreDefaultLayoutCommand => restoreLayoutCommand;
+
+    /// <summary>
+    /// Rebuilds the default panel layout in place, keeping every open source document. The next window close
+    /// persists whatever arrangement the user has then, so restoring is itself undoable by rearranging.
+    /// </summary>
+    public void RestoreDefaultLayout()
+    {
+        var openDocuments = factory.Documents?.VisibleDockables?.OfType<SourceDocument>().ToArray() ?? [];
+        var activeDocument = factory.Documents?.ActiveDockable as SourceDocument;
+
+        Layout = factory.CreateLayout();
+        factory.InitLayout(Layout);
+        foreach (var document in openDocuments)
+        {
+            factory.ShowDocument(document);
+        }
+
+        if (activeDocument is not null)
+        {
+            factory.ShowDocument(activeDocument);
+        }
+
+        SetStatus("The default panel layout has been restored.");
+    }
 
     /// <summary>Gets the overview pane backing the welcome document.</summary>
     public OverviewViewModel Overview { get; }
@@ -494,6 +528,52 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "PhoenixInspect",
         "recent-dumps.txt");
+
+    private static string PanelLayoutStorePath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "PhoenixInspect",
+        "panel-layout.json");
+
+    /// <summary>
+    /// Persists the current panel arrangement for the next launch. The layout is a convenience, never evidence:
+    /// an arrangement the capture cannot model — or any write failure — simply leaves the next launch on its
+    /// previous or default layout, so failures are swallowed rather than surfaced.
+    /// </summary>
+    public void SaveLayout()
+    {
+        try
+        {
+            if (DockLayoutPersistence.Capture(Layout) is not { } snapshot)
+            {
+                return;
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(PanelLayoutStorePath)!);
+            File.WriteAllText(PanelLayoutStorePath, DockLayoutPersistence.Serialize(snapshot));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // A layout that fails to save costs one re-arrangement, never a session.
+        }
+    }
+
+    private IRootDock? TryRestoreLayout()
+    {
+        try
+        {
+            if (!File.Exists(PanelLayoutStorePath))
+            {
+                return null;
+            }
+
+            var snapshot = DockLayoutPersistence.Deserialize(File.ReadAllText(PanelLayoutStorePath));
+            return factory.TryCreateLayout(snapshot);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
 
     private void LoadRecentDumps()
     {

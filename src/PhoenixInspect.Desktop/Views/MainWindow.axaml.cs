@@ -29,6 +29,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = model;
         model.OpenDumpRequested += OnOpenDumpRequested;
+        Closing += (_, _) => model.SaveLayout();
         Closed += (_, _) => model.Dispose();
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);

@@ -33,6 +33,9 @@
                 <Separator />
                 <MenuItem Header="E_xit" Click="OnExitClick" />
             </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Header="Restore _default layout" Command="{Binding RestoreDefaultLayoutCommand}" />
+            </MenuItem>
             <MenuItem Header="_Session">
                 <MenuItem Header="Probe _threads again" Command="{Binding Threads.ProbeCommand}" />
                 <MenuItem Header="Clear evaluation _history" Command="{Binding Evaluate.ClearHistoryCommand}" />

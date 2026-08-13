@@ -12,8 +12,9 @@ namespace PhoenixInspect.Desktop.Docking;
 /// holding the evaluation console beside the Call Stack and Threads tab group.
 /// </summary>
 /// <remarks>
-/// Layout persistence is deliberately out of scope for the preview — every launch starts from this one layout, and
-/// the panes themselves are non-closable singletons, so there is no hidden state to restore.
+/// The panes are non-closable singletons. <see cref="CreateLayout"/> builds the default arrangement;
+/// <see cref="TryCreateLayout"/> rebuilds a captured one, falling back to the default whenever the captured
+/// geometry cannot be honored exactly.
 /// </remarks>
 public sealed class InspectionDockFactory : Factory
 {
@@ -70,6 +71,183 @@ public sealed class InspectionDockFactory : Factory
 
     /// <summary>Gets the document dock that hosts the welcome page and resolved source tabs.</summary>
     public IDocumentDock? Documents { get; private set; }
+
+    /// <summary>
+    /// Rebuilds a layout from a captured snapshot, resolving pane ids to the singleton panes. Any snapshot the
+    /// rebuild cannot honor exactly — an unknown version, an unknown pane id, a pane placed twice, a missing
+    /// document dock — yields null so the caller starts from the default layout instead of a broken one; a pane
+    /// the snapshot merely omits is appended to the first compatible group, so a newly added pane stays visible
+    /// under an older layout file.
+    /// </summary>
+    /// <param name="snapshot">The captured layout, or null.</param>
+    /// <returns>The rebuilt root dock, or null when the snapshot cannot be honored.</returns>
+    public IRootDock? TryCreateLayout(DockLayoutSnapshot? snapshot)
+    {
+        if (snapshot is not { Version: DockLayoutSnapshot.CurrentVersion, Root: { } rootNode })
+        {
+            return null;
+        }
+
+        var panes = new Dictionary<string, IDockable>(StringComparer.Ordinal)
+        {
+            [callStack.Id] = callStack,
+            [threads.Id] = threads,
+            [locals.Id] = locals,
+            [watch.Id] = watch,
+            [immediate.Id] = immediate,
+            [modules.Id] = modules,
+            [processes.Id] = processes,
+            [heapSearch.Id] = heapSearch,
+            [evaluate.Id] = evaluate,
+            [resultPane.Id] = resultPane,
+            [welcome.Id] = welcome,
+        };
+        var placed = new HashSet<string>(StringComparer.Ordinal);
+        var toolGroups = new List<ToolDock>();
+        DocumentDock? documents = null;
+
+        IDockable? Rebuild(DockLayoutNode node)
+        {
+            switch (node.Kind)
+            {
+                case "Splitter":
+                    return new ProportionalDockSplitter { Id = node.Id ?? string.Empty };
+                case "Proportional":
+                {
+                    var band = new ProportionalDock
+                    {
+                        Id = node.Id ?? string.Empty,
+                        Orientation = Enum.TryParse<Orientation>(node.Orientation, out var orientation)
+                            ? orientation
+                            : Orientation.Horizontal,
+                        DockCapabilityPolicy = new DockCapabilityPolicy(),
+                    };
+                    if (node.Proportion is { } bandProportion)
+                    {
+                        band.Proportion = bandProportion;
+                    }
+
+                    var children = CreateList<IDockable>();
+                    foreach (var childNode in node.Children ?? [])
+                    {
+                        if (Rebuild(childNode) is not { } child)
+                        {
+                            return null;
+                        }
+
+                        children.Add(child);
+                    }
+
+                    band.VisibleDockables = children;
+                    return band;
+                }
+
+                case "Tools":
+                case "Documents":
+                {
+                    var members = CreateList<IDockable>();
+                    foreach (var paneNode in node.Children ?? [])
+                    {
+                        if (paneNode.Kind != "Pane" ||
+                            paneNode.Id is not { } paneId ||
+                            !panes.TryGetValue(paneId, out var pane) ||
+                            !placed.Add(paneId))
+                        {
+                            return null;
+                        }
+
+                        members.Add(pane);
+                    }
+
+                    IDock group = node.Kind == "Tools"
+                        ? new ToolDock
+                        {
+                            Id = node.Id ?? string.Empty,
+                            Alignment = Enum.TryParse<Alignment>(node.Alignment, out var alignment)
+                                ? alignment
+                                : Alignment.Unset,
+                            DockCapabilityPolicy = new DockCapabilityPolicy(),
+                        }
+                        : new DocumentDock
+                        {
+                            Id = node.Id ?? string.Empty,
+                            Title = "Documents",
+                            IsCollapsable = false,
+                            DockCapabilityPolicy = new DockCapabilityPolicy(),
+                        };
+                    if (node.Proportion is { } groupProportion)
+                    {
+                        group.Proportion = groupProportion;
+                    }
+
+                    group.VisibleDockables = members;
+                    group.ActiveDockable = node.ActiveId is { } activeId &&
+                        members.FirstOrDefault(member =>
+                            string.Equals(member.Id, activeId, StringComparison.Ordinal)) is { } active
+                        ? active
+                        : members.FirstOrDefault();
+                    if (group is ToolDock toolGroup)
+                    {
+                        toolGroups.Add(toolGroup);
+                    }
+                    else if (group is DocumentDock documentGroup)
+                    {
+                        // Two document docks would leave ShowDocument ambiguous; honor only the first.
+                        if (documents is not null)
+                        {
+                            return null;
+                        }
+
+                        documents = documentGroup;
+                    }
+
+                    return group;
+                }
+
+                default:
+                    return null;
+            }
+        }
+
+        if (Rebuild(rootNode) is not { } mainLayout || documents is null)
+        {
+            return null;
+        }
+
+        // A pane the snapshot omits — one added after the file was written, or one floating when it was
+        // captured — joins the first compatible group rather than disappearing.
+        foreach (var (id, pane) in panes)
+        {
+            if (placed.Contains(id))
+            {
+                continue;
+            }
+
+            if (pane is Tool && toolGroups.Count > 0)
+            {
+                toolGroups[0].VisibleDockables?.Add(pane);
+            }
+            else if (pane == welcome)
+            {
+                documents.VisibleDockables?.Add(pane);
+                documents.ActiveDockable ??= pane;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        Documents = documents;
+        var root = CreateRootDock();
+        root.Id = "Root";
+        root.IsCollapsable = false;
+        root.VisibleDockables = CreateList<IDockable>(mainLayout);
+        root.DefaultDockable = mainLayout;
+        root.ActiveDockable = mainLayout;
+        root.DockCapabilityPolicy = new DockCapabilityPolicy();
+        return root;
+    }
 
     /// <inheritdoc />
     public override IRootDock CreateLayout()
