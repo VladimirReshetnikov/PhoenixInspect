@@ -81,6 +81,9 @@ public static partial class ConstantExpressionEvaluator
         new(SystemRef("Action", "Action"), typeof(Action), true),
         new(SystemRef("Delegate", "Delegate"), typeof(Delegate), true),
         new(SystemRef("MulticastDelegate", "MulticastDelegate"), typeof(MulticastDelegate), true),
+        new(NamespacedRef("Rune", "System.Text"), typeof(System.Text.Rune), true),
+        new(NamespacedRef("CharUnicodeInfo", "System.Globalization"),
+            typeof(System.Globalization.CharUnicodeInfo), true),
     ];
 
     private static TypeRef NamespacedRef(string name, string typeNamespace) => new(
@@ -296,6 +299,12 @@ public static partial class ConstantExpressionEvaluator
                 return true;
             case "System.Text.RegularExpressions.Regex":
                 receiver = new TypeReceiver(TypeReceiverCategory.BclValue, default, Value: BclValueKind.Regex);
+                return true;
+            case "System.Text.Rune":
+                receiver = new TypeReceiver(TypeReceiverCategory.BclValue, default, Value: BclValueKind.Rune);
+                return true;
+            case "System.Globalization.CharUnicodeInfo":
+                receiver = new TypeReceiver(TypeReceiverCategory.CharUnicodeInfo, default);
                 return true;
             case "System.Guid":
                 receiver = new TypeReceiver(TypeReceiverCategory.BclValue, default, Value: BclValueKind.Guid);

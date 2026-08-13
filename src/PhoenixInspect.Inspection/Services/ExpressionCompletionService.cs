@@ -116,12 +116,13 @@ public static class ExpressionCompletionService
 
     private static readonly ImmutableArray<string> ModeledTypeNames =
     [
-        "Action", "Activator", "Array", "BigInteger", "Comparison", "DateOnly", "DateTime", "DateTimeKind",
-        "DateTimeOffset", "DayOfWeek", "Delegate", "Dictionary", "Encoding", "Enum", "Enumerable", "Func", "Guid",
-        "ICollection", "IComparable", "IDictionary", "IEnumerable", "IEquatable", "IList", "Int128",
-        "IReadOnlyCollection", "IReadOnlyDictionary", "IReadOnlyList", "KeyValuePair", "List", "Math",
-        "MemberTypes", "MulticastDelegate", "Nullable", "Object", "Predicate", "Regex", "RegexOptions", "String",
-        "StringComparison", "StringSplitOptions", "TimeOnly", "TimeSpan", "UInt128", "ValueType", "Version",
+        "Action", "Activator", "Array", "BigInteger", "CharUnicodeInfo", "Comparison", "DateOnly", "DateTime",
+        "DateTimeKind", "DateTimeOffset", "DayOfWeek", "Delegate", "Dictionary", "Encoding", "Enum", "Enumerable",
+        "Func", "Guid", "ICollection", "IComparable", "IDictionary", "IEnumerable", "IEquatable", "IList",
+        "Int128", "IReadOnlyCollection", "IReadOnlyDictionary", "IReadOnlyList", "KeyValuePair", "List", "Math",
+        "MemberTypes", "MulticastDelegate", "Nullable", "Object", "Predicate", "Regex", "RegexOptions", "Rune",
+        "String", "StringComparison", "StringSplitOptions", "TimeOnly", "TimeSpan", "UInt128", "UnicodeCategory",
+        "ValueType", "Version",
     ];
 
     // Members mirror the evaluator's dispatch tables; a member that is a deliberate typed stop (Now, NewGuid,
@@ -175,6 +176,14 @@ public static class ExpressionCompletionService
             ["Activator"] = ["CreateInstance"],
             ["Delegate"] = ["Combine", "CreateDelegate", "Remove", "RemoveAll"],
             ["MulticastDelegate"] = ["Combine", "CreateDelegate", "Remove", "RemoveAll"],
+            ["Rune"] =
+            [
+                "GetNumericValue", "GetRuneAt", "GetUnicodeCategory", "IsControl", "IsDigit", "IsLetter",
+                "IsLetterOrDigit", "IsLower", "IsNumber", "IsPunctuation", "IsSeparator", "IsSymbol", "IsUpper",
+                "IsValid", "IsWhiteSpace", "ReplacementChar", "ToLowerInvariant", "ToUpperInvariant",
+            ],
+            ["CharUnicodeInfo"] =
+            ["GetDecimalDigitValue", "GetDigitValue", "GetNumericValue", "GetUnicodeCategory"],
             ["MemberTypes"] =
             ["All", "Constructor", "Custom", "Event", "Field", "Method", "NestedType", "Property", "TypeInfo"],
             ["RegexOptions"] =

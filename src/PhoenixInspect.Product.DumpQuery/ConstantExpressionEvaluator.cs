@@ -2554,6 +2554,8 @@ public static partial class ConstantExpressionEvaluator
                 return MemberUnsupported($"Activator.{name} via reflection");
             case TypeReceiverCategory.SystemDelegate:
                 return DispatchDelegateStatic(name, arguments);
+            case TypeReceiverCategory.CharUnicodeInfo:
+                return DispatchCharUnicodeInfo(name, arguments);
             default:
                 return DispatchNumericTypeMethod(typeReceiver.Numeric, name, arguments);
         }
@@ -2600,9 +2602,7 @@ public static partial class ConstantExpressionEvaluator
             OperandKind.Sequence => DispatchSequence(receiver, name, arguments),
             OperandKind.Temporal => DispatchTemporalMethod(receiver, name, arguments),
             OperandKind.BclValue => DispatchBclValueMethod(receiver, name, arguments),
-            OperandKind.Char => name == "ToString" && arguments.Count == 0
-                ? FoldOutcome.Folded(Operand.FromString(receiver.Char.ToString()))
-                : MemberUnsupported(name),
+            OperandKind.Char => DispatchCharInstanceMethod(receiver.Char, name, arguments),
             OperandKind.Boolean => name == "ToString" && arguments.Count == 0
                 ? FoldOutcome.Folded(Operand.FromString(receiver.Boolean ? "True" : "False"))
                 : MemberUnsupported(name),
@@ -2692,56 +2692,6 @@ public static partial class ConstantExpressionEvaluator
         }
     }
 
-    private static FoldOutcome DispatchStaticChar(string name, List<Operand> arguments)
-    {
-        if (name is "ToUpperInvariant" or "ToLowerInvariant" && arguments is [{ Kind: OperandKind.Char } mapped])
-        {
-            return FoldOutcome.Folded(Operand.FromChar(name == "ToUpperInvariant"
-                ? char.ToUpperInvariant(mapped.Char)
-                : char.ToLowerInvariant(mapped.Char)));
-        }
-
-        if (name is "ToUpper" or "ToLower")
-        {
-            return CultureSensitive(name, $"char.{name}Invariant");
-        }
-
-        if (arguments is not [{ Kind: OperandKind.Char } single])
-        {
-            return MemberUnsupported(name);
-        }
-
-        var value = single.Char;
-        bool? predicate = name switch
-        {
-            "IsDigit" => char.IsDigit(value),
-            "IsLetter" => char.IsLetter(value),
-            "IsLetterOrDigit" => char.IsLetterOrDigit(value),
-            "IsWhiteSpace" => char.IsWhiteSpace(value),
-            "IsUpper" => char.IsUpper(value),
-            "IsLower" => char.IsLower(value),
-            "IsPunctuation" => char.IsPunctuation(value),
-            "IsSymbol" => char.IsSymbol(value),
-            "IsSeparator" => char.IsSeparator(value),
-            "IsControl" => char.IsControl(value),
-            "IsNumber" => char.IsNumber(value),
-            "IsSurrogate" => char.IsSurrogate(value),
-            "IsHighSurrogate" => char.IsHighSurrogate(value),
-            "IsLowSurrogate" => char.IsLowSurrogate(value),
-            "IsAscii" => char.IsAscii(value),
-            "IsAsciiDigit" => char.IsAsciiDigit(value),
-            "IsAsciiLetter" => char.IsAsciiLetter(value),
-            "IsAsciiLetterOrDigit" => char.IsAsciiLetterOrDigit(value),
-            "IsAsciiLetterLower" => char.IsAsciiLetterLower(value),
-            "IsAsciiLetterUpper" => char.IsAsciiLetterUpper(value),
-            "IsAsciiHexDigit" => char.IsAsciiHexDigit(value),
-            _ => null,
-        };
-        return predicate is { } result
-            ? FoldOutcome.Folded(Operand.FromBoolean(result))
-            : MemberUnsupported(name);
-    }
-
     private static FoldOutcome DispatchInstanceString(string receiver, string name, List<Operand> arguments)
     {
         try
@@ -2750,6 +2700,8 @@ public static partial class ConstantExpressionEvaluator
             {
                 case "Length":
                     return MemberUnsupported(name);
+                case "EnumerateRunes" when arguments.Count == 0:
+                    return CreateRuneSequence(receiver);
                 case "ToString" when arguments.Count == 0:
                     return FoldOutcome.Folded(Operand.FromString(receiver));
                 case "ToUpperInvariant" when arguments.Count == 0:

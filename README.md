@@ -114,6 +114,13 @@ Everything below is backed by executable tests over real dumps, and nothing is l
 - **Deterministic BCL values.** `Guid` and `Version` with fixed-grammar construction and parsing, comparisons,
   and invariant formats — `Guid.Parse(root.Batch.Id) == new Guid("…")`-style checks without leaving the
   evidence domain; `Guid.NewGuid()` is a typed stop, because a freshly generated value is not evidence.
+- **The complete Unicode character surface.** Every `char` static in both spellings —
+  `char.IsDigit("a5b", 1)`, `GetUnicodeCategory` with the `UnicodeCategory` enum, numeric values, the ASCII
+  family, UTF-32 conversions, surrogate pairing — plus `CharUnicodeInfo` and first-class `System.Text.Rune`
+  values: construction from chars, scalars, or surrogate pairs, the explicit `(Rune)`/`(int)`/`(char)`
+  conversions, classification and invariant case mapping, ordering, and `"text".EnumerateRunes()` as a
+  LINQ-composable sequence. All answers read the pinned runtime's Unicode tables — fixed data, never culture
+  state.
 - **Text encodings and regular expressions.** The `System.Text.Encoding` singletons with exact transcoding —
   `Encoding.UTF8.GetBytes(root.Batch.Id)`, `GetString`, `GetByteCount`, `Encoding.Convert` — and the full
   `Regex` family with BCL semantics: statics and instances, `Match`/`Groups`/`Captures` (named and numbered),

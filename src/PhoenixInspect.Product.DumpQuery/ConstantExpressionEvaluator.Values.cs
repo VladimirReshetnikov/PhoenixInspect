@@ -59,13 +59,16 @@ public static partial class ConstantExpressionEvaluator
 
         /// <summary>A <see cref="System.Reflection.ParameterInfo"/> of the modeled reflection universe.</summary>
         ParameterInfo,
+
+        /// <summary>A <see cref="System.Text.Rune"/> Unicode scalar value.</summary>
+        Rune,
     }
 
     /// <summary>The namespace each BCL value kind's runtime type lives in.</summary>
     private static string BclValueNamespaceOf(BclValueKind kind) => kind switch
     {
         BclValueKind.Guid or BclValueKind.Version => "System",
-        BclValueKind.Encoding => "System.Text",
+        BclValueKind.Encoding or BclValueKind.Rune => "System.Text",
         BclValueKind.MethodInfo or BclValueKind.ConstructorInfo or BclValueKind.PropertyInfo or
             BclValueKind.FieldInfo or BclValueKind.ParameterInfo => "System.Reflection",
         _ => "System.Text.RegularExpressions",
@@ -124,6 +127,11 @@ public static partial class ConstantExpressionEvaluator
         if (kind == BclValueKind.Regex)
         {
             return FoldRegexCreation(arguments);
+        }
+
+        if (kind == BclValueKind.Rune)
+        {
+            return ConstructRune(arguments);
         }
 
         try
@@ -203,6 +211,9 @@ public static partial class ConstantExpressionEvaluator
             case "Regex":
                 kind = BclValueKind.Regex;
                 return true;
+            case "Rune":
+                kind = BclValueKind.Rune;
+                return true;
             default:
                 return false;
         }
@@ -216,6 +227,8 @@ public static partial class ConstantExpressionEvaluator
             (BclValueKind.Guid, "Empty") => BclValue(BclValueKind.Guid, Guid.Empty),
             (BclValueKind.Guid, "NewGuid") => Nondeterministic("Guid.NewGuid"),
             (BclValueKind.Encoding, _) => DispatchEncodingStaticProperty(member),
+            (BclValueKind.Rune, "ReplacementChar") =>
+                BclValue(BclValueKind.Rune, System.Text.Rune.ReplacementChar),
             _ => MemberUnsupported($"{kind}.{member}"),
         };
 
@@ -229,6 +242,11 @@ public static partial class ConstantExpressionEvaluator
         if (kind == BclValueKind.Regex)
         {
             return DispatchRegexStaticMethod(name, arguments);
+        }
+
+        if (kind == BclValueKind.Rune)
+        {
+            return DispatchRuneStaticMethod(name, arguments);
         }
 
         try
@@ -400,7 +418,7 @@ public static partial class ConstantExpressionEvaluator
         comparison = 0;
         if (left.Kind != OperandKind.BclValue || right.Kind != OperandKind.BclValue ||
             left.BclValueKind != right.BclValueKind ||
-            left.BclValueKind is not (BclValueKind.Guid or BclValueKind.Version))
+            left.BclValueKind is not (BclValueKind.Guid or BclValueKind.Version or BclValueKind.Rune))
         {
             return false;
         }
@@ -408,6 +426,7 @@ public static partial class ConstantExpressionEvaluator
         comparison = left.BclValueKind switch
         {
             BclValueKind.Guid => ((Guid)left.Box!).CompareTo((Guid)right.Box!),
+            BclValueKind.Rune => ((System.Text.Rune)left.Box!).CompareTo((System.Text.Rune)right.Box!),
             _ => ((Version)left.Box!).CompareTo((Version)right.Box!),
         };
         return true;

@@ -37,6 +37,7 @@ public static partial class ConstantExpressionEvaluator
     private static string RenderTextValue(Operand operand) => operand.BclValueKind switch
     {
         BclValueKind.Encoding => ((Encoding)operand.Box!).WebName,
+        BclValueKind.Rune => ((Rune)operand.Box!).ToString(),
         BclValueKind.Regex => ((Regex)operand.Box!).ToString(),
         BclValueKind.Match => ((Match)operand.Box!).Value,
         BclValueKind.Group => ((Group)operand.Box!).Value,
@@ -435,6 +436,8 @@ public static partial class ConstantExpressionEvaluator
         {
             case BclValueKind.Encoding:
                 return DispatchEncodingProperty((Encoding)receiver.Box!, member);
+            case BclValueKind.Rune:
+                return DispatchRuneProperty((Rune)receiver.Box!, member);
             case BclValueKind.Regex:
                 var regex = (Regex)receiver.Box!;
                 return member switch
@@ -499,6 +502,8 @@ public static partial class ConstantExpressionEvaluator
         {
             case BclValueKind.Encoding:
                 return DispatchEncodingMethod((Encoding)receiver.Box!, name, arguments);
+            case BclValueKind.Rune:
+                return DispatchRuneMethod((Rune)receiver.Box!, name, arguments);
             case BclValueKind.Regex:
                 return DispatchRegexMethod((Regex)receiver.Box!, name, arguments);
             case BclValueKind.Match:

@@ -866,6 +866,21 @@ public static partial class ConstantExpressionEvaluator
                 return ConvertToDelegate(delegateType!, cast.Expression, context);
             }
 
+            // '(Rune) 'a'' and '(Rune) 0x1F600' are the struct's explicit conversions, not reference casts.
+            var castTypeName = cast.Type switch
+            {
+                IdentifierNameSyntax castIdentifier => castIdentifier.Identifier.ValueText,
+                QualifiedNameSyntax castQualified when TryReadDottedName(castQualified, out var dotted) => dotted,
+                _ => null,
+            };
+            if (castTypeName is "Rune" or "System.Text.Rune")
+            {
+                var runeSource = Fold(cast.Expression, context);
+                return runeSource.Disposition == FoldDisposition.Folded
+                    ? FoldRuneCast(runeSource.Operand)
+                    : runeSource;
+            }
+
             // A non-enum modeled type is a reference conversion: '(object) x' upcasts, '(string)(object) x'
             // downcasts against the runtime identity. Enum targets keep their numeric-conversion path below.
             if (TryResolveTypeRef(cast.Type, context, out var referenceTarget, out _) &&
@@ -891,6 +906,13 @@ public static partial class ConstantExpressionEvaluator
                 : FoldOutcome.Error(
                     OperandTypeCode,
                     "A null value converts only to a nullable or reference target type.");
+        }
+
+        // A Rune converts outward through its scalar value: '(int) rune' and '(char) rune' are the struct's
+        // explicit conversions, computed by the ordinary numeric conversion below.
+        if (value is { Kind: OperandKind.BclValue, BclValueKind: BclValueKind.Rune })
+        {
+            value = Operand.FromInt32(((System.Text.Rune)value.Box!).Value);
         }
 
         switch (target)
@@ -946,6 +968,7 @@ public static partial class ConstantExpressionEvaluator
         SystemArray,
         Activator,
         SystemDelegate,
+        CharUnicodeInfo,
     }
 
     private readonly record struct TypeReceiver(
@@ -1002,6 +1025,36 @@ public static partial class ConstantExpressionEvaluator
             (MemberTypesFullName, "Custom") => 64,
             (MemberTypesFullName, "NestedType") => 128,
             (MemberTypesFullName, "All") => 191,
+            (UnicodeCategoryFullName, "UppercaseLetter") => 0,
+            (UnicodeCategoryFullName, "LowercaseLetter") => 1,
+            (UnicodeCategoryFullName, "TitlecaseLetter") => 2,
+            (UnicodeCategoryFullName, "ModifierLetter") => 3,
+            (UnicodeCategoryFullName, "OtherLetter") => 4,
+            (UnicodeCategoryFullName, "NonSpacingMark") => 5,
+            (UnicodeCategoryFullName, "SpacingCombiningMark") => 6,
+            (UnicodeCategoryFullName, "EnclosingMark") => 7,
+            (UnicodeCategoryFullName, "DecimalDigitNumber") => 8,
+            (UnicodeCategoryFullName, "LetterNumber") => 9,
+            (UnicodeCategoryFullName, "OtherNumber") => 10,
+            (UnicodeCategoryFullName, "SpaceSeparator") => 11,
+            (UnicodeCategoryFullName, "LineSeparator") => 12,
+            (UnicodeCategoryFullName, "ParagraphSeparator") => 13,
+            (UnicodeCategoryFullName, "Control") => 14,
+            (UnicodeCategoryFullName, "Format") => 15,
+            (UnicodeCategoryFullName, "Surrogate") => 16,
+            (UnicodeCategoryFullName, "PrivateUse") => 17,
+            (UnicodeCategoryFullName, "ConnectorPunctuation") => 18,
+            (UnicodeCategoryFullName, "DashPunctuation") => 19,
+            (UnicodeCategoryFullName, "OpenPunctuation") => 20,
+            (UnicodeCategoryFullName, "ClosePunctuation") => 21,
+            (UnicodeCategoryFullName, "InitialQuotePunctuation") => 22,
+            (UnicodeCategoryFullName, "FinalQuotePunctuation") => 23,
+            (UnicodeCategoryFullName, "OtherPunctuation") => 24,
+            (UnicodeCategoryFullName, "MathSymbol") => 25,
+            (UnicodeCategoryFullName, "CurrencySymbol") => 26,
+            (UnicodeCategoryFullName, "ModifierSymbol") => 27,
+            (UnicodeCategoryFullName, "OtherSymbol") => 28,
+            (UnicodeCategoryFullName, "OtherNotAssigned") => 29,
             _ => null,
         };
         return value is { } resolved
@@ -1166,6 +1219,15 @@ public static partial class ConstantExpressionEvaluator
             case "Delegate" or "MulticastDelegate":
                 receiver = new TypeReceiver(TypeReceiverCategory.SystemDelegate, default);
                 return true;
+            case "Rune":
+                receiver = new TypeReceiver(TypeReceiverCategory.BclValue, default, Value: BclValueKind.Rune);
+                return true;
+            case "CharUnicodeInfo":
+                receiver = new TypeReceiver(TypeReceiverCategory.CharUnicodeInfo, default);
+                return true;
+            case "UnicodeCategory":
+                receiver = new TypeReceiver(TypeReceiverCategory.KnownEnum, default, UnicodeCategoryFullName);
+                return true;
             case "MemberTypes":
                 receiver = new TypeReceiver(TypeReceiverCategory.KnownEnum, default, MemberTypesFullName);
                 return true;
@@ -1223,6 +1285,8 @@ public static partial class ConstantExpressionEvaluator
                 return MemberUnsupported($"Activator.{member}");
             case TypeReceiverCategory.SystemDelegate:
                 return MemberUnsupported($"Delegate.{member}");
+            case TypeReceiverCategory.CharUnicodeInfo:
+                return MemberUnsupported($"CharUnicodeInfo.{member}");
             default:
                 return DispatchNumericTypeStatic(receiver.Numeric, member);
         }
