@@ -114,6 +114,13 @@ Everything below is backed by executable tests over real dumps, and nothing is l
 - **Deterministic BCL values.** `Guid` and `Version` with fixed-grammar construction and parsing, comparisons,
   and invariant formats — `Guid.Parse(root.Batch.Id) == new Guid("…")`-style checks without leaving the
   evidence domain; `Guid.NewGuid()` is a typed stop, because a freshly generated value is not evidence.
+- **Text encodings and regular expressions.** The `System.Text.Encoding` singletons with exact transcoding —
+  `Encoding.UTF8.GetBytes(root.Batch.Id)`, `GetString`, `GetByteCount`, `Encoding.Convert` — and the full
+  `Regex` family with BCL semantics: statics and instances, `Match`/`Groups`/`Captures` (named and numbered),
+  `Replace`, `Split`, `Escape`, and match collections that compose with the LINQ surface
+  (`Regex.Matches(root.Log, @"\d+").Select(m => m.Value)`). Case-insensitive matching without
+  `RegexOptions.CultureInvariant` is a typed culture stop, and a catastrophically backtracking pattern stops
+  with a fixed one-second budget named instead of hanging the prompt.
 - **Full enum semantics, `typeof`, and the `System.Enum` API.** Casts both ways, the flags algebra
   (`a \| b`, `~x`, `HasFlag`), enum formats, `typeof(...)` references, and
   `Enum.GetNames`/`GetValues`/`IsDefined`/`Parse` in generic and `typeof` spellings — with enum shapes read
@@ -124,6 +131,15 @@ Everything below is backed by executable tests over real dumps, and nothing is l
   statics, instance members like `Rank`/`GetValue`/`GetUpperBound`, and the deterministic `Type` surface
   (`IsValueType`, `GetElementType`, `MakeArrayType`, `GetEnumNames`). Mutators such as `Array.Sort` are typed
   stops: the evaluator observes evidence, it never rearranges it.
+- **Reflection over the modeled universe.** Public member info queries on `typeof(...)` references —
+  `GetMethods()`, `GetProperty("Length")`, `GetConstructors()` — return read-only `MethodInfo`/`PropertyInfo`/
+  `FieldInfo`/`ParameterInfo` values that compose with LINQ
+  (`typeof(Math).GetMethods().Where(m => m.GetParameters().Length == 2)`), plus `GetType()` on any folded value
+  and `Activator.CreateInstance` in both spellings. Invocation routes through the evaluator's own dispatch
+  tables, so `GetMethod("Sqrt").Invoke(null, new object[] { 2.0 })` computes exactly what `Math.Sqrt(2.0)`
+  folds to — and `Invoke` on a culture-sensitive or non-deterministic member hits the same typed stop as the
+  direct spelling; reflection can never widen what evaluates. Member lists are canonically ordered, mutation
+  (`SetValue`) is refused, and info reads are metadata facts of the pinned analysis runtime.
 - **Type relationships and generic construction.** The runtime's exact assignability relation —
   `IsAssignableFrom`/`IsAssignableTo` with base chains, `Nullable<T>` lifting, array covariance, implemented
   interfaces, and declared variance — plus `IsSubclassOf`, `BaseType`, `IsInstanceOfType`, and generic types in

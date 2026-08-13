@@ -116,11 +116,12 @@ public static class ExpressionCompletionService
 
     private static readonly ImmutableArray<string> ModeledTypeNames =
     [
-        "Array", "BigInteger", "DateOnly", "DateTime", "DateTimeKind", "DateTimeOffset", "DayOfWeek", "Dictionary",
-        "Enum", "Enumerable", "Guid", "ICollection", "IComparable", "IDictionary", "IEnumerable", "IEquatable",
-        "IList", "IReadOnlyCollection", "IReadOnlyDictionary", "IReadOnlyList", "Int128", "KeyValuePair", "List",
-        "Math", "Nullable", "Object", "String", "StringComparison", "StringSplitOptions", "TimeOnly", "TimeSpan",
-        "UInt128", "ValueType", "Version",
+        "Activator", "Array", "BigInteger", "DateOnly", "DateTime", "DateTimeKind", "DateTimeOffset", "DayOfWeek",
+        "Dictionary", "Encoding", "Enum", "Enumerable", "Guid", "ICollection", "IComparable", "IDictionary",
+        "IEnumerable", "IEquatable", "IList", "IReadOnlyCollection", "IReadOnlyDictionary", "IReadOnlyList",
+        "Int128", "KeyValuePair", "List", "Math", "MemberTypes", "Nullable", "Object", "Regex", "RegexOptions",
+        "String", "StringComparison", "StringSplitOptions", "TimeOnly", "TimeSpan", "UInt128", "ValueType",
+        "Version",
     ];
 
     // Members mirror the evaluator's dispatch tables; a member that is a deliberate typed stop (Now, NewGuid,
@@ -165,6 +166,20 @@ public static class ExpressionCompletionService
             ["TimeOnly"] = ["FromDateTime", "FromTimeSpan", "MaxValue", "MinValue", "Parse"],
             ["Guid"] = ["Empty", "NewGuid", "Parse", "ParseExact"],
             ["Version"] = ["Parse"],
+            ["Encoding"] =
+            [
+                "ASCII", "BigEndianUnicode", "Convert", "Default", "GetEncoding", "Latin1", "Unicode", "UTF32",
+                "UTF8",
+            ],
+            ["Regex"] = ["Count", "Escape", "IsMatch", "Match", "Matches", "Replace", "Split", "Unescape"],
+            ["Activator"] = ["CreateInstance"],
+            ["MemberTypes"] =
+            ["All", "Constructor", "Custom", "Event", "Field", "Method", "NestedType", "Property", "TypeInfo"],
+            ["RegexOptions"] =
+            [
+                "Compiled", "CultureInvariant", "ECMAScript", "ExplicitCapture", "IgnoreCase",
+                "IgnorePatternWhitespace", "Multiline", "NonBacktracking", "None", "RightToLeft", "Singleline",
+            ],
             ["int"] = ["MaxValue", "MinValue"],
             ["uint"] = ["MaxValue", "MinValue"],
             ["long"] = ["MaxValue", "MinValue"],

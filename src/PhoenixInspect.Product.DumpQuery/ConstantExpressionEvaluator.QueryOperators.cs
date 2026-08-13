@@ -29,6 +29,11 @@ public static partial class ConstantExpressionEvaluator
             case OperandKind.Grouping:
                 payload = PayloadOfGrouping(operand).Items;
                 return true;
+            case OperandKind.BclValue when IsRegexCollection(operand.BclValueKind):
+                // A match, group, or capture collection is a finished sequence of values, so the whole LINQ
+                // surface composes over it exactly as over an array.
+                payload = MaterializeRegexCollection(operand);
+                return true;
             default:
                 payload = null!;
                 return false;

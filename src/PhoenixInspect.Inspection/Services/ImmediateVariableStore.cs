@@ -13,9 +13,11 @@ namespace PhoenixInspect.Inspection;
 /// </summary>
 /// <remarks>
 /// The store holds constant values only, because that is the whole domain the immediate window evaluates: a
-/// variable is a named, reusable constant, not a live object. A declaration's optional type is checked against the
-/// folded value's kind so <c>int x = "hi"</c> is rejected rather than silently stored, and a value outside the
-/// operand domain — a sequence or a wide numeric — is reported as unsupported rather than truncated.
+/// variable is a named, reusable constant, not a live object. The stored domains span the evaluator's operand
+/// carriers — scalars, every numeric kind, date and time values, deterministic BCL values such as Guid and the
+/// Regex family, and sequences of those elements. A declaration's optional type is checked against the folded
+/// value's kind so <c>int x = "hi"</c> is rejected rather than silently stored, and a value outside the operand
+/// domain — a tuple or an anonymous object — is reported as unsupported rather than truncated.
 /// </remarks>
 public sealed class ImmediateVariableStore
 {
@@ -98,23 +100,39 @@ public sealed class ImmediateVariableStore
     private static bool TypeMatchesValue(string declaredType, ConstantExpressionEvaluation evaluation)
     {
         // The declared type is matched by its C# keyword or its BCL short or full name against the folded kind, so
-        // 'int', 'Int32', and 'System.Int32' all accept an Int32 value while 'int x = "s"' is refused.
-        var normalized = declaredType switch
+        // 'int', 'Int32', and 'System.Int32' all accept an Int32 value while 'int x = "s"' is refused. An array
+        // type normalizes elementwise, so 'byte[]' accepts a Byte[] sequence.
+        var arraySuffix = string.Empty;
+        var elementType = declaredType;
+        while (elementType.EndsWith("[]", StringComparison.Ordinal))
+        {
+            arraySuffix += "[]";
+            elementType = elementType[..^2];
+        }
+
+        var normalized = elementType switch
         {
             "int" => "Int32",
+            "uint" => "UInt32",
             "long" => "Int64",
+            "ulong" => "UInt64",
+            "short" => "Int16",
+            "ushort" => "UInt16",
+            "byte" => "Byte",
+            "sbyte" => "SByte",
             "double" => "Double",
             "float" => "Single",
+            "decimal" => "Decimal",
             "bool" => "Boolean",
             "char" => "Char",
             "string" => "String",
-            _ => declaredType,
+            _ => elementType,
         };
         var trimmed = normalized.Contains('.', StringComparison.Ordinal)
             ? normalized[(normalized.LastIndexOf('.') + 1)..]
             : normalized;
-        return string.Equals(trimmed, evaluation.StoredValueTypeName, StringComparison.Ordinal) ||
-            (evaluation.Kind == ConstantValueKind.EnumMember &&
+        return string.Equals(trimmed + arraySuffix, evaluation.StoredValueTypeName, StringComparison.Ordinal) ||
+            (evaluation.Kind == ConstantValueKind.EnumMember && arraySuffix.Length == 0 &&
                 string.Equals(normalized, evaluation.EnumTypeFullName, StringComparison.Ordinal));
     }
 

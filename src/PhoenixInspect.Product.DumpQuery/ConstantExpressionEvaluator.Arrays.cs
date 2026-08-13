@@ -27,6 +27,7 @@ public static partial class ConstantExpressionEvaluator
         public Operand DefaultElement => Kind switch
         {
             OperandKind.String => Operand.Null(),
+            OperandKind.Null => Operand.Null(),
             OperandKind.Char => Operand.FromChar('\0'),
             OperandKind.Boolean => Operand.FromBoolean(false),
             OperandKind.Int32 => Operand.FromInt32(0),
@@ -61,6 +62,15 @@ public static partial class ConstantExpressionEvaluator
     {
         descriptor = default;
         error = null;
+
+        // 'object[]' is the reflection argument carrier: its elements keep their own folded domains, so a mixed
+        // argument list like 'new object[] { 1, "a" }' passes to Invoke without a common-element conversion.
+        if (type is PredefinedTypeSyntax { Keyword.RawKind: (int)SyntaxKind.ObjectKeyword })
+        {
+            descriptor = new ElementDescriptor(OperandKind.Null, default, default, default, null, "Object");
+            return true;
+        }
+
         if (TryResolveCastType(type, out var castTarget, out var numericKind, out var nullable) && !nullable)
         {
             descriptor = castTarget switch
@@ -188,6 +198,24 @@ public static partial class ConstantExpressionEvaluator
                 return elementKnown
                     ? CreateSequence(element.Payload([]))
                     : FoldOutcome.NotArithmetic();
+            }
+
+            // An object[] initializer skips element inference: each element keeps its own folded domain.
+            if (elementKnown && element.Kind == OperandKind.Null)
+            {
+                var mixed = ImmutableArray.CreateBuilder<Operand>(initializer.Expressions.Count);
+                foreach (var expression in initializer.Expressions)
+                {
+                    var folded = Fold(expression, context);
+                    if (folded.Disposition != FoldDisposition.Folded)
+                    {
+                        return folded;
+                    }
+
+                    mixed.Add(folded.Operand);
+                }
+
+                return CreateSequence(element.Payload(mixed.MoveToImmutable()));
             }
 
             // A non-empty initializer infers exactly as the implicit form does; the declared element type is

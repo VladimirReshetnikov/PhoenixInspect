@@ -158,6 +158,9 @@ public static partial class ConstantExpressionEvaluator
         NumericKind.UInt64 or NumericKind.UIntPtr => (object)(ulong)value,
         NumericKind.Int128 => (object)(Int128)value,
         NumericKind.UInt128 => (object)(UInt128)value,
+        NumericKind.Single => (object)(float)value,
+        NumericKind.Double => (object)(double)value,
+        NumericKind.Decimal => (object)(decimal)value,
         _ => value,
     };
 
@@ -927,6 +930,7 @@ public static partial class ConstantExpressionEvaluator
         BclValue,
         SystemEnum,
         SystemArray,
+        Activator,
     }
 
     private readonly record struct TypeReceiver(
@@ -963,6 +967,26 @@ public static partial class ConstantExpressionEvaluator
             ("System.DayOfWeek", "Thursday") => 4,
             ("System.DayOfWeek", "Friday") => 5,
             ("System.DayOfWeek", "Saturday") => 6,
+            (RegexOptionsFullName, "None") => 0,
+            (RegexOptionsFullName, "IgnoreCase") => 1,
+            (RegexOptionsFullName, "Multiline") => 2,
+            (RegexOptionsFullName, "ExplicitCapture") => 4,
+            (RegexOptionsFullName, "Compiled") => 8,
+            (RegexOptionsFullName, "Singleline") => 16,
+            (RegexOptionsFullName, "IgnorePatternWhitespace") => 32,
+            (RegexOptionsFullName, "RightToLeft") => 64,
+            (RegexOptionsFullName, "ECMAScript") => 256,
+            (RegexOptionsFullName, "CultureInvariant") => 512,
+            (RegexOptionsFullName, "NonBacktracking") => 1024,
+            (MemberTypesFullName, "Constructor") => 1,
+            (MemberTypesFullName, "Event") => 2,
+            (MemberTypesFullName, "Field") => 4,
+            (MemberTypesFullName, "Method") => 8,
+            (MemberTypesFullName, "Property") => 16,
+            (MemberTypesFullName, "TypeInfo") => 32,
+            (MemberTypesFullName, "Custom") => 64,
+            (MemberTypesFullName, "NestedType") => 128,
+            (MemberTypesFullName, "All") => 191,
             _ => null,
         };
         return value is { } resolved
@@ -1030,6 +1054,26 @@ public static partial class ConstantExpressionEvaluator
             }:
                 receiver = new TypeReceiver(TypeReceiverCategory.Enumerable, default);
                 return true;
+            case MemberAccessExpressionSyntax dotted
+                when TryReadQualifiedName(dotted, out var dottedParts, out var dottedAlias) && dottedAlias is null:
+                // The System.Text types resolve by their full dotted spelling, mirroring the shortcuts above.
+                switch (string.Join('.', dottedParts))
+                {
+                    case "System.Text.Encoding":
+                        receiver = new TypeReceiver(
+                            TypeReceiverCategory.BclValue, default, Value: BclValueKind.Encoding);
+                        return true;
+                    case "System.Text.RegularExpressions.Regex":
+                        receiver = new TypeReceiver(
+                            TypeReceiverCategory.BclValue, default, Value: BclValueKind.Regex);
+                        return true;
+                    case "System.Text.RegularExpressions.RegexOptions":
+                        receiver = new TypeReceiver(TypeReceiverCategory.KnownEnum, default, RegexOptionsFullName);
+                        return true;
+                    default:
+                        return false;
+                }
+
             default:
                 return false;
         }
@@ -1086,11 +1130,26 @@ public static partial class ConstantExpressionEvaluator
             case "Version":
                 receiver = new TypeReceiver(TypeReceiverCategory.BclValue, default, Value: BclValueKind.Version);
                 return true;
+            case "Encoding":
+                receiver = new TypeReceiver(TypeReceiverCategory.BclValue, default, Value: BclValueKind.Encoding);
+                return true;
+            case "Regex":
+                receiver = new TypeReceiver(TypeReceiverCategory.BclValue, default, Value: BclValueKind.Regex);
+                return true;
+            case "RegexOptions":
+                receiver = new TypeReceiver(TypeReceiverCategory.KnownEnum, default, RegexOptionsFullName);
+                return true;
             case "Enum":
                 receiver = new TypeReceiver(TypeReceiverCategory.SystemEnum, default);
                 return true;
             case "Array":
                 receiver = new TypeReceiver(TypeReceiverCategory.SystemArray, default);
+                return true;
+            case "Activator":
+                receiver = new TypeReceiver(TypeReceiverCategory.Activator, default);
+                return true;
+            case "MemberTypes":
+                receiver = new TypeReceiver(TypeReceiverCategory.KnownEnum, default, MemberTypesFullName);
                 return true;
             default:
                 var target = CastTarget.Numeric;
@@ -1142,6 +1201,8 @@ public static partial class ConstantExpressionEvaluator
                 return member == "MaxLength"
                     ? FoldOutcome.Folded(Operand.FromInt32(ArrayMaxLength))
                     : MemberUnsupported($"Array.{member}");
+            case TypeReceiverCategory.Activator:
+                return MemberUnsupported($"Activator.{member}");
             default:
                 return DispatchNumericTypeStatic(receiver.Numeric, member);
         }

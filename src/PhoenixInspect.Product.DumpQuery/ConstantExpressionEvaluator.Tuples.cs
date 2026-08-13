@@ -268,6 +268,8 @@ public static partial class ConstantExpressionEvaluator
                     ChildOf("Key", grouping.Key),
                     .. ChildrenOf(Operand.FromSequence(grouping.Items)),
                 ];
+            case OperandKind.BclValue when IsRegexCollection(operand.BclValueKind):
+                return ChildrenOf(Operand.FromSequence(MaterializeRegexCollection(operand)));
             default:
                 return [];
         }

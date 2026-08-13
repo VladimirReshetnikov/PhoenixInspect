@@ -8,7 +8,7 @@ namespace PhoenixInspect.Product.DumpQuery;
 /// Further deterministic BCL value types: <see cref="Guid"/> and <see cref="Version"/>. Their parsing grammars are
 /// fixed and culture-independent, their comparisons total and deterministic, and their text forms invariant, so
 /// they fold with exact BCL semantics. The parts that are not evidence — <see cref="Guid.NewGuid"/> — are typed
-/// stops, never evaluated.
+/// stops, never evaluated. The text-family kinds — Encoding and the Regex family — route to their own partial.
 /// </content>
 public static partial class ConstantExpressionEvaluator
 {
@@ -20,14 +20,65 @@ public static partial class ConstantExpressionEvaluator
 
         /// <summary>A <see cref="System.Version"/> value.</summary>
         Version,
+
+        /// <summary>A <see cref="System.Text.Encoding"/> singleton.</summary>
+        Encoding,
+
+        /// <summary>A <see cref="System.Text.RegularExpressions.Regex"/> value.</summary>
+        Regex,
+
+        /// <summary>A <see cref="System.Text.RegularExpressions.Match"/> value.</summary>
+        Match,
+
+        /// <summary>A <see cref="System.Text.RegularExpressions.Group"/> value.</summary>
+        Group,
+
+        /// <summary>A <see cref="System.Text.RegularExpressions.Capture"/> value.</summary>
+        Capture,
+
+        /// <summary>A fully evaluated <see cref="System.Text.RegularExpressions.MatchCollection"/>.</summary>
+        MatchCollection,
+
+        /// <summary>A <see cref="System.Text.RegularExpressions.GroupCollection"/> value.</summary>
+        GroupCollection,
+
+        /// <summary>A <see cref="System.Text.RegularExpressions.CaptureCollection"/> value.</summary>
+        CaptureCollection,
+
+        /// <summary>A <see cref="System.Reflection.MethodInfo"/> of the modeled reflection universe.</summary>
+        MethodInfo,
+
+        /// <summary>A <see cref="System.Reflection.ConstructorInfo"/> of the modeled reflection universe.</summary>
+        ConstructorInfo,
+
+        /// <summary>A <see cref="System.Reflection.PropertyInfo"/> of the modeled reflection universe.</summary>
+        PropertyInfo,
+
+        /// <summary>A <see cref="System.Reflection.FieldInfo"/> of the modeled reflection universe.</summary>
+        FieldInfo,
+
+        /// <summary>A <see cref="System.Reflection.ParameterInfo"/> of the modeled reflection universe.</summary>
+        ParameterInfo,
     }
+
+    /// <summary>The namespace each BCL value kind's runtime type lives in.</summary>
+    private static string BclValueNamespaceOf(BclValueKind kind) => kind switch
+    {
+        BclValueKind.Guid or BclValueKind.Version => "System",
+        BclValueKind.Encoding => "System.Text",
+        BclValueKind.MethodInfo or BclValueKind.ConstructorInfo or BclValueKind.PropertyInfo or
+            BclValueKind.FieldInfo or BclValueKind.ParameterInfo => "System.Reflection",
+        _ => "System.Text.RegularExpressions",
+    };
 
     /// <summary>Renders one BCL value in its invariant text form.</summary>
     /// <remarks><see cref="Guid"/> uses its <c>D</c> form and <see cref="Version"/> its full component form.</remarks>
     private static string RenderBclValue(Operand operand) => operand.BclValueKind switch
     {
         BclValueKind.Guid => ((Guid)operand.Box!).ToString("D", CultureInfo.InvariantCulture),
-        _ => ((Version)operand.Box!).ToString(),
+        BclValueKind.Version => ((Version)operand.Box!).ToString(),
+        _ when IsReflectionKind(operand.BclValueKind) => RenderReflectionValue(operand),
+        _ => RenderTextValue(operand),
     };
 
     private static FoldOutcome BclValue(BclValueKind kind, object value) =>
@@ -64,12 +115,27 @@ public static partial class ConstantExpressionEvaluator
             arguments.Add(folded.Operand);
         }
 
+        return DispatchBclValueConstruction(kind, arguments);
+    }
+
+    /// <summary>Constructs one BCL value from folded constant arguments, with exact constructor semantics.</summary>
+    private static FoldOutcome DispatchBclValueConstruction(BclValueKind kind, List<Operand> arguments)
+    {
+        if (kind == BclValueKind.Regex)
+        {
+            return FoldRegexCreation(arguments);
+        }
+
         try
         {
             switch (kind)
             {
+                case BclValueKind.Guid when arguments.Count == 0:
+                    return BclValue(BclValueKind.Guid, Guid.Empty);
                 case BclValueKind.Guid when arguments is [{ Kind: OperandKind.String } text]:
                     return BclValue(BclValueKind.Guid, new Guid(text.String!));
+                case BclValueKind.Version when arguments.Count == 0:
+                    return BclValue(BclValueKind.Version, new Version());
                 case BclValueKind.Version when arguments is [{ Kind: OperandKind.String } text]:
                     return BclValue(BclValueKind.Version, new Version(text.String!));
                 case BclValueKind.Version when TryInt32Arguments(arguments, out var parts):
@@ -111,6 +177,19 @@ public static partial class ConstantExpressionEvaluator
                 Left: IdentifierNameSyntax { Identifier.ValueText: "System" },
                 Right: IdentifierNameSyntax nested,
             } => nested.Identifier.ValueText,
+            QualifiedNameSyntax
+            {
+                Left: QualifiedNameSyntax
+                {
+                    Left: QualifiedNameSyntax
+                    {
+                        Left: IdentifierNameSyntax { Identifier.ValueText: "System" },
+                        Right.Identifier.ValueText: "Text",
+                    },
+                    Right.Identifier.ValueText: "RegularExpressions",
+                },
+                Right: IdentifierNameSyntax { Identifier.ValueText: "Regex" },
+            } => "Regex",
             _ => null,
         };
         switch (name)
@@ -120,6 +199,9 @@ public static partial class ConstantExpressionEvaluator
                 return true;
             case "Version":
                 kind = BclValueKind.Version;
+                return true;
+            case "Regex":
+                kind = BclValueKind.Regex;
                 return true;
             default:
                 return false;
@@ -133,11 +215,22 @@ public static partial class ConstantExpressionEvaluator
         {
             (BclValueKind.Guid, "Empty") => BclValue(BclValueKind.Guid, Guid.Empty),
             (BclValueKind.Guid, "NewGuid") => Nondeterministic("Guid.NewGuid"),
+            (BclValueKind.Encoding, _) => DispatchEncodingStaticProperty(member),
             _ => MemberUnsupported($"{kind}.{member}"),
         };
 
     private static FoldOutcome DispatchBclValueStaticMethod(BclValueKind kind, string name, List<Operand> arguments)
     {
+        if (kind == BclValueKind.Encoding)
+        {
+            return DispatchEncodingStaticMethod(name, arguments);
+        }
+
+        if (kind == BclValueKind.Regex)
+        {
+            return DispatchRegexStaticMethod(name, arguments);
+        }
+
         try
         {
             switch (kind, name)
@@ -182,6 +275,16 @@ public static partial class ConstantExpressionEvaluator
             };
         }
 
+        if (IsReflectionKind(receiver.BclValueKind))
+        {
+            return DispatchReflectionProperty(receiver, member);
+        }
+
+        if (receiver.BclValueKind != BclValueKind.Version)
+        {
+            return DispatchTextValueProperty(receiver, member);
+        }
+
         var version = (Version)receiver.Box!;
         return member switch
         {
@@ -197,6 +300,18 @@ public static partial class ConstantExpressionEvaluator
 
     private static FoldOutcome DispatchBclValueMethod(Operand receiver, string name, List<Operand> arguments)
     {
+        // Invocation reaches reflection values through the fold-context-aware path; this arm only backstops
+        // callers without a context, where the Enum and Array static surfaces cannot resolve shapes.
+        if (IsReflectionKind(receiver.BclValueKind))
+        {
+            return DispatchReflectionMethod(receiver, name, arguments, context: null);
+        }
+
+        if (receiver.BclValueKind is not (BclValueKind.Guid or BclValueKind.Version))
+        {
+            return DispatchTextValueMethod(receiver, name, arguments);
+        }
+
         try
         {
             if (receiver.BclValueKind == BclValueKind.Guid)
@@ -240,6 +355,17 @@ public static partial class ConstantExpressionEvaluator
     /// <summary>Comparisons and equality over one BCL value kind; no arithmetic operator is defined for them.</summary>
     private static FoldOutcome ComputeBclValueBinary(SyntaxKind kind, Operand left, Operand right)
     {
+        // Every same-code-page encoding the evaluator can produce is the runtime's cached singleton, so value
+        // equality and the language's reference equality agree; the regex family defines no constant operator.
+        if (left is { Kind: OperandKind.BclValue, BclValueKind: BclValueKind.Encoding } &&
+            right is { Kind: OperandKind.BclValue, BclValueKind: BclValueKind.Encoding } &&
+            kind is SyntaxKind.EqualsExpression or SyntaxKind.NotEqualsExpression)
+        {
+            var sameEncoding = left.Box!.Equals(right.Box);
+            return FoldOutcome.Folded(Operand.FromBoolean(
+                kind == SyntaxKind.EqualsExpression ? sameEncoding : !sameEncoding));
+        }
+
         if (kind is not (SyntaxKind.EqualsExpression or SyntaxKind.NotEqualsExpression or
             SyntaxKind.LessThanExpression or SyntaxKind.LessThanOrEqualExpression or
             SyntaxKind.GreaterThanExpression or SyntaxKind.GreaterThanOrEqualExpression))
@@ -253,7 +379,8 @@ public static partial class ConstantExpressionEvaluator
         {
             return FoldOutcome.Error(
                 OperandTypeCode,
-                "Guid and Version comparisons require two values of the same kind.");
+                "Comparison requires two Guid or two Version values; encodings define equality only, and the "
+                + "Regex family defines no constant operators.");
         }
 
         return FoldOutcome.Folded(Operand.FromBoolean(kind switch
@@ -272,7 +399,8 @@ public static partial class ConstantExpressionEvaluator
     {
         comparison = 0;
         if (left.Kind != OperandKind.BclValue || right.Kind != OperandKind.BclValue ||
-            left.BclValueKind != right.BclValueKind)
+            left.BclValueKind != right.BclValueKind ||
+            left.BclValueKind is not (BclValueKind.Guid or BclValueKind.Version))
         {
             return false;
         }

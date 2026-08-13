@@ -485,7 +485,16 @@ public static partial class ConstantExpressionEvaluator
                 return SystemRef(temporalName, temporalName);
             case OperandKind.BclValue:
                 var valueName = operand.BclValueKind.ToString();
-                return SystemRef(valueName, valueName);
+                var valueNamespace = BclValueNamespaceOf(operand.BclValueKind);
+                return valueNamespace == "System"
+                    ? SystemRef(valueName, valueName)
+                    : new TypeRef(
+                        valueName,
+                        $"{valueNamespace}.{valueName}",
+                        valueNamespace,
+                        valueName,
+                        IsEnum: false,
+                        Shape: null);
             case OperandKind.Enum when operand.EnumTypeFullName is { } enumFullName:
                 var separator = enumFullName.LastIndexOf('.');
                 var shortName = separator < 0 ? enumFullName : enumFullName[(separator + 1)..];

@@ -298,6 +298,14 @@ public sealed class ConstantExpressionEvaluation
     /// <summary>Gets the cached Host admission refusal when session authority blocked constant evaluation.</summary>
     public ClrmdModuleEditAdmission? ModuleEditAdmission { get; }
 
+    /// <summary>
+    /// Gets the exact operand projection the evaluator attached for the value domains the public scalar fields
+    /// cannot reconstruct — sequences, boxed numerics, temporal values, and BCL values — or null when the value
+    /// is a legacy scalar or has no operand carrier. Derived from the same payload as the rendered value, so it
+    /// never participates in the canonical replay digest.
+    /// </summary>
+    internal ConstantOperandResolution? ExactProjection { get; init; }
+
     /// <summary>Gets the lowercase SHA-256 identity of the canonical outcome projection.</summary>
     public string Sha256 { get; }
 
@@ -308,9 +316,11 @@ public sealed class ConstantExpressionEvaluation
     /// <param name="stored">The stored value on success, otherwise null.</param>
     /// <returns><see langword="true"/> when the value is a scalar the operand domain carries.</returns>
     /// <remarks>
-    /// Only the scalar kinds the operand resolution carries round-trip: the integral, floating, Boolean, char,
-    /// string, enum-as-underlying, and null values. A sequence, tuple, decimal, or wide-integer result has no
-    /// operand carrier and cannot be stored, so the caller reports it as an unsupported variable value rather than
+    /// The kinds the operand resolution carries round-trip: the integral, floating, Boolean, char, string,
+    /// enum-as-underlying, and null scalars; every numeric domain including decimals and wide integers; date and
+    /// time values; deterministic BCL values such as Guid, Version, Encoding, and the Regex family; and
+    /// sequences of any of those element domains. A tuple, anonymous, grouping, or type result has no operand
+    /// carrier and cannot be stored, so the caller reports it as an unsupported variable value rather than
     /// silently truncating it.
     /// </remarks>
     public bool TryProjectStoredValue(out ConstantOperandResolution? stored)
@@ -319,6 +329,14 @@ public sealed class ConstantExpressionEvaluation
         if (Status != ConstantExpressionStatus.Exact)
         {
             return false;
+        }
+
+        // The attached projection is exact by construction; the scalar switch below reconstructs the kinds that
+        // predate it from the public fields, so evaluations built by the literal-field paths keep storing.
+        if (ExactProjection is { } exact)
+        {
+            stored = exact;
+            return true;
         }
 
         switch (Kind)
@@ -371,6 +389,9 @@ public sealed class ConstantExpressionEvaluation
         ConstantValueKind.Boolean => "Boolean",
         ConstantValueKind.Numeric => ValueTypeName,
         ConstantValueKind.Null => "null",
+        ConstantValueKind.Sequence => ValueTypeName,
+        ConstantValueKind.Temporal => ValueTypeName,
+        ConstantValueKind.BclValue => ValueTypeName,
         _ => null,
     };
 
@@ -542,6 +563,24 @@ public enum ConstantOperandResolutionKind
     /// elements are themselves scalar resolutions.
     /// </summary>
     Sequence = 10,
+
+    /// <summary>
+    /// The operand resolved to an exact numeric value outside the dedicated kinds — a byte, a decimal, a wide
+    /// integer — carried as its exact boxed CLR value with its numeric domain name.
+    /// </summary>
+    Numeric = 11,
+
+    /// <summary>
+    /// The operand resolved to an exact date or time value, carried as its exact boxed BCL struct with its
+    /// temporal domain name.
+    /// </summary>
+    Temporal = 12,
+
+    /// <summary>
+    /// The operand resolved to an exact deterministic BCL value — a Guid, Version, Encoding, or Regex-family
+    /// value — carried as its exact boxed BCL object with its value domain name.
+    /// </summary>
+    BclValue = 13,
 }
 
 /// <summary>One value extracted from the dump for use as an operand inside a composed expression.</summary>
@@ -559,7 +598,9 @@ public sealed class ConstantOperandResolution
         bool? booleanValue = null,
         char? charValue = null,
         ImmutableArray<ConstantOperandResolution> elements = default,
-        string? elementTypeName = null)
+        string? elementTypeName = null,
+        string? valueTypeName = null,
+        object? boxedValue = null)
     {
         Kind = kind;
         Int32Value = int32Value;
@@ -573,6 +614,8 @@ public sealed class ConstantOperandResolution
         CharValue = charValue;
         Elements = elements.IsDefault ? [] : elements;
         ElementTypeName = elementTypeName;
+        ValueTypeName = valueTypeName;
+        BoxedValue = boxedValue;
     }
 
     /// <summary>Gets the resolution discriminator.</summary>
@@ -609,10 +652,26 @@ public sealed class ConstantOperandResolution
     public ImmutableArray<ConstantOperandResolution> Elements { get; }
 
     /// <summary>
-    /// Gets the element domain name — <c>Int32</c>, <c>Int64</c>, <c>Double</c>, <c>Single</c>, <c>Boolean</c>,
-    /// <c>Char</c>, or <c>String</c> — only for <see cref="ConstantOperandResolutionKind.Sequence"/>.
+    /// Gets the element domain name — a numeric kind name such as <c>Int32</c> or <c>Byte</c>, a temporal or BCL
+    /// value kind name such as <c>DateTime</c> or <c>Guid</c>, <c>Boolean</c>, <c>Char</c>, or <c>String</c> —
+    /// only for <see cref="ConstantOperandResolutionKind.Sequence"/>.
     /// </summary>
     public string? ElementTypeName { get; }
+
+    /// <summary>
+    /// Gets the value domain name — a numeric kind such as <c>Byte</c> or <c>Decimal</c>, a temporal kind such
+    /// as <c>DateTime</c>, or a BCL value kind such as <c>Guid</c> — only for the
+    /// <see cref="ConstantOperandResolutionKind.Numeric"/>, <see cref="ConstantOperandResolutionKind.Temporal"/>,
+    /// and <see cref="ConstantOperandResolutionKind.BclValue"/> kinds.
+    /// </summary>
+    public string? ValueTypeName { get; }
+
+    /// <summary>
+    /// Gets the exact boxed CLR value for the same three kinds. The box is the value the evaluator itself
+    /// produced — a <see cref="decimal"/>, a <see cref="DateTime"/>, a <see cref="Guid"/> — handed back
+    /// unchanged within the same process, so the round-trip is exact by construction.
+    /// </summary>
+    public object? BoxedValue { get; }
 
     /// <summary>Creates an exact Int32 operand.</summary>
     /// <param name="value">The exact value read from the dump.</param>
@@ -686,6 +745,33 @@ public sealed class ConstantOperandResolution
         new(ConstantOperandResolutionKind.Sequence, null, null, null, null,
             elements: elements,
             elementTypeName: elementTypeName ?? throw new ArgumentNullException(nameof(elementTypeName)));
+
+    /// <summary>Creates an exact numeric operand outside the dedicated Int32/Int64/Double/Single kinds.</summary>
+    /// <param name="numericKindName">The numeric domain name, such as <c>Byte</c> or <c>Decimal</c>.</param>
+    /// <param name="value">The exact boxed CLR value of that domain.</param>
+    /// <returns>A boxed numeric resolution.</returns>
+    public static ConstantOperandResolution FromNumericValue(string numericKindName, object value) =>
+        new(ConstantOperandResolutionKind.Numeric, null, null, null, null,
+            valueTypeName: numericKindName ?? throw new ArgumentNullException(nameof(numericKindName)),
+            boxedValue: value ?? throw new ArgumentNullException(nameof(value)));
+
+    /// <summary>Creates an exact date or time operand.</summary>
+    /// <param name="temporalKindName">The temporal domain name, such as <c>DateTime</c> or <c>TimeSpan</c>.</param>
+    /// <param name="value">The exact boxed BCL struct of that domain.</param>
+    /// <returns>A boxed temporal resolution.</returns>
+    public static ConstantOperandResolution FromTemporalValue(string temporalKindName, object value) =>
+        new(ConstantOperandResolutionKind.Temporal, null, null, null, null,
+            valueTypeName: temporalKindName ?? throw new ArgumentNullException(nameof(temporalKindName)),
+            boxedValue: value ?? throw new ArgumentNullException(nameof(value)));
+
+    /// <summary>Creates an exact deterministic BCL value operand.</summary>
+    /// <param name="bclValueKindName">The value domain name, such as <c>Guid</c> or <c>Regex</c>.</param>
+    /// <param name="value">The exact boxed BCL value of that domain.</param>
+    /// <returns>A boxed BCL value resolution.</returns>
+    public static ConstantOperandResolution FromBclValue(string bclValueKindName, object value) =>
+        new(ConstantOperandResolutionKind.BclValue, null, null, null, null,
+            valueTypeName: bclValueKindName ?? throw new ArgumentNullException(nameof(bclValueKindName)),
+            boxedValue: value ?? throw new ArgumentNullException(nameof(value)));
 }
 
 /// <summary>
@@ -913,7 +999,13 @@ public static partial class ConstantExpressionEvaluator
             nameParts[^1] != "Length" &&
             !IsKnownTypeHead(nameParts) &&
             !(syntax is MemberAccessExpressionSyntax typeStaticCandidate &&
-                TryReadTypeReceiver(typeStaticCandidate.Expression, out _)))
+                TryReadTypeReceiver(typeStaticCandidate.Expression, out _)) &&
+            // A chain whose head names a declared variable is member access over that variable's value, never a
+            // literal-field candidate: the variable shadows the import scope exactly as a local shadows an
+            // import in source, so 'g.Version' reads the stored Guid rather than scanning for a static.
+            !(nameAlias is null &&
+                resolvers?.LocalName is { } chainHeadResolver &&
+                chainHeadResolver(nameParts[0]).Kind != ConstantOperandResolutionKind.Outside))
         {
             // An alias-qualified name resolves only through the references carrying that alias, never through the
             // session's modules, exactly as extern-alias scoping works in source. An unqualified name expands
@@ -1042,7 +1134,11 @@ public static partial class ConstantExpressionEvaluator
     /// </remarks>
     private static bool IsKnownTypeHead(ImmutableArray<string> parts) =>
         TryMapReceiverName(parts[0], out _) ||
-        (parts.Length > 1 && parts[0] == "System" && TryMapReceiverName(parts[1], out _));
+        (parts.Length > 1 && parts[0] == "System" && TryMapReceiverName(parts[1], out _)) ||
+        (parts.Length > 2 && parts[0] == "System" && parts[1] == "Text" &&
+            (parts[2] == "Encoding" ||
+                (parts.Length > 3 && parts[2] == "RegularExpressions" &&
+                    parts[3] is "Regex" or "RegexOptions")));
 
     /// <summary>Returns the leftmost identifier of an access chain, stepping through every access shape.</summary>
     private static string? LeftmostIdentifier(ExpressionSyntax syntax)
@@ -1121,6 +1217,8 @@ public static partial class ConstantExpressionEvaluator
                 FoldOutcome.Folded(Operand.FromBoolean(resolution.BooleanValue!.Value)),
             ConstantOperandResolutionKind.Char => FoldOutcome.Folded(Operand.FromChar(resolution.CharValue!.Value)),
             ConstantOperandResolutionKind.Sequence => MaterializeSequenceResolution(resolution),
+            ConstantOperandResolutionKind.Numeric or ConstantOperandResolutionKind.Temporal or
+                ConstantOperandResolutionKind.BclValue => MaterializeBoxedResolution(resolution),
             ConstantOperandResolutionKind.Stop =>
                 FoldOutcome.Error(resolution.DiagnosticCode!, resolution.DiagnosticMessage!),
             _ => FoldOutcome.NotArithmetic(),
@@ -1159,6 +1257,11 @@ public static partial class ConstantExpressionEvaluator
             case ConstantOperandResolutionKind.Sequence:
                 context.DumpValuesConsumed++;
                 return MaterializeSequenceResolution(resolution);
+            case ConstantOperandResolutionKind.Numeric:
+            case ConstantOperandResolutionKind.Temporal:
+            case ConstantOperandResolutionKind.BclValue:
+                context.DumpValuesConsumed++;
+                return MaterializeBoxedResolution(resolution);
             case ConstantOperandResolutionKind.Stop:
                 return FoldOutcome.Error(resolution.DiagnosticCode!, resolution.DiagnosticMessage!);
             default:
@@ -1176,6 +1279,15 @@ public static partial class ConstantExpressionEvaluator
             "Single" => (OperandKind.Numeric, NumericKind.Single),
             "Boolean" => (OperandKind.Boolean, default),
             "Char" => (OperandKind.Char, default),
+            "String" or null => (OperandKind.String, default),
+            // Every remaining numeric domain — Byte, Decimal, the wide integers — and the temporal and BCL value
+            // domains carry their kind name, so a byte[] variable materializes back as exactly a byte[].
+            { } numericName when Enum.TryParse<NumericKind>(numericName, out var numeric) =>
+                (OperandKind.Numeric, numeric),
+            { } temporalName when Enum.TryParse<TemporalKind>(temporalName, out _) =>
+                (OperandKind.Temporal, default),
+            { } valueName when Enum.TryParse<BclValueKind>(valueName, out _) =>
+                (OperandKind.BclValue, default),
             _ => (OperandKind.String, default(NumericKind)),
         };
         var items = ImmutableArray.CreateBuilder<Operand>(resolution.Elements.Length);
@@ -1196,6 +1308,12 @@ public static partial class ConstantExpressionEvaluator
                 ConstantOperandResolutionKind.Boolean => Operand.FromBoolean(element.BooleanValue!.Value),
                 ConstantOperandResolutionKind.Char => Operand.FromChar(element.CharValue!.Value),
                 ConstantOperandResolutionKind.String => Operand.FromString(element.StringValue!),
+                ConstantOperandResolutionKind.Numeric or ConstantOperandResolutionKind.Temporal or
+                    ConstantOperandResolutionKind.BclValue when
+                    MaterializeBoxedResolution(element) is
+                    {
+                        Disposition: FoldDisposition.Folded,
+                    } boxed => boxed.Operand,
                 _ => Operand.Null(),
             });
         }
@@ -1205,6 +1323,35 @@ public static partial class ConstantExpressionEvaluator
             elementKind,
             elementNumeric,
             resolution.ElementTypeName ?? "String"));
+    }
+
+    /// <summary>
+    /// Materializes one boxed resolution — a numeric outside the dedicated kinds, a temporal value, or a BCL
+    /// value — back into its exact operand. The box is the value the evaluator itself stored, so an unknown
+    /// domain name or a mismatched box means the resolution was not produced by this evaluator and stays a
+    /// typed stop rather than a fabricated value.
+    /// </summary>
+    private static FoldOutcome MaterializeBoxedResolution(ConstantOperandResolution resolution)
+    {
+        if (resolution.BoxedValue is { } box && resolution.ValueTypeName is { } domain)
+        {
+            switch (resolution.Kind)
+            {
+                case ConstantOperandResolutionKind.Numeric
+                    when Enum.TryParse<NumericKind>(domain, out var numericKind):
+                    return FoldOutcome.Folded(Operand.FromNumeric(numericKind, box));
+                case ConstantOperandResolutionKind.Temporal
+                    when Enum.TryParse<TemporalKind>(domain, out var temporalKind):
+                    return FoldOutcome.Folded(Operand.FromTemporal(temporalKind, box));
+                case ConstantOperandResolutionKind.BclValue
+                    when Enum.TryParse<BclValueKind>(domain, out var valueKind):
+                    return FoldOutcome.Folded(Operand.FromBclValue(valueKind, box));
+            }
+        }
+
+        return FoldOutcome.Error(
+            OperandTypeCode,
+            "The stored value's domain is not one this evaluator produces; reassign the variable.");
     }
 
     private enum OperandKind
@@ -1450,8 +1597,69 @@ public static partial class ConstantExpressionEvaluator
             valueTypeName,
             valueText,
             context.DumpValuesConsumed,
-            ChildrenOf(operand));
+            ChildrenOf(operand))
+        {
+            ExactProjection = ProjectOperandForStorage(operand),
+        };
     }
+
+    /// <summary>
+    /// Projects one folded operand into a stored-variable resolution for the value domains the evaluation's
+    /// public scalar fields cannot reconstruct: boxed numerics, temporal values, BCL values, and sequences of
+    /// storable elements. Domains the legacy scalar projection already reconstructs return null so their stored
+    /// form is unchanged, and domains with no operand carrier — tuples, anonymous values, groupings, type
+    /// references — return null so the caller keeps refusing them with its typed message.
+    /// </summary>
+    private static ConstantOperandResolution? ProjectOperandForStorage(Operand operand)
+    {
+        switch (operand.Kind)
+        {
+            case OperandKind.Numeric when operand.NumericKind is not
+                (NumericKind.Int64 or NumericKind.Double or NumericKind.Single):
+                return ConstantOperandResolution.FromNumericValue(operand.NumericKind.ToString(), operand.Box!);
+            case OperandKind.Temporal:
+                return ConstantOperandResolution.FromTemporalValue(operand.TemporalKind.ToString(), operand.Box!);
+            case OperandKind.BclValue:
+                return ConstantOperandResolution.FromBclValue(operand.BclValueKind.ToString(), operand.Box!);
+            case OperandKind.Sequence:
+                var payload = PayloadOf(operand);
+                var elements = ImmutableArray.CreateBuilder<ConstantOperandResolution>(payload.Items.Length);
+                foreach (var item in payload.Items)
+                {
+                    if (ProjectElementForStorage(item) is not { } element)
+                    {
+                        return null;
+                    }
+
+                    elements.Add(element);
+                }
+
+                return ConstantOperandResolution.FromSequence(elements.ToImmutable(), payload.DisplayName);
+            default:
+                return null;
+        }
+    }
+
+    /// <summary>Projects one sequence element, or null when the element domain has no operand carrier.</summary>
+    private static ConstantOperandResolution? ProjectElementForStorage(Operand item) => item.Kind switch
+    {
+        OperandKind.Int32 => ConstantOperandResolution.FromInt32(item.Int32),
+        OperandKind.String => ConstantOperandResolution.FromString(item.String!),
+        OperandKind.Char => ConstantOperandResolution.FromChar(item.Char),
+        OperandKind.Boolean => ConstantOperandResolution.FromBoolean(item.Boolean),
+        OperandKind.Null => ConstantOperandResolution.ExactNull(),
+        OperandKind.Numeric => item.NumericKind switch
+        {
+            NumericKind.Int64 => ConstantOperandResolution.FromInt64((long)item.Box!),
+            NumericKind.Double => ConstantOperandResolution.FromDouble((double)item.Box!),
+            NumericKind.Single => ConstantOperandResolution.FromSingle((float)item.Box!),
+            _ => ConstantOperandResolution.FromNumericValue(item.NumericKind.ToString(), item.Box!),
+        },
+        OperandKind.Temporal => ConstantOperandResolution.FromTemporalValue(
+            item.TemporalKind.ToString(), item.Box!),
+        OperandKind.BclValue => ConstantOperandResolution.FromBclValue(item.BclValueKind.ToString(), item.Box!),
+        _ => null,
+    };
 
     private static FoldOutcome Fold(ExpressionSyntax syntax, FoldContext context)
     {
@@ -1683,6 +1891,17 @@ public static partial class ConstantExpressionEvaluator
         var right = Fold(binary.Right, context);
         if (right.Disposition != FoldDisposition.Folded)
         {
+            // Short-circuit semantics: when the left operand already decides a logical operator — false for &&,
+            // true for || — the right operand is never evaluated at run time, so a right side that stops or
+            // stays outside the constant domain does not poison the decided answer. A right side that folds
+            // keeps full operand-type checking below, so 'false && 5' still reports its type error.
+            if (kind is SyntaxKind.LogicalAndExpression or SyntaxKind.LogicalOrExpression &&
+                left.Operand.Kind == OperandKind.Boolean &&
+                left.Operand.Boolean == (kind == SyntaxKind.LogicalOrExpression))
+            {
+                return FoldOutcome.Folded(Operand.FromBoolean(left.Operand.Boolean));
+            }
+
             return right;
         }
 
@@ -1907,6 +2126,11 @@ public static partial class ConstantExpressionEvaluator
             return FoldSequenceElementAccess(receiver.Operand, elementAccess, context);
         }
 
+        if (receiver.Operand.Kind == OperandKind.BclValue)
+        {
+            return DispatchBclValueElementAccess(receiver.Operand, elementAccess, context);
+        }
+
         if (receiver.Operand.Kind != OperandKind.String ||
             elementAccess.ArgumentList.Arguments.Count != 1)
         {
@@ -2055,32 +2279,42 @@ public static partial class ConstantExpressionEvaluator
             return qualifiedOutcome ?? receiver;
         }
 
-        return (receiver.Operand.Kind, member.Identifier.ValueText) switch
+        var dispatched = DispatchOperandProperty(receiver.Operand, member.Identifier.ValueText);
+        return dispatched.Disposition == FoldDisposition.NotArithmetic
+            ? qualifiedOutcome ?? FoldOutcome.Error(
+                MemberUnsupportedCode,
+                $"'{member.Identifier.ValueText}' is not an admitted deterministic constant member.")
+            : dispatched;
+    }
+
+    /// <summary>
+    /// One instance property read over a folded operand, shared by source spelling and reflection. A member no
+    /// operand domain answers is not-arithmetic, so the caller keeps its own fallback vocabulary.
+    /// </summary>
+    private static FoldOutcome DispatchOperandProperty(Operand receiver, string member) =>
+        (receiver.Kind, member) switch
         {
-            (OperandKind.String, "Length") => FoldOutcome.Folded(Operand.FromInt32(receiver.Operand.String!.Length)),
+            (OperandKind.String, "Length") => FoldOutcome.Folded(Operand.FromInt32(receiver.String!.Length)),
             (OperandKind.Sequence, "Length") => FoldOutcome.Folded(Operand.FromInt32(
-                PayloadOf(receiver.Operand).Items.Length)),
+                PayloadOf(receiver).Items.Length)),
             (OperandKind.Sequence, "LongLength") => FoldOutcome.Folded(Operand.FromNumeric(
                 NumericKind.Int64,
-                (long)PayloadOf(receiver.Operand).Items.Length)),
+                (long)PayloadOf(receiver).Items.Length)),
             (OperandKind.Sequence, "Rank") => FoldOutcome.Folded(Operand.FromInt32(1)),
             (OperandKind.Temporal, var temporalProperty) =>
-                DispatchTemporalProperty(receiver.Operand, temporalProperty),
+                DispatchTemporalProperty(receiver, temporalProperty),
             (OperandKind.BclValue, var valueProperty) =>
-                DispatchBclValueProperty(receiver.Operand, valueProperty),
+                DispatchBclValueProperty(receiver, valueProperty),
             (OperandKind.Type, var typeProperty) =>
-                DispatchTypeRefProperty(receiver.Operand, typeProperty),
+                DispatchTypeRefProperty(receiver, typeProperty),
             (OperandKind.Tuple, var tupleMember) =>
-                DispatchTupleProperty(receiver.Operand, tupleMember),
+                DispatchTupleProperty(receiver, tupleMember),
             (OperandKind.Anonymous, var anonymousMember) =>
-                DispatchAnonymousProperty(receiver.Operand, anonymousMember),
+                DispatchAnonymousProperty(receiver, anonymousMember),
             (OperandKind.Grouping, "Key") =>
-                FoldOutcome.Folded(PayloadOfGrouping(receiver.Operand).Key),
-            _ => qualifiedOutcome ?? FoldOutcome.Error(
-                MemberUnsupportedCode,
-                $"'{member.Identifier.ValueText}' is not an admitted deterministic constant member."),
+                FoldOutcome.Folded(PayloadOfGrouping(receiver).Key),
+            _ => FoldOutcome.NotArithmetic(),
         };
-    }
 
     private static FoldOutcome FoldQualifiedName(
         ImmutableArray<string> parts,
@@ -2160,13 +2394,14 @@ public static partial class ConstantExpressionEvaluator
             return FoldOutcome.NotArithmetic();
         }
 
-        // A generic method name is admitted only on the System.Enum and System.Array surfaces —
-        // Enum.GetNames<T>(), Array.Empty<T>() — so every other generic invocation keeps its existing
-        // not-constant path.
+        // A generic method name is admitted only on the System.Enum, System.Array, and System.Activator
+        // surfaces — Enum.GetNames<T>(), Array.Empty<T>(), Activator.CreateInstance<T>() — so every other
+        // generic invocation keeps its existing not-constant path.
         var typeArguments = (method as GenericNameSyntax)?.TypeArgumentList.Arguments ?? default;
         if (typeArguments.Count > 0 &&
             !(TryReadTypeReceiver(receiverExpression, out var genericReceiver) &&
-                genericReceiver.Category is TypeReceiverCategory.SystemEnum or TypeReceiverCategory.SystemArray))
+                genericReceiver.Category is TypeReceiverCategory.SystemEnum or TypeReceiverCategory.SystemArray
+                    or TypeReceiverCategory.Activator))
         {
             return FoldOutcome.NotArithmetic();
         }
@@ -2205,23 +2440,7 @@ public static partial class ConstantExpressionEvaluator
         var name = method.Identifier.ValueText;
         if (!receiverIsBound && TryReadTypeReceiver(receiverExpression, out var typeReceiver))
         {
-            return typeReceiver.Category switch
-            {
-                TypeReceiverCategory.String => DispatchStaticString(name, arguments),
-                TypeReceiverCategory.Char => DispatchStaticChar(name, arguments),
-                TypeReceiverCategory.Math => DispatchMath(name, arguments),
-                TypeReceiverCategory.Enumerable => DispatchEnumerable(name, arguments),
-                TypeReceiverCategory.KnownEnum => MemberUnsupported(name),
-                TypeReceiverCategory.Temporal =>
-                    DispatchTemporalStaticMethod(typeReceiver.Temporal, name, arguments),
-                TypeReceiverCategory.BclValue =>
-                    DispatchBclValueStaticMethod(typeReceiver.Value, name, arguments),
-                TypeReceiverCategory.SystemEnum =>
-                    DispatchSystemEnum(name, typeArguments, arguments, context),
-                TypeReceiverCategory.SystemArray =>
-                    DispatchSystemArray(name, typeArguments, arguments, context),
-                _ => DispatchNumericTypeMethod(typeReceiver.Numeric, name, arguments),
-            };
+            return DispatchTypeReceiverInvocation(typeReceiver, name, typeArguments, arguments, context);
         }
 
         var receiver = Fold(receiverExpression, context);
@@ -2230,38 +2449,103 @@ public static partial class ConstantExpressionEvaluator
             return receiver;
         }
 
+        // A reflection info value invokes with the fold context in hand, so Invoke over the Enum and Array
+        // static surfaces can still resolve enum shapes from dump metadata.
+        if (receiver.Operand.Kind == OperandKind.BclValue && IsReflectionKind(receiver.Operand.BclValueKind))
+        {
+            return DispatchReflectionMethod(receiver.Operand, name, arguments, context);
+        }
+
+        return DispatchOperandInvocation(receiver.Operand, name, arguments);
+    }
+
+    /// <summary>One static invocation over a recognized type receiver, shared by source spelling and reflection.</summary>
+    /// <remarks>
+    /// The context is null only when reflection invokes without a fold in flight; the Enum and Array surfaces
+    /// are the two that read it, and they stop rather than resolve shapes without one.
+    /// </remarks>
+    private static FoldOutcome DispatchTypeReceiverInvocation(
+        TypeReceiver typeReceiver,
+        string name,
+        SeparatedSyntaxList<TypeSyntax> typeArguments,
+        List<Operand> arguments,
+        FoldContext? context)
+    {
+        switch (typeReceiver.Category)
+        {
+            case TypeReceiverCategory.String:
+                return DispatchStaticString(name, arguments);
+            case TypeReceiverCategory.Char:
+                return DispatchStaticChar(name, arguments);
+            case TypeReceiverCategory.Math:
+                return DispatchMath(name, arguments);
+            case TypeReceiverCategory.Enumerable:
+                return DispatchEnumerable(name, arguments);
+            case TypeReceiverCategory.KnownEnum:
+                return MemberUnsupported(name);
+            case TypeReceiverCategory.Temporal:
+                return DispatchTemporalStaticMethod(typeReceiver.Temporal, name, arguments);
+            case TypeReceiverCategory.BclValue:
+                return DispatchBclValueStaticMethod(typeReceiver.Value, name, arguments);
+            case TypeReceiverCategory.SystemEnum when context is not null:
+                return DispatchSystemEnum(name, typeArguments, arguments, context);
+            case TypeReceiverCategory.SystemArray when context is not null:
+                return DispatchSystemArray(name, typeArguments, arguments, context);
+            case TypeReceiverCategory.SystemEnum:
+            case TypeReceiverCategory.SystemArray:
+                return MemberUnsupported($"{name} via reflection without an evaluation context");
+            case TypeReceiverCategory.Activator when context is not null:
+                return DispatchActivator(name, typeArguments, arguments, context);
+            case TypeReceiverCategory.Activator:
+                return MemberUnsupported($"Activator.{name} via reflection");
+            default:
+                return DispatchNumericTypeMethod(typeReceiver.Numeric, name, arguments);
+        }
+    }
+
+    /// <summary>One instance invocation over a folded operand, shared by source spelling and reflection.</summary>
+    private static FoldOutcome DispatchOperandInvocation(Operand receiver, string name, List<Operand> arguments)
+    {
         // Every numeric ToString evaluates under the invariant culture, with or without a format string, so the
         // answer never depends on the analysis machine's regional settings.
         if (name == "ToString" &&
-            receiver.Operand.Kind is OperandKind.Int32 or OperandKind.Numeric)
+            receiver.Kind is OperandKind.Int32 or OperandKind.Numeric)
         {
             switch (arguments)
             {
                 case []:
-                    return NumericToString(receiver.Operand, format: null);
+                    return NumericToString(receiver, format: null);
                 case [{ Kind: OperandKind.String } format]:
-                    return NumericToString(receiver.Operand, format.String);
+                    return NumericToString(receiver, format.String);
             }
         }
 
-        return receiver.Operand.Kind switch
+        // GetType is the reflective entry every value shares: the exact runtime identity of the folded operand.
+        if (name == "GetType" && arguments.Count == 0 && receiver.Kind != OperandKind.Null)
         {
-            OperandKind.String => DispatchInstanceString(receiver.Operand.String!, name, arguments),
-            OperandKind.Sequence => DispatchSequence(receiver.Operand, name, arguments),
-            OperandKind.Temporal => DispatchTemporalMethod(receiver.Operand, name, arguments),
-            OperandKind.BclValue => DispatchBclValueMethod(receiver.Operand, name, arguments),
+            return TryDescribeRuntimeType(receiver) is { } runtimeType
+                ? FoldOutcome.Folded(Operand.FromType(runtimeType))
+                : MemberUnsupported("GetType over this operand's runtime identity");
+        }
+
+        return receiver.Kind switch
+        {
+            OperandKind.String => DispatchInstanceString(receiver.String!, name, arguments),
+            OperandKind.Sequence => DispatchSequence(receiver, name, arguments),
+            OperandKind.Temporal => DispatchTemporalMethod(receiver, name, arguments),
+            OperandKind.BclValue => DispatchBclValueMethod(receiver, name, arguments),
             OperandKind.Char => name == "ToString" && arguments.Count == 0
-                ? FoldOutcome.Folded(Operand.FromString(receiver.Operand.Char.ToString()))
+                ? FoldOutcome.Folded(Operand.FromString(receiver.Char.ToString()))
                 : MemberUnsupported(name),
             OperandKind.Boolean => name == "ToString" && arguments.Count == 0
-                ? FoldOutcome.Folded(Operand.FromString(receiver.Operand.Boolean ? "True" : "False"))
+                ? FoldOutcome.Folded(Operand.FromString(receiver.Boolean ? "True" : "False"))
                 : MemberUnsupported(name),
-            OperandKind.Enum => DispatchEnumMethod(receiver.Operand, name, arguments),
-            OperandKind.Type => DispatchTypeRefMethod(receiver.Operand, name, arguments),
-            OperandKind.Tuple => DispatchTupleMethod(receiver.Operand, name, arguments),
-            OperandKind.Anonymous => DispatchAnonymousMethod(receiver.Operand, name, arguments),
+            OperandKind.Enum => DispatchEnumMethod(receiver, name, arguments),
+            OperandKind.Type => DispatchTypeRefMethod(receiver, name, arguments),
+            OperandKind.Tuple => DispatchTupleMethod(receiver, name, arguments),
+            OperandKind.Anonymous => DispatchAnonymousMethod(receiver, name, arguments),
             OperandKind.Grouping => DispatchSequence(
-                Operand.FromSequence(PayloadOfGrouping(receiver.Operand).Items), name, arguments),
+                Operand.FromSequence(PayloadOfGrouping(receiver).Items), name, arguments),
             _ => MemberUnsupported(name),
         };
     }

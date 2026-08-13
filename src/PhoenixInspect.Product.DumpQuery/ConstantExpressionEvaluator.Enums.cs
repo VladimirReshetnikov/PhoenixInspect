@@ -480,7 +480,22 @@ public static partial class ConstantExpressionEvaluator
         if (TryReadBclValueTypeName(type, out var valueKind))
         {
             var name = valueKind.ToString();
-            resolved = new TypeRef(name, $"System.{name}", "System", name, IsEnum: false, null);
+            var valueNamespace = BclValueNamespaceOf(valueKind);
+            resolved = new TypeRef(name, $"{valueNamespace}.{name}", valueNamespace, name, IsEnum: false, null);
+            return true;
+        }
+
+        // The reflection universe resolves the remaining modeled runtime types — Math, Encoding, the regex
+        // family, Enumerable — by bare or fully dotted name, before dotted names fall through to enum lookup.
+        var reflectionName = type switch
+        {
+            IdentifierNameSyntax reflectionIdentifier => reflectionIdentifier.Identifier.ValueText,
+            QualifiedNameSyntax reflectionQualified when TryReadDottedName(reflectionQualified, out var dotted) =>
+                dotted,
+            _ => null,
+        };
+        if (reflectionName is not null && TryResolveReflectionNamedRef(reflectionName, out resolved))
+        {
             return true;
         }
 
@@ -695,7 +710,10 @@ public static partial class ConstantExpressionEvaluator
         && (type.Definition is { } definition
             ? definition.IsValue
             : type.FullName is not ("System.String" or "System.Object" or "System.Version" or "System.Array"
-                or "System.Enum" or "System.ValueType"));
+                or "System.Enum" or "System.ValueType" or "System.Math")
+                && !type.FullName.StartsWith("System.Text.", StringComparison.Ordinal)
+                && !type.FullName.StartsWith("System.Reflection.", StringComparison.Ordinal)
+                && !type.FullName.StartsWith("System.Linq.", StringComparison.Ordinal));
 
     /// <summary>Whether a reference names a CLR primitive: the fixed-size numerics, char, and bool.</summary>
     private static bool IsPrimitiveTypeRef(TypeRef type) => type.FullName is
@@ -815,7 +833,11 @@ public static partial class ConstantExpressionEvaluator
                     "System.ArgumentException",
                     $"'{type.FullName}' is not an enum type the evaluator can enumerate.");
             default:
-                return MemberUnsupported($"Type.{name}");
+                // The public-member reflection queries — GetMethods, GetProperty(name), … — answer over the
+                // modeled runtime universe; every other member keeps its typed stop.
+                return TryDispatchTypeReflectionQuery(type, name, arguments, out var reflectionOutcome)
+                    ? reflectionOutcome
+                    : MemberUnsupported($"Type.{name}");
         }
     }
 
