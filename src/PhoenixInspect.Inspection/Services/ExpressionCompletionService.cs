@@ -371,140 +371,319 @@ public static class ExpressionCompletionService
             ["StringSplitOptions"] = ["None", "RemoveEmptyEntries", "TrimEntries"],
         }.ToImmutableDictionary(StringComparer.Ordinal);
 
-    // ---- Instance members over stored immediate-variable values ------------------------------------------------
+    // ---- Instance members over modeled values ------------------------------------------------------------------
     // These tables mirror the constant evaluator's instance dispatch exactly, including members that produce a
     // deliberate explained stop (ToUpper redirects to the invariant form, ToLocalTime is nondeterministic): the
-    // stop is part of the documented surface, so the name still completes.
+    // stop is part of the documented surface, so the name still completes. Each member also records the type of
+    // the value it folds to, when the evaluator models one, which is what lets chains keep completing:
+    // 's.Trim().Length' knows Trim() folds a String and Length an Int32. A null result means the chain has no
+    // modeled continuation there.
 
-    private static readonly ImmutableArray<CompletionItem> SequenceInstanceMembers = BuildInstanceItems(
-        ["Length", "LongLength", "Rank"],
+    private readonly record struct InstanceMemberInfo(bool IsMethod, string? ResultType);
+
+    private sealed class InstanceSurface
+    {
+        public InstanceSurface(
+            (string Name, string? Result)[] properties,
+            (string Name, string? Result)[] methods)
+        {
+            var items = ImmutableArray.CreateBuilder<CompletionItem>(properties.Length + methods.Length);
+            var members = ImmutableDictionary.CreateBuilder<string, InstanceMemberInfo>(StringComparer.Ordinal);
+            foreach (var (name, result) in properties)
+            {
+                items.Add(new CompletionItem(name, CompletionItemKind.Member, "property"));
+                members[name] = new InstanceMemberInfo(IsMethod: false, result);
+            }
+
+            foreach (var (name, result) in methods)
+            {
+                items.Add(new CompletionItem(name, CompletionItemKind.Member, "method"));
+                members[name] = new InstanceMemberInfo(IsMethod: true, result);
+            }
+
+            items.Sort(static (left, right) => StringComparer.OrdinalIgnoreCase.Compare(left.Text, right.Text));
+            Items = items.MoveToImmutable();
+            Members = members.ToImmutable();
+        }
+
+        public ImmutableArray<CompletionItem> Items { get; }
+
+        public ImmutableDictionary<string, InstanceMemberInfo> Members { get; }
+    }
+
+    // Sequence member results are parametric in the element type; these tokens stand for it in the template.
+    private const string ElementResult = "@element";
+    private const string SequenceResult = "@sequence";
+
+    private static readonly InstanceSurface SequenceSurfaceTemplate = new(
+        [("Length", "Int32"), ("LongLength", "Int64"), ("Rank", "Int32")],
         [
-            "All", "Any", "Append", "Average", "Concat", "Contains", "Count", "Distinct", "ElementAt",
-            "ElementAtOrDefault", "Except", "FindIndex", "FindLastIndex", "First", "FirstOrDefault", "GetLength",
-            "GetLowerBound", "GetType", "GetUpperBound", "GetValue", "GroupBy", "GroupJoin", "Intersect", "Join",
-            "Last", "LastOrDefault", "LongCount", "Max", "Min", "Order", "OrderBy", "OrderByDescending",
-            "OrderDescending", "Prepend", "Reverse", "Select", "SelectMany", "SequenceEqual", "Single",
-            "SingleOrDefault", "Skip", "SkipLast", "SkipWhile", "Sum", "Take", "TakeLast", "TakeWhile", "ThenBy",
-            "ThenByDescending", "ToArray", "ToList", "Union", "Where",
+            ("All", "Boolean"), ("Any", "Boolean"), ("Append", SequenceResult), ("Average", "Double"),
+            ("Concat", SequenceResult), ("Contains", "Boolean"), ("Count", "Int32"),
+            ("Distinct", SequenceResult), ("ElementAt", ElementResult), ("ElementAtOrDefault", ElementResult),
+            ("Except", SequenceResult), ("FindIndex", "Int32"), ("FindLastIndex", "Int32"),
+            ("First", ElementResult), ("FirstOrDefault", ElementResult), ("GetLength", "Int32"),
+            ("GetLowerBound", "Int32"), ("GetType", "Type"), ("GetUpperBound", "Int32"),
+            ("GetValue", ElementResult), ("GroupBy", null), ("GroupJoin", null), ("Intersect", SequenceResult),
+            ("Join", null), ("Last", ElementResult), ("LastOrDefault", ElementResult), ("LongCount", "Int64"),
+            ("Max", ElementResult), ("Min", ElementResult), ("Order", SequenceResult),
+            ("OrderBy", SequenceResult), ("OrderByDescending", SequenceResult),
+            ("OrderDescending", SequenceResult), ("Prepend", SequenceResult), ("Reverse", SequenceResult),
+            ("Select", null), ("SelectMany", null), ("SequenceEqual", "Boolean"), ("Single", ElementResult),
+            ("SingleOrDefault", ElementResult), ("Skip", SequenceResult), ("SkipLast", SequenceResult),
+            ("SkipWhile", SequenceResult), ("Sum", "Double"), ("Take", SequenceResult),
+            ("TakeLast", SequenceResult), ("TakeWhile", SequenceResult), ("ThenBy", SequenceResult),
+            ("ThenByDescending", SequenceResult), ("ToArray", SequenceResult), ("ToList", SequenceResult),
+            ("Union", SequenceResult), ("Where", SequenceResult),
         ]);
 
-    private static readonly ImmutableArray<CompletionItem> DelegateInstanceMembers = BuildInstanceItems(
-        ["HasSingleTarget", "Method", "Target"],
-        ["DynamicInvoke", "Equals", "GetInvocationList", "GetType", "Invoke", "ToString"]);
+    private static readonly ImmutableArray<CompletionItem> SequenceInstanceMembers = SequenceSurfaceTemplate.Items;
+
+    private static readonly InstanceSurface DelegateSurface = new(
+        [("HasSingleTarget", "Boolean"), ("Method", "MethodInfo"), ("Target", null)],
+        [
+            ("DynamicInvoke", null), ("Equals", "Boolean"), ("GetInvocationList", "Delegate[]"),
+            ("GetType", "Type"), ("Invoke", null), ("ToString", "String"),
+        ]);
+
+    private static readonly ImmutableArray<CompletionItem> DelegateInstanceMembers = DelegateSurface.Items;
 
     // A plain scalar — a numeric, a Boolean, or a stored enum, which reads back as its underlying value — only
     // answers the universal members.
-    private static readonly ImmutableArray<CompletionItem> ScalarInstanceMembers = BuildInstanceItems(
+    private static readonly InstanceSurface ScalarSurface = new(
         [],
-        ["GetType", "ToString"]);
+        [("GetType", "Type"), ("ToString", "String")]);
 
-    private static readonly ImmutableDictionary<string, ImmutableArray<CompletionItem>> InstanceReceiverMembers =
-        BuildInstanceReceiverTables();
+    private static readonly ImmutableArray<CompletionItem> ScalarInstanceMembers = ScalarSurface.Items;
 
-    private static ImmutableDictionary<string, ImmutableArray<CompletionItem>> BuildInstanceReceiverTables()
+    // A live enum value — an enum-typed property or a spelled enum member, unlike a stored variable — keeps its
+    // identity and dispatches the enum instance surface.
+    private static readonly InstanceSurface EnumValueSurface = new(
+        [],
+        [("CompareTo", "Int32"), ("GetType", "Type"), ("HasFlag", "Boolean"), ("ToString", "String")]);
+
+    private static readonly ImmutableDictionary<string, InstanceSurface> InstanceReceiverSurfaces =
+        BuildInstanceReceiverSurfaces();
+
+    private static ImmutableDictionary<string, InstanceSurface> BuildInstanceReceiverSurfaces()
     {
-        var tables = new Dictionary<string, ImmutableArray<CompletionItem>>(StringComparer.Ordinal)
+        var tables = new Dictionary<string, InstanceSurface>(StringComparer.Ordinal)
         {
-            ["String"] = BuildInstanceItems(
-                ["Length"],
+            ["String"] = new(
+                [("Length", "Int32")],
                 [
-                    "CompareTo", "Contains", "EndsWith", "EnumerateRunes", "Equals", "GetType", "IndexOf",
-                    "Insert", "LastIndexOf", "PadLeft", "PadRight", "Remove", "Replace", "Split", "StartsWith",
-                    "Substring", "ToCharArray", "ToLower", "ToLowerInvariant", "ToString", "ToUpper",
-                    "ToUpperInvariant", "Trim", "TrimEnd", "TrimStart",
+                    ("CompareTo", null), ("Contains", "Boolean"), ("EndsWith", "Boolean"),
+                    ("EnumerateRunes", "Rune[]"), ("Equals", "Boolean"), ("GetType", "Type"),
+                    ("IndexOf", "Int32"), ("Insert", "String"), ("LastIndexOf", "Int32"),
+                    ("PadLeft", "String"), ("PadRight", "String"), ("Remove", "String"), ("Replace", "String"),
+                    ("Split", "String[]"), ("StartsWith", "Boolean"), ("Substring", "String"),
+                    ("ToCharArray", "Char[]"), ("ToLower", null), ("ToLowerInvariant", "String"),
+                    ("ToString", "String"), ("ToUpper", null), ("ToUpperInvariant", "String"),
+                    ("Trim", "String"), ("TrimEnd", "String"), ("TrimStart", "String"),
                 ]),
-            ["Char"] = BuildInstanceItems([], ["CompareTo", "Equals", "GetHashCode", "GetType", "ToString"]),
-            ["DateTime"] = BuildInstanceItems(
+            ["Char"] = new(
+                [],
                 [
-                    "Date", "Day", "DayOfWeek", "DayOfYear", "Hour", "Kind", "Millisecond", "Minute", "Month",
-                    "Second", "Ticks", "TimeOfDay", "Year",
+                    ("CompareTo", "Int32"), ("Equals", "Boolean"), ("GetHashCode", "Int32"),
+                    ("GetType", "Type"), ("ToString", "String"),
+                ]),
+            ["DateTime"] = new(
+                [
+                    ("Date", "DateTime"), ("Day", "Int32"), ("DayOfWeek", "Enum"), ("DayOfYear", "Int32"),
+                    ("Hour", "Int32"), ("Kind", "Enum"), ("Millisecond", "Int32"), ("Minute", "Int32"),
+                    ("Month", "Int32"), ("Second", "Int32"), ("Ticks", "Int64"), ("TimeOfDay", "TimeSpan"),
+                    ("Year", "Int32"),
                 ],
                 [
-                    "Add", "AddDays", "AddHours", "AddMilliseconds", "AddMinutes", "AddMonths", "AddSeconds",
-                    "AddTicks", "AddYears", "GetType", "Subtract", "ToLocalTime", "ToString", "ToUniversalTime",
+                    ("Add", "DateTime"), ("AddDays", "DateTime"), ("AddHours", "DateTime"),
+                    ("AddMilliseconds", "DateTime"), ("AddMinutes", "DateTime"), ("AddMonths", "DateTime"),
+                    ("AddSeconds", "DateTime"), ("AddTicks", "DateTime"), ("AddYears", "DateTime"),
+                    ("GetType", "Type"), ("Subtract", null), ("ToLocalTime", null), ("ToString", "String"),
+                    ("ToUniversalTime", null),
                 ]),
-            ["DateTimeOffset"] = BuildInstanceItems(
+            ["DateTimeOffset"] = new(
                 [
-                    "Date", "DateTime", "Day", "DayOfWeek", "DayOfYear", "Hour", "LocalDateTime", "Millisecond",
-                    "Minute", "Month", "Offset", "Second", "Ticks", "TimeOfDay", "UtcDateTime", "UtcTicks",
-                    "Year",
+                    ("Date", "DateTime"), ("DateTime", "DateTime"), ("Day", "Int32"), ("DayOfWeek", "Enum"),
+                    ("DayOfYear", "Int32"), ("Hour", "Int32"), ("LocalDateTime", null),
+                    ("Millisecond", "Int32"), ("Minute", "Int32"), ("Month", "Int32"), ("Offset", "TimeSpan"),
+                    ("Second", "Int32"), ("Ticks", "Int64"), ("TimeOfDay", "TimeSpan"),
+                    ("UtcDateTime", "DateTime"), ("UtcTicks", "Int64"), ("Year", "Int32"),
                 ],
                 [
-                    "Add", "AddDays", "AddHours", "AddMilliseconds", "AddMinutes", "AddMonths", "AddSeconds",
-                    "AddTicks", "AddYears", "GetType", "Subtract", "ToLocalTime", "ToOffset", "ToString",
-                    "ToUniversalTime", "ToUnixTimeMilliseconds", "ToUnixTimeSeconds",
+                    ("Add", "DateTimeOffset"), ("AddDays", "DateTimeOffset"), ("AddHours", "DateTimeOffset"),
+                    ("AddMilliseconds", "DateTimeOffset"), ("AddMinutes", "DateTimeOffset"),
+                    ("AddMonths", "DateTimeOffset"), ("AddSeconds", "DateTimeOffset"),
+                    ("AddTicks", "DateTimeOffset"), ("AddYears", "DateTimeOffset"), ("GetType", "Type"),
+                    ("Subtract", null), ("ToLocalTime", null), ("ToOffset", "DateTimeOffset"),
+                    ("ToString", "String"), ("ToUniversalTime", "DateTimeOffset"),
+                    ("ToUnixTimeMilliseconds", "Int64"), ("ToUnixTimeSeconds", "Int64"),
                 ]),
-            ["TimeSpan"] = BuildInstanceItems(
+            ["TimeSpan"] = new(
                 [
-                    "Days", "Hours", "Milliseconds", "Minutes", "Seconds", "Ticks", "TotalDays", "TotalHours",
-                    "TotalMilliseconds", "TotalMinutes", "TotalSeconds",
+                    ("Days", "Int32"), ("Hours", "Int32"), ("Milliseconds", "Int32"), ("Minutes", "Int32"),
+                    ("Seconds", "Int32"), ("Ticks", "Int64"), ("TotalDays", "Double"),
+                    ("TotalHours", "Double"), ("TotalMilliseconds", "Double"), ("TotalMinutes", "Double"),
+                    ("TotalSeconds", "Double"),
                 ],
-                ["Add", "Divide", "Duration", "GetType", "Multiply", "Negate", "Subtract", "ToString"]),
-            ["DateOnly"] = BuildInstanceItems(
-                ["Day", "DayNumber", "DayOfWeek", "DayOfYear", "Month", "Year"],
-                ["AddDays", "AddMonths", "AddYears", "GetType", "ToDateTime", "ToString"]),
-            ["TimeOnly"] = BuildInstanceItems(
-                ["Hour", "Millisecond", "Minute", "Second", "Ticks"],
-                ["Add", "AddHours", "AddMinutes", "GetType", "ToString", "ToTimeSpan"]),
-            ["Guid"] = BuildInstanceItems(["Variant", "Version"], ["CompareTo", "GetType", "ToString"]),
-            ["Version"] = BuildInstanceItems(
-                ["Build", "Major", "MajorRevision", "Minor", "MinorRevision", "Revision"],
-                ["CompareTo", "GetType", "ToString"]),
-            ["DBNull"] = BuildInstanceItems([], ["Equals", "GetType", "GetTypeCode", "ToString"]),
-            ["Rune"] = BuildInstanceItems(
-                ["IsAscii", "IsBmp", "Plane", "Utf16SequenceLength", "Utf8SequenceLength", "Value"],
-                ["CompareTo", "Equals", "GetHashCode", "GetType", "ToString"]),
-            ["Encoding"] = BuildInstanceItems(
-                ["BodyName", "CodePage", "EncodingName", "HeaderName", "IsSingleByte", "Preamble", "WebName"],
                 [
-                    "Equals", "GetByteCount", "GetBytes", "GetCharCount", "GetChars", "GetMaxByteCount",
-                    "GetMaxCharCount", "GetPreamble", "GetString", "GetType",
+                    ("Add", "TimeSpan"), ("Divide", null), ("Duration", "TimeSpan"), ("GetType", "Type"),
+                    ("Multiply", "TimeSpan"), ("Negate", "TimeSpan"), ("Subtract", "TimeSpan"),
+                    ("ToString", "String"),
                 ]),
-            ["Regex"] = BuildInstanceItems(
-                ["Options", "RightToLeft"],
+            ["DateOnly"] = new(
                 [
-                    "Count", "GetGroupNames", "GetGroupNumbers", "GetType", "GroupNameFromNumber",
-                    "GroupNumberFromName", "IsMatch", "Match", "Matches", "Replace", "Split", "ToString",
+                    ("Day", "Int32"), ("DayNumber", "Int32"), ("DayOfWeek", "Enum"), ("DayOfYear", "Int32"),
+                    ("Month", "Int32"), ("Year", "Int32"),
+                ],
+                [
+                    ("AddDays", "DateOnly"), ("AddMonths", "DateOnly"), ("AddYears", "DateOnly"),
+                    ("GetType", "Type"), ("ToDateTime", "DateTime"), ("ToString", "String"),
                 ]),
-            ["Match"] = BuildInstanceItems(
-                ["Groups", "Index", "Length", "Name", "Success", "Value"],
-                ["GetType", "NextMatch", "Result", "ToString"]),
-            ["Group"] = BuildInstanceItems(
-                ["Captures", "Index", "Length", "Name", "Success", "Value"],
-                ["GetType", "ToString"]),
-            ["Capture"] = BuildInstanceItems(["Index", "Length", "Value"], ["GetType", "ToString"]),
-            ["MethodInfo"] = BuildInstanceItems(
-                ["DeclaringType", "IsGenericMethod", "IsPublic", "IsStatic", "MemberType", "Name", "ReturnType"],
-                ["CreateDelegate", "GetParameters", "GetType", "Invoke", "ToString"]),
-            ["ConstructorInfo"] = BuildInstanceItems(
-                ["DeclaringType", "IsPublic", "IsStatic", "MemberType", "Name"],
-                ["GetParameters", "GetType", "Invoke", "ToString"]),
-            ["PropertyInfo"] = BuildInstanceItems(
-                ["CanRead", "CanWrite", "DeclaringType", "MemberType", "Name", "PropertyType"],
-                ["GetGetMethod", "GetIndexParameters", "GetSetMethod", "GetType", "GetValue", "SetValue",
-                    "ToString"]),
-            ["FieldInfo"] = BuildInstanceItems(
-                ["DeclaringType", "FieldType", "IsInitOnly", "IsLiteral", "IsPublic", "IsStatic", "MemberType",
-                    "Name"],
-                ["GetType", "GetValue", "SetValue", "ToString"]),
-            ["ParameterInfo"] = BuildInstanceItems(
-                ["HasDefaultValue", "IsOptional", "Name", "ParameterType", "Position"],
-                ["GetType", "ToString"]),
+            ["TimeOnly"] = new(
+                [
+                    ("Hour", "Int32"), ("Millisecond", "Int32"), ("Minute", "Int32"), ("Second", "Int32"),
+                    ("Ticks", "Int64"),
+                ],
+                [
+                    ("Add", "TimeOnly"), ("AddHours", "TimeOnly"), ("AddMinutes", "TimeOnly"),
+                    ("GetType", "Type"), ("ToString", "String"), ("ToTimeSpan", "TimeSpan"),
+                ]),
+            ["Guid"] = new(
+                [("Variant", "Int32"), ("Version", "Int32")],
+                [("CompareTo", "Int32"), ("GetType", "Type"), ("ToString", "String")]),
+            ["Version"] = new(
+                [
+                    ("Build", "Int32"), ("Major", "Int32"), ("MajorRevision", "Int16"), ("Minor", "Int32"),
+                    ("MinorRevision", "Int16"), ("Revision", "Int32"),
+                ],
+                [("CompareTo", "Int32"), ("GetType", "Type"), ("ToString", "String")]),
+            ["DBNull"] = new(
+                [],
+                [
+                    ("Equals", "Boolean"), ("GetType", "Type"), ("GetTypeCode", "Enum"),
+                    ("ToString", "String"),
+                ]),
+            ["Rune"] = new(
+                [
+                    ("IsAscii", "Boolean"), ("IsBmp", "Boolean"), ("Plane", "Int32"),
+                    ("Utf16SequenceLength", "Int32"), ("Utf8SequenceLength", "Int32"), ("Value", "Int32"),
+                ],
+                [
+                    ("CompareTo", "Int32"), ("Equals", "Boolean"), ("GetHashCode", "Int32"),
+                    ("GetType", "Type"), ("ToString", "String"),
+                ]),
+            ["Encoding"] = new(
+                [
+                    ("BodyName", "String"), ("CodePage", "Int32"), ("EncodingName", "String"),
+                    ("HeaderName", "String"), ("IsSingleByte", "Boolean"), ("Preamble", "Byte[]"),
+                    ("WebName", "String"),
+                ],
+                [
+                    ("Equals", "Boolean"), ("GetByteCount", "Int32"), ("GetBytes", "Byte[]"),
+                    ("GetCharCount", "Int32"), ("GetChars", "Char[]"), ("GetMaxByteCount", "Int32"),
+                    ("GetMaxCharCount", "Int32"), ("GetPreamble", "Byte[]"), ("GetString", "String"),
+                    ("GetType", "Type"),
+                ]),
+            ["Regex"] = new(
+                [("Options", "Enum"), ("RightToLeft", "Boolean")],
+                [
+                    ("Count", "Int32"), ("GetGroupNames", "String[]"), ("GetGroupNumbers", "Int32[]"),
+                    ("GetType", "Type"), ("GroupNameFromNumber", "String"), ("GroupNumberFromName", "Int32"),
+                    ("IsMatch", "Boolean"), ("Match", "Match"), ("Matches", "MatchCollection"),
+                    ("Replace", "String"), ("Split", "String[]"), ("ToString", "String"),
+                ]),
+            ["Match"] = new(
+                [
+                    ("Groups", "GroupCollection"), ("Index", "Int32"), ("Length", "Int32"),
+                    ("Name", "String"), ("Success", "Boolean"), ("Value", "String"),
+                ],
+                [
+                    ("GetType", "Type"), ("NextMatch", "Match"), ("Result", "String"),
+                    ("ToString", "String"),
+                ]),
+            ["Group"] = new(
+                [
+                    ("Captures", "CaptureCollection"), ("Index", "Int32"), ("Length", "Int32"),
+                    ("Name", "String"), ("Success", "Boolean"), ("Value", "String"),
+                ],
+                [("GetType", "Type"), ("ToString", "String")]),
+            ["Capture"] = new(
+                [("Index", "Int32"), ("Length", "Int32"), ("Value", "String")],
+                [("GetType", "Type"), ("ToString", "String")]),
+            ["MethodInfo"] = new(
+                [
+                    ("DeclaringType", "Type"), ("IsGenericMethod", "Boolean"), ("IsPublic", "Boolean"),
+                    ("IsStatic", "Boolean"), ("MemberType", "Enum"), ("Name", "String"),
+                    ("ReturnType", "Type"),
+                ],
+                [
+                    ("CreateDelegate", "Delegate"), ("GetParameters", "ParameterInfo[]"), ("GetType", "Type"),
+                    ("Invoke", null), ("ToString", "String"),
+                ]),
+            ["ConstructorInfo"] = new(
+                [
+                    ("DeclaringType", "Type"), ("IsPublic", "Boolean"), ("IsStatic", "Boolean"),
+                    ("MemberType", "Enum"), ("Name", "String"),
+                ],
+                [
+                    ("GetParameters", "ParameterInfo[]"), ("GetType", "Type"), ("Invoke", null),
+                    ("ToString", "String"),
+                ]),
+            ["PropertyInfo"] = new(
+                [
+                    ("CanRead", "Boolean"), ("CanWrite", "Boolean"), ("DeclaringType", "Type"),
+                    ("MemberType", "Enum"), ("Name", "String"), ("PropertyType", "Type"),
+                ],
+                [
+                    ("GetGetMethod", "MethodInfo"), ("GetIndexParameters", "ParameterInfo[]"),
+                    ("GetSetMethod", "MethodInfo"), ("GetType", "Type"), ("GetValue", null),
+                    ("SetValue", null), ("ToString", "String"),
+                ]),
+            ["FieldInfo"] = new(
+                [
+                    ("DeclaringType", "Type"), ("FieldType", "Type"), ("IsInitOnly", "Boolean"),
+                    ("IsLiteral", "Boolean"), ("IsPublic", "Boolean"), ("IsStatic", "Boolean"),
+                    ("MemberType", "Enum"), ("Name", "String"),
+                ],
+                [("GetType", "Type"), ("GetValue", null), ("SetValue", null), ("ToString", "String")]),
+            ["ParameterInfo"] = new(
+                [
+                    ("HasDefaultValue", "Boolean"), ("IsOptional", "Boolean"), ("Name", "String"),
+                    ("ParameterType", "Type"), ("Position", "Int32"),
+                ],
+                [("GetType", "Type"), ("ToString", "String")]),
+            ["Type"] = new(
+                [
+                    ("AssemblyQualifiedName", null), ("BaseType", "Type"),
+                    ("ContainsGenericParameters", "Boolean"), ("FullName", "String"),
+                    ("GenericTypeArguments", "Type[]"), ("HasElementType", "Boolean"), ("IsArray", "Boolean"),
+                    ("IsClass", "Boolean"), ("IsConstructedGenericType", "Boolean"), ("IsEnum", "Boolean"),
+                    ("IsGenericType", "Boolean"), ("IsGenericTypeDefinition", "Boolean"),
+                    ("IsInterface", "Boolean"), ("IsPrimitive", "Boolean"), ("IsValueType", "Boolean"),
+                    ("Name", "String"), ("Namespace", "String"), ("UnderlyingSystemType", "Type"),
+                ],
+                [
+                    ("Equals", "Boolean"), ("GetConstructors", "ConstructorInfo[]"),
+                    ("GetElementType", "Type"), ("GetEnumName", "String"), ("GetEnumNames", "String[]"),
+                    ("GetEnumUnderlyingType", "Type"), ("GetEnumValues", null), ("GetField", "FieldInfo"),
+                    ("GetFields", "FieldInfo[]"), ("GetGenericArguments", "Type[]"),
+                    ("GetGenericTypeDefinition", "Type"), ("GetMember", null), ("GetMembers", null),
+                    ("GetMethod", "MethodInfo"), ("GetMethods", "MethodInfo[]"),
+                    ("GetProperties", "PropertyInfo[]"), ("GetProperty", "PropertyInfo"), ("GetType", "Type"),
+                    ("IsAssignableFrom", "Boolean"), ("IsAssignableTo", "Boolean"),
+                    ("IsEnumDefined", "Boolean"), ("IsInstanceOfType", "Boolean"),
+                    ("IsSubclassOf", "Boolean"), ("MakeArrayType", "Type"), ("MakeGenericType", "Type"),
+                    ("ToString", "String"),
+                ]),
+            ["Delegate"] = DelegateSurface,
+            ["Enum"] = EnumValueSurface,
         };
 
         // The materialized regex collections carry Count as a property and otherwise answer the whole sequence
-        // surface.
-        foreach (var collection in (string[])["MatchCollection", "GroupCollection", "CaptureCollection"])
-        {
-            tables[collection] =
-            [
-                .. SequenceInstanceMembers
-                    .Concat([new CompletionItem("Count", CompletionItemKind.Member, "property")])
-                    .GroupBy(static item => item.Text, StringComparer.Ordinal)
-                    .Select(static group => group.First())
-                    .OrderBy(static item => item.Text, StringComparer.OrdinalIgnoreCase),
-            ];
-        }
+        // surface, with their element types fixed.
+        tables["MatchCollection"] = CollectionSurface("Match");
+        tables["GroupCollection"] = CollectionSurface("Group");
+        tables["CaptureCollection"] = CollectionSurface("Capture");
 
         // Booleans and every boxed numeric answer only the universal members.
         foreach (var scalar in (string[])
@@ -513,30 +692,26 @@ public static class ExpressionCompletionService
             "UIntPtr", "Int128", "UInt128", "BigInteger", "Single", "Double", "Decimal",
         ])
         {
-            tables[scalar] = ScalarInstanceMembers;
+            tables[scalar] = ScalarSurface;
         }
 
         return tables.ToImmutableDictionary(StringComparer.Ordinal);
     }
 
-    private static ImmutableArray<CompletionItem> BuildInstanceItems(
-        ReadOnlySpan<string> properties,
-        ReadOnlySpan<string> methods)
+    private static InstanceSurface CollectionSurface(string elementType) => new(
+        [("Count", "Int32")],
+        [
+            .. SequenceSurfaceTemplate.Members
+                .Where(static pair => pair.Value.IsMethod)
+                .Select(pair => (pair.Key, ResolveSequenceToken(pair.Value.ResultType, elementType))),
+        ]);
+
+    private static string? ResolveSequenceToken(string? resultType, string elementType) => resultType switch
     {
-        var items = ImmutableArray.CreateBuilder<CompletionItem>(properties.Length + methods.Length);
-        foreach (var property in properties)
-        {
-            items.Add(new CompletionItem(property, CompletionItemKind.Member, "property"));
-        }
-
-        foreach (var method in methods)
-        {
-            items.Add(new CompletionItem(method, CompletionItemKind.Member, "method"));
-        }
-
-        items.Sort(static (left, right) => StringComparer.OrdinalIgnoreCase.Compare(left.Text, right.Text));
-        return items.MoveToImmutable();
-    }
+        ElementResult => elementType,
+        SequenceResult => elementType + "[]",
+        _ => resultType,
+    };
 
     /// <summary>
     /// Maps a stored immediate-variable type name to the instance members the constant evaluator dispatches for
@@ -558,28 +733,26 @@ public static class ExpressionCompletionService
             return SequenceInstanceMembers;
         }
 
-        if (typeName is "Action" or "Delegate"
-            || typeName.StartsWith("Func<", StringComparison.Ordinal)
-            || typeName.StartsWith("Action<", StringComparison.Ordinal)
-            || typeName.StartsWith("Predicate<", StringComparison.Ordinal)
-            || typeName.StartsWith("Comparison<", StringComparison.Ordinal))
+        if (IsDelegateTypeName(typeName))
         {
             return DelegateInstanceMembers;
         }
 
-        if (InstanceReceiverMembers.TryGetValue(typeName, out var members))
+        if (InstanceReceiverSurfaces.TryGetValue(typeName, out var surface))
         {
-            return members;
+            return surface.Items;
         }
 
         // A dotted name is a stored enum's full type name; the value reads back as its underlying numeric.
         return typeName.Contains('.', StringComparison.Ordinal) ? ScalarInstanceMembers : [];
     }
 
-    // An enum value dispatches exactly these instance members.
-    private static readonly ImmutableArray<CompletionItem> EnumValueInstanceMembers = BuildInstanceItems(
-        [],
-        ["CompareTo", "GetType", "HasFlag", "ToString"]);
+    private static bool IsDelegateTypeName(string typeName) =>
+        typeName is "Action" or "Delegate"
+        || typeName.StartsWith("Func<", StringComparison.Ordinal)
+        || typeName.StartsWith("Action<", StringComparison.Ordinal)
+        || typeName.StartsWith("Predicate<", StringComparison.Ordinal)
+        || typeName.StartsWith("Comparison<", StringComparison.Ordinal);
 
     // The modeled receivers whose members are enum values, so 'DayOfWeek.Monday.' completes the enum surface.
     private static readonly ImmutableHashSet<string> EnumReceivers = ImmutableHashSet.Create(
@@ -664,18 +837,108 @@ public static class ExpressionCompletionService
             ["float.PositiveInfinity"] = "Single",
         }.ToImmutableDictionary(StringComparer.Ordinal);
 
-    private static ImmutableArray<CompletionItem> StaticMemberInstanceSurface(string receiver, string member)
+    private static string? StaticMemberResultType(string receiver, string member)
     {
         if (EnumReceivers.Contains(receiver)
             && ReceiverMembers.TryGetValue(receiver, out var enumMembers)
             && enumMembers.Contains(member, StringComparer.Ordinal))
         {
-            return EnumValueInstanceMembers;
+            return "Enum";
         }
 
         return StaticMemberResultTypes.TryGetValue($"{receiver}.{member}", out var resultType)
-            ? InstanceMembersForStoredType(resultType)
-            : [];
+            ? resultType
+            : null;
+    }
+
+    /// <summary>Folds one member access over a modeled value type, honoring property-versus-method spelling.</summary>
+    private static string? ApplyMemberResult(string receiverType, string member, bool invoked)
+    {
+        if (receiverType.EndsWith("[]", StringComparison.Ordinal))
+        {
+            var elementType = receiverType[..^2];
+            return SequenceSurfaceTemplate.Members.TryGetValue(member, out var sequenceMember)
+                && sequenceMember.IsMethod == invoked
+                ? ResolveSequenceToken(sequenceMember.ResultType, elementType)
+                : null;
+        }
+
+        var key = IsDelegateTypeName(receiverType) ? "Delegate"
+            : receiverType.Contains('.', StringComparison.Ordinal) ? "Int32"
+            : receiverType;
+        return InstanceReceiverSurfaces.TryGetValue(key, out var surface)
+            && surface.Members.TryGetValue(member, out var info)
+            && info.IsMethod == invoked
+            ? info.ResultType
+            : null;
+    }
+
+    /// <summary>Folds one index access: an array yields its element, a string a char, a collection its item.</summary>
+    private static string? ApplyIndexResult(string receiverType) => receiverType switch
+    {
+        _ when receiverType.EndsWith("[]", StringComparison.Ordinal) => receiverType[..^2],
+        "String" => "Char",
+        "MatchCollection" => "Match",
+        "GroupCollection" => "Group",
+        "CaptureCollection" => "Capture",
+        _ => null,
+    };
+
+    /// <summary>
+    /// Resolves the modeled value type a receiver chain folds to: a string or char literal, a declared variable,
+    /// or a modeled static value at its head, then one member, call, or index application per hop. Null means
+    /// some hop has no modeled value — a method group without parentheses, an unmodeled member, or an unknown
+    /// head — so completion offers nothing rather than guessing.
+    /// </summary>
+    private static string? ResolveChainValueType(
+        CompletionContext context,
+        ImmutableArray<ReceiverSegment> chain)
+    {
+        string? type;
+        int consumed;
+        var head = chain[0];
+        if (head.LiteralType is { } literalType)
+        {
+            type = head.IsInvocation ? null : ApplyIndexes(literalType, head.IndexCount);
+            consumed = 1;
+        }
+        else if (context.Locals.FirstOrDefault(local =>
+            string.Equals(local.Text, head.Name, StringComparison.Ordinal)) is { } local)
+        {
+            type = head.IsInvocation ? null : ApplyIndexes(local.Detail, head.IndexCount);
+            consumed = 1;
+        }
+        else if (chain.Length >= 2
+            && head is { IsInvocation: false, IndexCount: 0 }
+            && chain[1] is { IsInvocation: false } staticMember)
+        {
+            type = ApplyIndexes(StaticMemberResultType(head.Name, staticMember.Name), staticMember.IndexCount);
+            consumed = 2;
+        }
+        else
+        {
+            return null;
+        }
+
+        for (var hop = consumed; hop < chain.Length && type is not null; hop++)
+        {
+            var segment = chain[hop];
+            type = ApplyIndexes(
+                ApplyMemberResult(type, segment.Name, segment.IsInvocation),
+                segment.IndexCount);
+        }
+
+        return type is null or "" or "null" ? null : type;
+
+        static string? ApplyIndexes(string? type, int count)
+        {
+            for (var index = 0; index < count && type is not null; index++)
+            {
+                type = ApplyIndexResult(type);
+            }
+
+            return type;
+        }
     }
 
     /// <summary>
@@ -944,10 +1207,10 @@ public static class ExpressionCompletionService
 
         if (prefixStart > 0 && text[prefixStart - 1] == '.')
         {
-            var segments = ReadReceiverSegments(text, prefixStart - 1);
-            return segments.Length == 0
+            var chain = ReadReceiverChain(text, prefixStart - 1);
+            return chain.Length == 0
                 ? CompletionResult.Empty
-                : CompleteMembers(catalog, context, segments, prefix, prefixStart, caret);
+                : CompleteMembers(catalog, context, chain, prefix, prefixStart, caret);
         }
 
         if (prefix.Length == 0 && !explicitInvocation)
@@ -1059,17 +1322,24 @@ public static class ExpressionCompletionService
     private static CompletionResult CompleteMembers(
         CompletionCatalog catalog,
         CompletionContext context,
-        ImmutableArray<string> segments,
+        ImmutableArray<ReceiverSegment> chain,
         string prefix,
         int prefixStart,
         int caret)
     {
         var replaceLength = caret - prefixStart;
 
+        // Qualified names, root chains, and receiver lookups speak in plain dotted identifiers; a chain with
+        // calls, indexes, or a literal head resolves only as a typed value chain.
+        var isPlain = chain.All(static segment =>
+            segment is { IsInvocation: false, IndexCount: 0, LiteralType: null });
+        var segments = isPlain ? [.. chain.Select(static segment => segment.Name)] : ImmutableArray<string>.Empty;
+
         // A member chain rooted at the adopted root walks declared field types: after 'root.A.' the candidates
         // are the instance fields of A's declared type, realized from the dump on demand — the same field set a
         // chain hop evaluates. An unknown hop offers nothing rather than guessing.
-        if (catalog.HasRoot
+        if (isPlain
+            && catalog.HasRoot
             && segments.Length >= 1
             && string.Equals(segments[0], catalog.RootIdentifier, StringComparison.Ordinal))
         {
@@ -1093,35 +1363,26 @@ public static class ExpressionCompletionService
             return Finish(Score(chainMembers, prefix), prefixStart, replaceLength);
         }
 
-        if (segments is [var single])
+        // A typed value chain — a literal, a declared variable, or a modeled static value at the head, folded
+        // through members, calls, and index accesses — completes the resulting value's instance surface:
+        // 's.Trim().', 'xs[0].', '"text".Split(',')[0].', 'Guid.Empty.Version.', 'x.GetType().Name.'.
+        if (ResolveChainValueType(context, chain) is { } chainType)
         {
-            // A declared immediate variable completes the instance members the constant evaluator dispatches
-            // for its stored value's type; a variable with no modeled instance surface offers nothing.
-            if (context.Locals.FirstOrDefault(
-                local => string.Equals(local.Text, single, StringComparison.Ordinal)) is { } localReceiver)
-            {
-                return Finish(
-                    Score(InstanceMembersForStoredType(localReceiver.Detail), prefix),
-                    prefixStart,
-                    replaceLength);
-            }
-
-            if (ReceiverMembers.TryGetValue(single, out var members))
-            {
-                return Finish(
-                    Score(members.Select(static member => new CompletionItem(member, CompletionItemKind.Member)),
-                        prefix),
-                    prefixStart,
-                    replaceLength);
-            }
+            return Finish(Score(InstanceMembersForStoredType(chainType), prefix), prefixStart, replaceLength);
         }
 
-        // A static member with a modeled folded value completes that value's instance surface: 'Guid.Empty.',
-        // 'Encoding.UTF8.', 'TimeSpan.Zero.', an enum member, or a numeric bound.
-        if (segments is [var staticReceiver, var staticMember]
-            && StaticMemberInstanceSurface(staticReceiver, staticMember) is { IsDefaultOrEmpty: false } surface)
+        if (isPlain && segments is [var single] && ReceiverMembers.TryGetValue(single, out var members))
         {
-            return Finish(Score(surface, prefix), prefixStart, replaceLength);
+            return Finish(
+                Score(members.Select(static member => new CompletionItem(member, CompletionItemKind.Member)),
+                    prefix),
+                prefixStart,
+                replaceLength);
+        }
+
+        if (!isPlain)
+        {
+            return Finish([], prefixStart, replaceLength);
         }
 
         // A qualified receiver resolves as written first; with using directives active, the alias-substituted
@@ -1180,12 +1441,97 @@ public static class ExpressionCompletionService
         return Finish([], prefixStart, replaceLength);
     }
 
-    private static ImmutableArray<string> ReadReceiverSegments(string text, int dotOffset)
+    /// <summary>One parsed hop of a receiver chain, read right-to-left before the completion dot.</summary>
+    /// <param name="Name">The member or identifier name; empty for a literal head.</param>
+    /// <param name="IsInvocation">Whether the hop is spelled as a call, with balanced parentheses.</param>
+    /// <param name="IndexCount">How many index applications follow the hop.</param>
+    /// <param name="LiteralType">The literal head's value type — 'String' or 'Char' — or null.</param>
+    private readonly record struct ReceiverSegment(
+        string Name,
+        bool IsInvocation,
+        int IndexCount,
+        string? LiteralType = null);
+
+    private static ImmutableArray<ReceiverSegment> ReadReceiverChain(string text, int dotOffset)
     {
-        var segments = new List<string>();
+        var segments = new List<ReceiverSegment>();
         var end = dotOffset;
         while (end > 0)
         {
+            var indexCount = 0;
+            var invoked = false;
+
+            // Trailing suffix groups read backwards: index groups first, then at most one call group adjacent
+            // to the name — "Split(',')[0]" is a call followed by one index. The balance scan is lexical, like
+            // the rest of completion; a bracket inside a string argument defeats it and simply completes
+            // nothing.
+            while (end > 0 && text[end - 1] is ')' or ']')
+            {
+                var close = text[end - 1];
+                var open = close == ')' ? '(' : '[';
+                var depth = 0;
+                var scan = end - 1;
+                while (scan >= 0)
+                {
+                    if (text[scan] == close)
+                    {
+                        depth++;
+                    }
+                    else if (text[scan] == open)
+                    {
+                        depth--;
+                        if (depth == 0)
+                        {
+                            break;
+                        }
+                    }
+
+                    scan--;
+                }
+
+                if (scan < 0)
+                {
+                    return [];
+                }
+
+                end = scan;
+                if (close == ')')
+                {
+                    invoked = true;
+                    break;
+                }
+
+                indexCount++;
+            }
+
+            // A string or char literal ends the backward walk as the chain's head value.
+            if (end > 0 && text[end - 1] is '"' or '\'')
+            {
+                if (invoked)
+                {
+                    return [];
+                }
+
+                var quote = text[end - 1];
+                var scan = end - 2;
+                while (scan >= 0 && (text[scan] != quote || (scan > 0 && text[scan - 1] == '\\')))
+                {
+                    scan--;
+                }
+
+                if (scan < 0)
+                {
+                    return [];
+                }
+
+                segments.Insert(0, new ReceiverSegment(
+                    string.Empty,
+                    IsInvocation: false,
+                    indexCount,
+                    quote == '"' ? "String" : "Char"));
+                return [.. segments];
+            }
+
             var start = end;
             while (start > 0 && IsIdentifierChar(text[start - 1]))
             {
@@ -1197,7 +1543,7 @@ public static class ExpressionCompletionService
                 return [];
             }
 
-            segments.Insert(0, text[start..end]);
+            segments.Insert(0, new ReceiverSegment(text[start..end], invoked, indexCount));
             if (start > 0 && text[start - 1] == '.')
             {
                 end = start - 1;

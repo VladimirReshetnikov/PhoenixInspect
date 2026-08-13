@@ -256,8 +256,87 @@ public sealed class ExpressionCompletionTests
 
         // A member that produces an explained stop folds no value, so nothing chains after it.
         Assert.Empty(ExpressionCompletionService.Complete(CompletionCatalog.Empty, "DateTime.Now.", 13).Items);
+
+        // A deeper chain keeps folding member result types: Guid.Empty.Version is an Int32.
+        Assert.Equal(
+            ["GetType", "ToString"],
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "Guid.Empty.Version.", 19)
+                .Items.Select(static item => item.Text).ToArray());
+    }
+
+    /// <summary>Proves chains fold through method calls, index accesses, and literal heads.</summary>
+    [Fact]
+    public void Chains_fold_through_calls_indexes_and_literals()
+    {
+        var context = new CompletionContext
+        {
+            Locals =
+            [
+                new CompletionItem("s", CompletionItemKind.Local, "String"),
+                new CompletionItem("xs", CompletionItemKind.Local, "Int32[]"),
+                new CompletionItem("t", CompletionItemKind.Local, "TimeSpan"),
+            ],
+        };
+
+        // A method call folds to its result type: Trim() is a String again, Length an Int32.
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "s.Trim().Len", 12, context).Items,
+            static item => item.Text == "Length");
+        Assert.Equal(
+            ["GetType", "ToString"],
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "s.Length.", 9, context)
+                .Items.Select(static item => item.Text).ToArray());
+
+        // Calls with arguments and index accesses fold too: Split(',') is a String[], its element a String.
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "s.Split(',').", 13, context).Items,
+            static item => item.Text == "Where");
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "s.Split(',')[0].Sub", 19, context)
+                .Items,
+            static item => item.Text == "Substring");
+        Assert.Equal(
+            ["GetType", "ToString"],
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "xs[0].", 6, context)
+                .Items.Select(static item => item.Text).ToArray());
+
+        // A literal head carries its own type.
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "\"phoenix\".Len", 13, context).Items,
+            static item => item.Text == "Length");
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "\"a,b\".Split(',').", 17, context)
+                .Items,
+            static item => item.Text == "First");
+
+        // GetType() opens the reflective surface, and its members keep chaining.
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "s.GetType().Full", 16, context).Items,
+            static item => item.Text == "FullName");
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "s.GetType().Name.", 17, context)
+                .Items,
+            static item => item.Text == "Substring");
+
+        // Temporal chains: Duration() folds a TimeSpan; an enum-typed property offers the enum surface.
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "t.Duration().Tot", 16, context).Items,
+            static item => item.Text == "TotalSeconds");
+        Assert.Equal(
+            ["CompareTo", "GetType", "HasFlag", "ToString"],
+            ExpressionCompletionService.Complete(
+                CompletionCatalog.Empty, "DateTime.MaxValue.DayOfWeek.", 28)
+                .Items.Select(static item => item.Text).ToArray());
+        Assert.Contains(
+            ExpressionCompletionService.Complete(
+                CompletionCatalog.Empty, "DateTime.MaxValue.AddDays(1).", 29).Items,
+            static item => item.Text == "Year");
+
+        // A method group without parentheses folds no value, and a property spelled as a call folds none either.
         Assert.Empty(
-            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "Guid.Empty.Version.", 19).Items);
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "s.Trim.", 7, context).Items);
+        Assert.Empty(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "s.Length().", 11, context).Items);
     }
 
     /// <summary>Proves using directives admit prefix-less completion: namespaces, aliases, static imports.</summary>
