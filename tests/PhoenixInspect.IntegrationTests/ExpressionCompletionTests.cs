@@ -320,6 +320,54 @@ public sealed class ExpressionCompletionTests
         Assert.Empty(ExpressionCompletionService.Complete(SampleCatalog, "ServiceState.", 13).Items);
     }
 
+    /// <summary>Proves '#r' references contribute their types, namespaces, and static members.</summary>
+    [Fact]
+    public void References_contribute_types_and_members()
+    {
+        var loaded = ConstantReferenceAssembly.TryLoad(
+            typeof(ExpressionCompletionService).Assembly.Location, alias: null, out var error);
+        Assert.Null(error);
+        var index = new ReferenceCompletionIndex([loaded!]);
+        var context = new CompletionContext { References = index };
+
+        // The reference's namespaces complete at the top level and drill down like dump-module names.
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "Phoen", 5, context).Items,
+            static item => item is
+            { Text: "PhoenixInspect", Kind: CompletionItemKind.Namespace, Detail: "from references" });
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "PhoenixInspect.", 15, context).Items,
+            static item => item.Text == "Inspection");
+
+        // A referenced type's static members realize synchronously — no pending handshake.
+        var members = ExpressionCompletionService.Complete(
+            CompletionCatalog.Empty,
+            "PhoenixInspect.Inspection.ExpressionCompletionService.Maximum",
+            "PhoenixInspect.Inspection.ExpressionCompletionService.Maximum".Length,
+            context);
+        Assert.Contains(members.Items, static item => item is { Text: "MaximumItems", Detail: "const" });
+        Assert.Null(members.PendingTypeMembers);
+
+        // Using directives reach into references exactly as they reach into dump modules.
+        var usingContext = context with
+        {
+            Usings = ConstantUsingDirectiveSet.Empty.WithImportedNamespace("PhoenixInspect.Inspection"),
+        };
+        Assert.Contains(
+            ExpressionCompletionService.Complete(
+                CompletionCatalog.Empty, "ExpressionCompletionServ", 24, usingContext).Items,
+            static item => item is { Text: "ExpressionCompletionService", Kind: CompletionItemKind.Type });
+        Assert.Contains(
+            ExpressionCompletionService.Complete(
+                CompletionCatalog.Empty, "ExpressionCompletionService.Maximum", 35, usingContext).Items,
+            static item => item.Text == "MaximumItems");
+
+        // An aliased reference is reachable only through its extern alias, so it contributes nothing bare.
+        var aliased = ConstantReferenceAssembly.TryLoad(
+            typeof(ExpressionCompletionService).Assembly.Location, alias: "ext", out _);
+        Assert.True(new ReferenceCompletionIndex([aliased!]).IsEmpty);
+    }
+
     /// <summary>Proves the immediate-window context: locals, statement keywords, and explicit invocation.</summary>
     [Fact]
     public void Immediate_context_offers_locals_and_statement_keywords()

@@ -52,6 +52,100 @@ public sealed record CompletionContext
     /// resolve without their prefixes, and static imports offer their members as bare identifiers.
     /// </summary>
     public ConstantUsingDirectiveSet Usings { get; init; } = ConstantUsingDirectiveSet.Empty;
+
+    /// <summary>Gets the '#r'-referenced assemblies' completion facts, or null with no references.</summary>
+    public ReferenceCompletionIndex? References { get; init; }
+}
+
+/// <summary>
+/// The completion facts of the immediate window's <c>#r</c> references: top-level type names scanned once at
+/// construction, and static-member lists realized synchronously on first use — a reference's metadata is retained
+/// local bytes, so no session round-trip is needed. An aliased reference is reachable only through its extern
+/// alias, which the completion grammar never spells, so it contributes nothing here.
+/// </summary>
+/// <remarks>The realized-member cache is not thread-safe; one editor consults it from its UI thread.</remarks>
+public sealed class ReferenceCompletionIndex
+{
+    private readonly ImmutableArray<ConstantReferenceAssembly> globalReferences;
+    private readonly Dictionary<string, ImmutableArray<CompletionItem>> realizedMembers = new(StringComparer.Ordinal);
+
+    /// <summary>Gets the empty index.</summary>
+    public static ReferenceCompletionIndex Empty { get; } = new([]);
+
+    /// <summary>Builds the index over the current references.</summary>
+    /// <param name="references">The referenced assemblies; aliased ones are skipped.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="references"/> is default.</exception>
+    public ReferenceCompletionIndex(ImmutableArray<ConstantReferenceAssembly> references)
+    {
+        if (references.IsDefault)
+        {
+            throw new ArgumentNullException(nameof(references));
+        }
+
+        globalReferences = [.. references.Where(static reference => reference.Alias is null)];
+        var typeNames = ImmutableArray.CreateBuilder<string>();
+        foreach (var reference in globalReferences)
+        {
+            if (typeNames.Count >= ExpressionCompletionService.MaximumCatalogTypes)
+            {
+                break;
+            }
+
+            try
+            {
+                using var provider = MetadataReaderProvider.FromMetadataImage(reference.MetadataBytes);
+                ExpressionCompletionService.CollectTopLevelTypeNames(
+                    provider.GetMetadataReader(), typeNames, ExpressionCompletionService.MaximumCatalogTypes);
+            }
+            catch (BadImageFormatException)
+            {
+                // A malformed image contributes no names.
+            }
+        }
+
+        TypeFullNames = [.. typeNames.Distinct(StringComparer.Ordinal)];
+    }
+
+    /// <summary>Gets whether the index carries no names.</summary>
+    public bool IsEmpty => TypeFullNames.IsEmpty;
+
+    /// <summary>Gets the top-level type full names of the global-scope references, bounded.</summary>
+    public ImmutableArray<string> TypeFullNames { get; }
+
+    /// <summary>Reads one referenced type's static-field completions, cached after the first scan.</summary>
+    /// <param name="typeFullName">The dotted full name of a top-level type.</param>
+    /// <returns>The static-field completions, possibly empty.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="typeFullName"/> is null.</exception>
+    public ImmutableArray<CompletionItem> GetStaticMembers(string typeFullName)
+    {
+        ArgumentNullException.ThrowIfNull(typeFullName);
+        if (realizedMembers.TryGetValue(typeFullName, out var cached))
+        {
+            return cached;
+        }
+
+        var separator = typeFullName.LastIndexOf('.');
+        var typeNamespace = separator < 0 ? string.Empty : typeFullName[..separator];
+        var typeName = separator < 0 ? typeFullName : typeFullName[(separator + 1)..];
+        var members = ImmutableArray.CreateBuilder<CompletionItem>();
+        foreach (var reference in globalReferences)
+        {
+            try
+            {
+                using var provider = MetadataReaderProvider.FromMetadataImage(reference.MetadataBytes);
+                ExpressionCompletionService.CollectStaticMemberCompletions(
+                    provider.GetMetadataReader(), typeNamespace, typeName, members);
+            }
+            catch (BadImageFormatException)
+            {
+                // A malformed image contributes no members.
+            }
+        }
+
+        var realized = ExpressionCompletionService.FinishMemberList(members);
+        realizedMembers[typeFullName] = realized;
+        return realized;
+    }
 }
 
 /// <summary>One completion candidate.</summary>
@@ -634,29 +728,7 @@ public static class ExpressionCompletionService
             try
             {
                 using var provider = MetadataReaderProvider.FromMetadataImage(content.Evidence[0].Bytes);
-                var reader = provider.GetMetadataReader();
-                foreach (var handle in reader.TypeDefinitions)
-                {
-                    if (typeNames.Count >= MaximumCatalogTypes)
-                    {
-                        break;
-                    }
-
-                    var typeDefinition = reader.GetTypeDefinition(handle);
-                    if (!typeDefinition.GetDeclaringType().IsNil)
-                    {
-                        continue;
-                    }
-
-                    var name = reader.GetString(typeDefinition.Name);
-                    if (name.Length == 0 || name.Contains('<', StringComparison.Ordinal) || name == "<Module>")
-                    {
-                        continue;
-                    }
-
-                    var typeNamespace = reader.GetString(typeDefinition.Namespace);
-                    typeNames.Add(typeNamespace.Length == 0 ? name : $"{typeNamespace}.{name}");
-                }
+                CollectTopLevelTypeNames(provider.GetMetadataReader(), typeNames, MaximumCatalogTypes);
             }
             catch (BadImageFormatException)
             {
@@ -702,38 +774,7 @@ public static class ExpressionCompletionService
             try
             {
                 using var provider = MetadataReaderProvider.FromMetadataImage(content.Evidence[0].Bytes);
-                var reader = provider.GetMetadataReader();
-                foreach (var handle in reader.TypeDefinitions)
-                {
-                    var typeDefinition = reader.GetTypeDefinition(handle);
-                    if (!typeDefinition.GetDeclaringType().IsNil ||
-                        !reader.StringComparer.Equals(typeDefinition.Name, typeName) ||
-                        !reader.StringComparer.Equals(typeDefinition.Namespace, typeNamespace))
-                    {
-                        continue;
-                    }
-
-                    foreach (var fieldHandle in typeDefinition.GetFields())
-                    {
-                        var field = reader.GetFieldDefinition(fieldHandle);
-                        if ((field.Attributes & FieldAttributes.Static) == 0)
-                        {
-                            continue;
-                        }
-
-                        var fieldName = reader.GetString(field.Name);
-                        if (fieldName.Length == 0 || fieldName.Contains('<', StringComparison.Ordinal))
-                        {
-                            continue;
-                        }
-
-                        var isLiteral = (field.Attributes & FieldAttributes.Literal) != 0;
-                        members.Add(new CompletionItem(
-                            fieldName,
-                            CompletionItemKind.Field,
-                            isLiteral ? "const" : "static field"));
-                    }
-                }
+                CollectStaticMemberCompletions(provider.GetMetadataReader(), typeNamespace, typeName, members);
             }
             catch (BadImageFormatException)
             {
@@ -741,14 +782,97 @@ public static class ExpressionCompletionService
             }
         }
 
-        return
-        [
-            .. members
-                .GroupBy(static item => item.Text, StringComparer.Ordinal)
-                .Select(static group => group.First())
-                .OrderBy(static item => item.Text, StringComparer.OrdinalIgnoreCase),
-        ];
+        return FinishMemberList(members);
     }
+
+    /// <summary>Collects the spellable top-level type full names of one metadata image, bounded.</summary>
+    /// <param name="reader">The metadata reader.</param>
+    /// <param name="typeNames">The builder the names accumulate into, across images.</param>
+    /// <param name="maximum">The greatest total number of names to collect.</param>
+    internal static void CollectTopLevelTypeNames(
+        MetadataReader reader,
+        ImmutableArray<string>.Builder typeNames,
+        int maximum)
+    {
+        foreach (var handle in reader.TypeDefinitions)
+        {
+            if (typeNames.Count >= maximum)
+            {
+                break;
+            }
+
+            var typeDefinition = reader.GetTypeDefinition(handle);
+            if (!typeDefinition.GetDeclaringType().IsNil)
+            {
+                continue;
+            }
+
+            var name = reader.GetString(typeDefinition.Name);
+            if (name.Length == 0 || name.Contains('<', StringComparison.Ordinal) || name == "<Module>")
+            {
+                continue;
+            }
+
+            var typeNamespace = reader.GetString(typeDefinition.Namespace);
+            typeNames.Add(typeNamespace.Length == 0 ? name : $"{typeNamespace}.{name}");
+        }
+    }
+
+    /// <summary>Collects one named type's static-field completions from one metadata image.</summary>
+    /// <param name="reader">The metadata reader.</param>
+    /// <param name="typeNamespace">The type's namespace, possibly empty.</param>
+    /// <param name="typeName">The type's simple name.</param>
+    /// <param name="members">The builder the members accumulate into, across images.</param>
+    internal static void CollectStaticMemberCompletions(
+        MetadataReader reader,
+        string typeNamespace,
+        string typeName,
+        ImmutableArray<CompletionItem>.Builder members)
+    {
+        foreach (var handle in reader.TypeDefinitions)
+        {
+            var typeDefinition = reader.GetTypeDefinition(handle);
+            if (!typeDefinition.GetDeclaringType().IsNil ||
+                !reader.StringComparer.Equals(typeDefinition.Name, typeName) ||
+                !reader.StringComparer.Equals(typeDefinition.Namespace, typeNamespace))
+            {
+                continue;
+            }
+
+            foreach (var fieldHandle in typeDefinition.GetFields())
+            {
+                var field = reader.GetFieldDefinition(fieldHandle);
+                if ((field.Attributes & FieldAttributes.Static) == 0)
+                {
+                    continue;
+                }
+
+                var fieldName = reader.GetString(field.Name);
+                if (fieldName.Length == 0 || fieldName.Contains('<', StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                var isLiteral = (field.Attributes & FieldAttributes.Literal) != 0;
+                members.Add(new CompletionItem(
+                    fieldName,
+                    CompletionItemKind.Field,
+                    isLiteral ? "const" : "static field"));
+            }
+        }
+    }
+
+    /// <summary>Deduplicates and orders one collected member list for display.</summary>
+    /// <param name="members">The collected members.</param>
+    /// <returns>The display list.</returns>
+    internal static ImmutableArray<CompletionItem> FinishMemberList(
+        ImmutableArray<CompletionItem>.Builder members) =>
+    [
+        .. members
+            .GroupBy(static item => item.Text, StringComparer.Ordinal)
+            .Select(static group => group.First())
+            .OrderBy(static item => item.Text, StringComparer.OrdinalIgnoreCase),
+    ];
 
     /// <summary>
     /// Reads one runtime type's instance-field completions, for member-chain hops: each item's detail carries the
@@ -855,6 +979,14 @@ public static class ExpressionCompletionService
                 .Select(static segment => new CompletionItem(
                     segment, CompletionItemKind.Namespace, "from dump modules")),
             prefix));
+        var referenceNames = context.References?.TypeFullNames ?? [];
+        items.AddRange(Score(
+            referenceNames
+                .Select(static fullName => FirstSegment(fullName))
+                .Distinct(StringComparer.Ordinal)
+                .Select(static segment => new CompletionItem(
+                    segment, CompletionItemKind.Namespace, "from references")),
+            prefix));
 
         var pendingStaticImport = (string?)null;
         if (!context.Usings.IsEmpty)
@@ -865,7 +997,7 @@ public static class ExpressionCompletionService
             foreach (var importedNamespace in context.Usings.ImportedNamespaces)
             {
                 var namespacePrefix = importedNamespace + ".";
-                foreach (var fullName in catalog.TypeFullNames)
+                foreach (var fullName in catalog.TypeFullNames.Concat(referenceNames))
                 {
                     if (!fullName.StartsWith(namespacePrefix, StringComparison.Ordinal))
                     {
@@ -894,18 +1026,24 @@ public static class ExpressionCompletionService
                     .Select(pair => new CompletionItem(
                         pair.Key,
                         catalog.TypeFullNames.Contains(pair.Value, StringComparer.Ordinal)
+                            || referenceNames.Contains(pair.Value, StringComparer.Ordinal)
                             ? CompletionItemKind.Type
                             : CompletionItemKind.Namespace,
                         pair.Value)),
                 prefix));
 
-            // Statically imported members complete bare once realized; the first unrealized import asks the
-            // host to fetch, and the refreshed catalog answers the next query.
+            // Statically imported members complete bare: a referenced type's members realize synchronously, a
+            // dump type's members once realized — the first unrealized import asks the host to fetch, and the
+            // refreshed catalog answers the next query.
             foreach (var staticType in context.Usings.StaticImportedTypes)
             {
                 if (catalog.TypeMembers.TryGetValue(staticType, out var importedMembers))
                 {
                     items.AddRange(Score(importedMembers, prefix));
+                }
+                else if (context.References?.GetStaticMembers(staticType) is { IsEmpty: false } referenceMembers)
+                {
+                    items.AddRange(Score(referenceMembers, prefix));
                 }
                 else if (pendingStaticImport is null
                     && catalog.TypeFullNames.Contains(staticType, StringComparer.Ordinal))
@@ -988,6 +1126,7 @@ public static class ExpressionCompletionService
 
         // A qualified receiver resolves as written first; with using directives active, the alias-substituted
         // and namespace-prefixed spellings then get their chance, in evaluation's own candidate order.
+        var referenceNames = context.References?.TypeFullNames ?? [];
         var candidates = context.Usings.IsEmpty
             ? ImmutableArray.Create(string.Join('.', segments))
             : context.Usings.ExpandTypeCandidates(segments);
@@ -998,10 +1137,17 @@ public static class ExpressionCompletionService
                 return Finish(Score(realized, prefix), prefixStart, replaceLength);
             }
 
+            // A referenced type's static members realize synchronously from the retained metadata bytes.
+            if (referenceNames.Contains(dotted, StringComparer.Ordinal)
+                && context.References!.GetStaticMembers(dotted) is { IsEmpty: false } referenceMembers)
+            {
+                return Finish(Score(referenceMembers, prefix), prefixStart, replaceLength);
+            }
+
             var namespacePrefix = dotted + ".";
             var items = new List<ScoredItem>();
             var seen = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var fullName in catalog.TypeFullNames)
+            foreach (var fullName in catalog.TypeFullNames.Concat(referenceNames))
             {
                 if (!fullName.StartsWith(namespacePrefix, StringComparison.Ordinal))
                 {

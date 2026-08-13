@@ -21,6 +21,7 @@ public sealed class ImmediateViewModel : ObservableObject
     private int historyIndex = -1;
     private string inputText = string.Empty;
     private ImmutableArray<ConstantReferenceAssembly> references = [];
+    private ReferenceCompletionIndex referenceIndex = ReferenceCompletionIndex.Empty;
     private ConstantUsingDirectiveSet usings = ConstantUsingDirectiveSet.Empty;
     private readonly ImmediateVariableStore variables = new();
 
@@ -64,6 +65,7 @@ public sealed class ImmediateViewModel : ObservableObject
         Locals = variables.ListCompletions(),
         AllowsStatements = true,
         Usings = usings,
+        References = referenceIndex,
     };
 
     /// <summary>Gets a statement of the context immediate expressions currently evaluate under.</summary>
@@ -108,6 +110,7 @@ public sealed class ImmediateViewModel : ObservableObject
             if (applied)
             {
                 references = updated;
+                referenceIndex = new ReferenceCompletionIndex(references);
             }
 
             AppendLine($"// {directiveMessage}");
