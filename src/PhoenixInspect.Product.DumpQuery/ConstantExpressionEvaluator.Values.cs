@@ -62,12 +62,15 @@ public static partial class ConstantExpressionEvaluator
 
         /// <summary>A <see cref="System.Text.Rune"/> Unicode scalar value.</summary>
         Rune,
+
+        /// <summary>The <see cref="System.DBNull"/> singleton.</summary>
+        DBNull,
     }
 
     /// <summary>The namespace each BCL value kind's runtime type lives in.</summary>
     private static string BclValueNamespaceOf(BclValueKind kind) => kind switch
     {
-        BclValueKind.Guid or BclValueKind.Version => "System",
+        BclValueKind.Guid or BclValueKind.Version or BclValueKind.DBNull => "System",
         BclValueKind.Encoding or BclValueKind.Rune => "System.Text",
         BclValueKind.MethodInfo or BclValueKind.ConstructorInfo or BclValueKind.PropertyInfo or
             BclValueKind.FieldInfo or BclValueKind.ParameterInfo => "System.Reflection",
@@ -80,6 +83,8 @@ public static partial class ConstantExpressionEvaluator
     {
         BclValueKind.Guid => ((Guid)operand.Box!).ToString("D", CultureInfo.InvariantCulture),
         BclValueKind.Version => ((Version)operand.Box!).ToString(),
+        // DBNull's own text form is empty, exactly as DBNull.Value.ToString() renders.
+        BclValueKind.DBNull => string.Empty,
         _ when IsReflectionKind(operand.BclValueKind) => RenderReflectionValue(operand),
         _ => RenderTextValue(operand),
     };
@@ -229,6 +234,7 @@ public static partial class ConstantExpressionEvaluator
             (BclValueKind.Encoding, _) => DispatchEncodingStaticProperty(member),
             (BclValueKind.Rune, "ReplacementChar") =>
                 BclValue(BclValueKind.Rune, System.Text.Rune.ReplacementChar),
+            (BclValueKind.DBNull, "Value") => BclValue(BclValueKind.DBNull, DBNull.Value),
             _ => MemberUnsupported($"{kind}.{member}"),
         };
 
@@ -298,6 +304,11 @@ public static partial class ConstantExpressionEvaluator
             return DispatchReflectionProperty(receiver, member);
         }
 
+        if (receiver.BclValueKind == BclValueKind.DBNull)
+        {
+            return MemberUnsupported($"DBNull.{member}");
+        }
+
         if (receiver.BclValueKind != BclValueKind.Version)
         {
             return DispatchTextValueProperty(receiver, member);
@@ -323,6 +334,11 @@ public static partial class ConstantExpressionEvaluator
         if (IsReflectionKind(receiver.BclValueKind))
         {
             return DispatchReflectionMethod(receiver, name, arguments, context: null);
+        }
+
+        if (receiver.BclValueKind == BclValueKind.DBNull)
+        {
+            return DispatchDBNullMethod(name, arguments);
         }
 
         if (receiver.BclValueKind is not (BclValueKind.Guid or BclValueKind.Version))
@@ -382,6 +398,14 @@ public static partial class ConstantExpressionEvaluator
             var sameEncoding = left.Box!.Equals(right.Box);
             return FoldOutcome.Folded(Operand.FromBoolean(
                 kind == SyntaxKind.EqualsExpression ? sameEncoding : !sameEncoding));
+        }
+
+        // DBNull is a singleton, so two DBNull values are always the same reference.
+        if (left is { Kind: OperandKind.BclValue, BclValueKind: BclValueKind.DBNull } &&
+            right is { Kind: OperandKind.BclValue, BclValueKind: BclValueKind.DBNull } &&
+            kind is SyntaxKind.EqualsExpression or SyntaxKind.NotEqualsExpression)
+        {
+            return FoldOutcome.Folded(Operand.FromBoolean(kind == SyntaxKind.EqualsExpression));
         }
 
         if (kind is not (SyntaxKind.EqualsExpression or SyntaxKind.NotEqualsExpression or

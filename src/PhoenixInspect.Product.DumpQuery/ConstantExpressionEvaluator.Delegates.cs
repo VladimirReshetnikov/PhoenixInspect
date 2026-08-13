@@ -411,9 +411,11 @@ public static partial class ConstantExpressionEvaluator
             BclValueKind.Encoding => typeof(System.Text.Encoding),
             BclValueKind.Regex => typeof(System.Text.RegularExpressions.Regex),
             BclValueKind.Rune => typeof(System.Text.Rune),
+            BclValueKind.DBNull => typeof(DBNull),
             _ => null,
         },
         TypeReceiverCategory.CharUnicodeInfo => typeof(System.Globalization.CharUnicodeInfo),
+        TypeReceiverCategory.SystemConvert => typeof(Convert),
         TypeReceiverCategory.Numeric => RuntimeTypeOfRef(SystemRef(
             receiver.Numeric.ToString(),
             receiver.Numeric.ToString())),

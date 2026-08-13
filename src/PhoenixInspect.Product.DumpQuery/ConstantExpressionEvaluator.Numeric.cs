@@ -969,6 +969,7 @@ public static partial class ConstantExpressionEvaluator
         Activator,
         SystemDelegate,
         CharUnicodeInfo,
+        SystemConvert,
     }
 
     private readonly record struct TypeReceiver(
@@ -1055,6 +1056,24 @@ public static partial class ConstantExpressionEvaluator
             (UnicodeCategoryFullName, "ModifierSymbol") => 27,
             (UnicodeCategoryFullName, "OtherSymbol") => 28,
             (UnicodeCategoryFullName, "OtherNotAssigned") => 29,
+            (TypeCodeFullName, "Empty") => 0,
+            (TypeCodeFullName, "Object") => 1,
+            (TypeCodeFullName, "DBNull") => 2,
+            (TypeCodeFullName, "Boolean") => 3,
+            (TypeCodeFullName, "Char") => 4,
+            (TypeCodeFullName, "SByte") => 5,
+            (TypeCodeFullName, "Byte") => 6,
+            (TypeCodeFullName, "Int16") => 7,
+            (TypeCodeFullName, "UInt16") => 8,
+            (TypeCodeFullName, "Int32") => 9,
+            (TypeCodeFullName, "UInt32") => 10,
+            (TypeCodeFullName, "Int64") => 11,
+            (TypeCodeFullName, "UInt64") => 12,
+            (TypeCodeFullName, "Single") => 13,
+            (TypeCodeFullName, "Double") => 14,
+            (TypeCodeFullName, "Decimal") => 15,
+            (TypeCodeFullName, "DateTime") => 16,
+            (TypeCodeFullName, "String") => 18,
             _ => null,
         };
         return value is { } resolved
@@ -1228,6 +1247,15 @@ public static partial class ConstantExpressionEvaluator
             case "UnicodeCategory":
                 receiver = new TypeReceiver(TypeReceiverCategory.KnownEnum, default, UnicodeCategoryFullName);
                 return true;
+            case "Convert":
+                receiver = new TypeReceiver(TypeReceiverCategory.SystemConvert, default);
+                return true;
+            case "TypeCode":
+                receiver = new TypeReceiver(TypeReceiverCategory.KnownEnum, default, TypeCodeFullName);
+                return true;
+            case "DBNull":
+                receiver = new TypeReceiver(TypeReceiverCategory.BclValue, default, Value: BclValueKind.DBNull);
+                return true;
             case "MemberTypes":
                 receiver = new TypeReceiver(TypeReceiverCategory.KnownEnum, default, MemberTypesFullName);
                 return true;
@@ -1287,6 +1315,8 @@ public static partial class ConstantExpressionEvaluator
                 return MemberUnsupported($"Delegate.{member}");
             case TypeReceiverCategory.CharUnicodeInfo:
                 return MemberUnsupported($"CharUnicodeInfo.{member}");
+            case TypeReceiverCategory.SystemConvert:
+                return DispatchConvertStaticProperty(member);
             default:
                 return DispatchNumericTypeStatic(receiver.Numeric, member);
         }

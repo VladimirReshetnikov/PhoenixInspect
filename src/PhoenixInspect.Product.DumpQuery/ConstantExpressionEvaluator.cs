@@ -2599,6 +2599,8 @@ public static partial class ConstantExpressionEvaluator
                 return DispatchDelegateStatic(name, arguments);
             case TypeReceiverCategory.CharUnicodeInfo:
                 return DispatchCharUnicodeInfo(name, arguments);
+            case TypeReceiverCategory.SystemConvert:
+                return DispatchConvert(name, arguments);
             default:
                 return DispatchNumericTypeMethod(typeReceiver.Numeric, name, arguments);
         }

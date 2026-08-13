@@ -116,13 +116,14 @@ public static class ExpressionCompletionService
 
     private static readonly ImmutableArray<string> ModeledTypeNames =
     [
-        "Action", "Activator", "Array", "BigInteger", "CharUnicodeInfo", "Comparison", "DateOnly", "DateTime",
-        "DateTimeKind", "DateTimeOffset", "DayOfWeek", "Delegate", "Dictionary", "Encoding", "Enum", "Enumerable",
+        "Action", "Activator", "Array", "BigInteger", "CharUnicodeInfo", "Comparison", "Convert", "DateOnly",
+        "DateTime", "DateTimeKind", "DateTimeOffset", "DayOfWeek", "DBNull", "Delegate", "Dictionary", "Encoding",
+        "Enum", "Enumerable",
         "Func", "Guid", "ICollection", "IComparable", "IDictionary", "IEnumerable", "IEquatable", "IList",
         "Int128", "IReadOnlyCollection", "IReadOnlyDictionary", "IReadOnlyList", "KeyValuePair", "List", "Math",
         "MemberTypes", "MulticastDelegate", "Nullable", "Object", "Predicate", "Regex", "RegexOptions", "Rune",
-        "String", "StringComparison", "StringSplitOptions", "TimeOnly", "TimeSpan", "UInt128", "UnicodeCategory",
-        "ValueType", "Version",
+        "String", "StringComparison", "StringSplitOptions", "TimeOnly", "TimeSpan", "TypeCode", "UInt128",
+        "UnicodeCategory", "ValueType", "Version",
     ];
 
     // Members mirror the evaluator's dispatch tables; a member that is a deliberate typed stop (Now, NewGuid,
@@ -184,6 +185,19 @@ public static class ExpressionCompletionService
             ],
             ["CharUnicodeInfo"] =
             ["GetDecimalDigitValue", "GetDigitValue", "GetNumericValue", "GetUnicodeCategory"],
+            ["Convert"] =
+            [
+                "ChangeType", "DBNull", "FromBase64String", "FromHexString", "GetTypeCode", "IsDBNull",
+                "ToBase64String", "ToBoolean", "ToByte", "ToChar", "ToDateTime", "ToDecimal", "ToDouble",
+                "ToHexString", "ToHexStringLower", "ToInt16", "ToInt32", "ToInt64", "ToSByte", "ToSingle",
+                "ToString", "ToUInt16", "ToUInt32", "ToUInt64",
+            ],
+            ["DBNull"] = ["Value"],
+            ["TypeCode"] =
+            [
+                "Boolean", "Byte", "Char", "DateTime", "DBNull", "Decimal", "Double", "Empty", "Int16", "Int32",
+                "Int64", "Object", "SByte", "Single", "String", "UInt16", "UInt32", "UInt64",
+            ],
             ["MemberTypes"] =
             ["All", "Constructor", "Custom", "Event", "Field", "Method", "NestedType", "Property", "TypeInfo"],
             ["RegexOptions"] =

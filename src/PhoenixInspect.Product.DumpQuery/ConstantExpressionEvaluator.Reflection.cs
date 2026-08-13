@@ -84,6 +84,8 @@ public static partial class ConstantExpressionEvaluator
         new(NamespacedRef("Rune", "System.Text"), typeof(System.Text.Rune), true),
         new(NamespacedRef("CharUnicodeInfo", "System.Globalization"),
             typeof(System.Globalization.CharUnicodeInfo), true),
+        new(SystemRef("Convert", "Convert"), typeof(Convert), true),
+        new(SystemRef("DBNull", "DBNull"), typeof(DBNull), true),
     ];
 
     private static TypeRef NamespacedRef(string name, string typeNamespace) => new(
@@ -305,6 +307,12 @@ public static partial class ConstantExpressionEvaluator
                 return true;
             case "System.Globalization.CharUnicodeInfo":
                 receiver = new TypeReceiver(TypeReceiverCategory.CharUnicodeInfo, default);
+                return true;
+            case "System.Convert":
+                receiver = new TypeReceiver(TypeReceiverCategory.SystemConvert, default);
+                return true;
+            case "System.DBNull":
+                receiver = new TypeReceiver(TypeReceiverCategory.BclValue, default, Value: BclValueKind.DBNull);
                 return true;
             case "System.Guid":
                 receiver = new TypeReceiver(TypeReceiverCategory.BclValue, default, Value: BclValueKind.Guid);
