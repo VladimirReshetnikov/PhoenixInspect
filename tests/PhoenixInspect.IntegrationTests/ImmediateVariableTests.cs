@@ -190,6 +190,58 @@ public sealed class ImmediateVariableTests
         Assert.Contains("cannot be stored", tuple, StringComparison.Ordinal);
     }
 
+    /// <summary>Delegates store as variables: a typed lambda declaration converts, invokes, and combines.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Delegates_store_and_invoke_as_variables()
+    {
+        var store = new ImmediateVariableStore();
+
+        // A typed declaration supplies the lambda's target type, exactly as C# conversion does.
+        Assert.True(Apply(store, "Func<int, int> f = x => x + 1;", out var message));
+        Assert.Contains("Func<int, int>", message, StringComparison.Ordinal);
+
+        var invoked = ExpressionEvaluationService.EvaluateWithoutSnapshot(
+            "f(41)", localVariables: store.LocalNameResolver);
+        Assert.Equal(EvaluationSeverity.Exact, invoked.Severity);
+        Assert.Equal("42", invoked.Value);
+
+        var throughInvoke = ExpressionEvaluationService.EvaluateWithoutSnapshot(
+            "f.Invoke(1) + f(2)", localVariables: store.LocalNameResolver);
+        Assert.Equal("5", throughInvoke.Value);
+
+        // A stored delegate equals itself, and combination through variables keeps entry identity.
+        Assert.True(Apply(store, "var g = f + f;", out _));
+        var combined = ExpressionEvaluationService.EvaluateWithoutSnapshot(
+            "g.GetInvocationList().Length", localVariables: store.LocalNameResolver);
+        Assert.Equal("2", combined.Value);
+        var removed = ExpressionEvaluationService.EvaluateWithoutSnapshot(
+            "(g - f).HasSingleTarget", localVariables: store.LocalNameResolver);
+        Assert.Equal("true", removed.Value);
+        var equal = ExpressionEvaluationService.EvaluateWithoutSnapshot(
+            "f == f", localVariables: store.LocalNameResolver);
+        Assert.Equal("true", equal.Value);
+
+        // A method-group delegate keeps its runtime method identity through storage.
+        Assert.True(Apply(store, "var sqrt = new Func<double, double>(Math.Sqrt);", out _));
+        var methodName = ExpressionEvaluationService.EvaluateWithoutSnapshot(
+            "sqrt.Method.Name", localVariables: store.LocalNameResolver);
+        Assert.Contains("Sqrt", methodName.Value, StringComparison.Ordinal);
+
+        // A curried delegate declares, partially applies through a variable, and keeps its closure.
+        Assert.True(Apply(store, "Func<int, Func<int, int>> curried = x => y => x + y;", out var curriedMessage));
+        Assert.Contains("Func<int, Func<int, int>>", curriedMessage, StringComparison.Ordinal);
+        var curriedResult = ExpressionEvaluationService.EvaluateWithoutSnapshot(
+            "curried(5)(6)", localVariables: store.LocalNameResolver);
+        Assert.Equal(EvaluationSeverity.Exact, curriedResult.Severity);
+        Assert.Equal("11", curriedResult.Value);
+
+        Assert.True(Apply(store, "var addFive = curried(5);", out _));
+        var partial = ExpressionEvaluationService.EvaluateWithoutSnapshot(
+            "addFive(37)", localVariables: store.LocalNameResolver);
+        Assert.Equal("42", partial.Value);
+    }
+
     /// <summary>The statement classifier distinguishes statements from expressions.</summary>
     [Fact]
     [Trait("Category", "Fast")]

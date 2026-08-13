@@ -1344,6 +1344,9 @@ public static partial class ConstantExpressionEvaluator
                     when Enum.TryParse<TemporalKind>(domain, out var temporalKind):
                     return FoldOutcome.Folded(Operand.FromTemporal(temporalKind, box));
                 case ConstantOperandResolutionKind.BclValue
+                    when domain == "Delegate" && box is DelegatePayload storedDelegate:
+                    return FoldOutcome.Folded(Operand.FromDelegate(storedDelegate));
+                case ConstantOperandResolutionKind.BclValue
                     when Enum.TryParse<BclValueKind>(domain, out var valueKind):
                     return FoldOutcome.Folded(Operand.FromBclValue(valueKind, box));
             }
@@ -1370,6 +1373,7 @@ public static partial class ConstantExpressionEvaluator
         Tuple,
         Anonymous,
         Grouping,
+        Delegate,
     }
 
     private readonly record struct Operand(
@@ -1413,6 +1417,9 @@ public static partial class ConstantExpressionEvaluator
 
         internal static Operand FromAnonymous(AnonymousPayload payload) =>
             new(OperandKind.Anonymous, 0, false, '\0', null, null, null, default, payload);
+
+        internal static Operand FromDelegate(DelegatePayload payload) =>
+            new(OperandKind.Delegate, 0, false, '\0', null, null, null, default, payload);
 
         internal static Operand FromGrouping(GroupingPayload payload) =>
             new(OperandKind.Grouping, 0, false, '\0', null, null, null, default, payload);
@@ -1563,6 +1570,13 @@ public static partial class ConstantExpressionEvaluator
                 valueText = $"typeof({((TypeRef)operand.Box!).CSharpName})";
                 underlying = valueTypeName;
                 break;
+            case OperandKind.Delegate:
+                var delegatePayload = DelegatePayloadOf(operand);
+                kind = ConstantValueKind.BclValue;
+                valueTypeName = delegatePayload.Type.CSharpName;
+                valueText = RenderDelegate(delegatePayload);
+                underlying = valueTypeName;
+                break;
             default:
                 kind = ConstantValueKind.EnumMember;
                 int32 = operand.EnumBits >= int.MinValue && operand.EnumBits <= int.MaxValue
@@ -1621,6 +1635,9 @@ public static partial class ConstantExpressionEvaluator
                 return ConstantOperandResolution.FromTemporalValue(operand.TemporalKind.ToString(), operand.Box!);
             case OperandKind.BclValue:
                 return ConstantOperandResolution.FromBclValue(operand.BclValueKind.ToString(), operand.Box!);
+            case OperandKind.Delegate:
+                // The delegate payload rides the same boxed carrier under its own domain sentinel.
+                return ConstantOperandResolution.FromBclValue("Delegate", operand.Box!);
             case OperandKind.Sequence:
                 var payload = PayloadOf(operand);
                 var elements = ImmutableArray.CreateBuilder<ConstantOperandResolution>(payload.Items.Length);
@@ -1658,6 +1675,7 @@ public static partial class ConstantExpressionEvaluator
         OperandKind.Temporal => ConstantOperandResolution.FromTemporalValue(
             item.TemporalKind.ToString(), item.Box!),
         OperandKind.BclValue => ConstantOperandResolution.FromBclValue(item.BclValueKind.ToString(), item.Box!),
+        OperandKind.Delegate => ConstantOperandResolution.FromBclValue("Delegate", item.Box!),
         _ => null,
     };
 
@@ -1918,6 +1936,12 @@ public static partial class ConstantExpressionEvaluator
             return FoldNullLifted(kind, leftOperand, rightOperand);
         }
 
+        // Delegates carry the multicast algebra: + combines, - removes, and equality compares invocation lists.
+        if (leftOperand.Kind == OperandKind.Delegate || rightOperand.Kind == OperandKind.Delegate)
+        {
+            return ComputeDelegateBinary(kind, leftOperand, rightOperand);
+        }
+
         // Date and time operands carry their own operator algebra — DateTime − DateTime is a TimeSpan, TimeSpan
         // scales by a number — so they dispatch before the numeric tower sees them.
         if (leftOperand.Kind == OperandKind.Temporal || rightOperand.Kind == OperandKind.Temporal)
@@ -2047,6 +2071,19 @@ public static partial class ConstantExpressionEvaluator
             return FoldOutcome.Folded(Operand.FromString(
                 (left.Kind == OperandKind.String ? left.String : string.Empty) +
                 (right.Kind == OperandKind.String ? right.String : string.Empty)));
+        }
+
+        // The delegate algebra lifts by Delegate.Combine and Remove: null + d and d + null are d, and
+        // d - null is d, while null - d stays null through the default lifted arm below.
+        if (kind == SyntaxKind.AddExpression &&
+            (left.Kind == OperandKind.Delegate || right.Kind == OperandKind.Delegate))
+        {
+            return FoldOutcome.Folded(left.Kind == OperandKind.Delegate ? left : right);
+        }
+
+        if (kind == SyntaxKind.SubtractExpression && left.Kind == OperandKind.Delegate)
+        {
+            return FoldOutcome.Folded(left);
         }
 
         switch (kind)
@@ -2313,6 +2350,8 @@ public static partial class ConstantExpressionEvaluator
                 DispatchAnonymousProperty(receiver, anonymousMember),
             (OperandKind.Grouping, "Key") =>
                 FoldOutcome.Folded(PayloadOfGrouping(receiver).Key),
+            (OperandKind.Delegate, var delegateMember) =>
+                DispatchDelegateProperty(receiver, delegateMember),
             _ => FoldOutcome.NotArithmetic(),
         };
 
@@ -2391,7 +2430,9 @@ public static partial class ConstantExpressionEvaluator
                 Name: SimpleNameSyntax method,
             })
         {
-            return FoldOutcome.NotArithmetic();
+            // 'f(3)', '((Action)(…))()', 'delegates[0](x)': an invocation whose expression folds to a delegate
+            // value invokes it; every other non-member shape keeps its not-constant path.
+            return FoldDelegateValueInvocation(invocation, context);
         }
 
         // A generic method name is admitted only on the System.Enum, System.Array, and System.Activator
@@ -2456,6 +2497,12 @@ public static partial class ConstantExpressionEvaluator
             return DispatchReflectionMethod(receiver.Operand, name, arguments, context);
         }
 
+        // A delegate's Invoke and DynamicInvoke fold lambda entries in the caller's context.
+        if (receiver.Operand.Kind == OperandKind.Delegate)
+        {
+            return DispatchDelegateMethod(receiver.Operand, name, arguments, context);
+        }
+
         return DispatchOperandInvocation(receiver.Operand, name, arguments);
     }
 
@@ -2471,6 +2518,13 @@ public static partial class ConstantExpressionEvaluator
         List<Operand> arguments,
         FoldContext? context)
     {
+        // A property accessor reached as a MethodInfo — through Invoke or a delegate — answers as the property
+        // it accesses, so 'get_UtcNow' hits the same fold, and the same stops, as 'DateTime.UtcNow'.
+        if (arguments.Count == 0 && name.StartsWith("get_", StringComparison.Ordinal))
+        {
+            return DispatchTypeStatic(typeReceiver, name[4..]);
+        }
+
         switch (typeReceiver.Category)
         {
             case TypeReceiverCategory.String:
@@ -2498,6 +2552,8 @@ public static partial class ConstantExpressionEvaluator
                 return DispatchActivator(name, typeArguments, arguments, context);
             case TypeReceiverCategory.Activator:
                 return MemberUnsupported($"Activator.{name} via reflection");
+            case TypeReceiverCategory.SystemDelegate:
+                return DispatchDelegateStatic(name, arguments);
             default:
                 return DispatchNumericTypeMethod(typeReceiver.Numeric, name, arguments);
         }
@@ -2526,6 +2582,16 @@ public static partial class ConstantExpressionEvaluator
             return TryDescribeRuntimeType(receiver) is { } runtimeType
                 ? FoldOutcome.Folded(Operand.FromType(runtimeType))
                 : MemberUnsupported("GetType over this operand's runtime identity");
+        }
+
+        // A property accessor reached as a MethodInfo answers as the property it accesses, so a bound
+        // 'get_Length' delegate folds exactly as reading Length on the target does.
+        if (arguments.Count == 0 && name.StartsWith("get_", StringComparison.Ordinal))
+        {
+            var accessed = DispatchOperandProperty(receiver, name[4..]);
+            return accessed.Disposition == FoldDisposition.NotArithmetic
+                ? MemberUnsupported(name)
+                : accessed;
         }
 
         return receiver.Kind switch

@@ -710,7 +710,8 @@ public static partial class ConstantExpressionEvaluator
         && (type.Definition is { } definition
             ? definition.IsValue
             : type.FullName is not ("System.String" or "System.Object" or "System.Version" or "System.Array"
-                or "System.Enum" or "System.ValueType" or "System.Math")
+                or "System.Enum" or "System.ValueType" or "System.Math" or "System.Action" or "System.Delegate"
+                or "System.MulticastDelegate")
                 && !type.FullName.StartsWith("System.Text.", StringComparison.Ordinal)
                 && !type.FullName.StartsWith("System.Reflection.", StringComparison.Ordinal)
                 && !type.FullName.StartsWith("System.Linq.", StringComparison.Ordinal));

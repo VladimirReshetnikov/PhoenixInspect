@@ -74,6 +74,22 @@ public static partial class ConstantExpressionEvaluator
             return FoldOutcome.NotArithmetic();
         }
 
+        // 'new Action(…)' and 'new Func<int, int>(…)' convert their single argument — a lambda, a method
+        // group, or another delegate — before ordinary argument folding, which cannot fold a bare lambda.
+        if (TryResolveDelegateTypeRef(creation.Type, context, out var delegateType))
+        {
+            if (creation.ArgumentList?.Arguments is not [{ NameColon: null } single] ||
+                single.RefKindKeyword != default)
+            {
+                return FoldOutcome.Error(
+                    OperandTypeCode,
+                    $"'new {delegateType!.CSharpName}(…)' takes exactly one argument: a lambda, a method "
+                    + "group, or another delegate.");
+            }
+
+            return ConvertToDelegate(delegateType!, single.Expression, context);
+        }
+
         if (!TryReadTemporalTypeName(creation.Type, out var kind))
         {
             return FoldBclValueCreation(creation, context);

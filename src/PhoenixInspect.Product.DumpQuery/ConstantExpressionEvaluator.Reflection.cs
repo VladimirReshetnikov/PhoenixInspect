@@ -78,6 +78,9 @@ public static partial class ConstantExpressionEvaluator
         new(NamespacedRef("GroupCollection", "System.Text.RegularExpressions"), typeof(GroupCollection), true),
         new(NamespacedRef("CaptureCollection", "System.Text.RegularExpressions"), typeof(CaptureCollection), true),
         new(NamespacedRef("Enumerable", "System.Linq"), typeof(Enumerable), true),
+        new(SystemRef("Action", "Action"), typeof(Action), true),
+        new(SystemRef("Delegate", "Delegate"), typeof(Delegate), true),
+        new(SystemRef("MulticastDelegate", "MulticastDelegate"), typeof(MulticastDelegate), true),
     ];
 
     private static TypeRef NamespacedRef(string name, string typeNamespace) => new(
@@ -99,6 +102,17 @@ public static partial class ConstantExpressionEvaluator
         "System.Collections.Generic.IReadOnlyDictionary`2" => typeof(IReadOnlyDictionary<,>),
         "System.IEquatable`1" => typeof(IEquatable<>),
         "System.IComparable`1" => typeof(IComparable<>),
+        "System.Action`1" => typeof(Action<>),
+        "System.Action`2" => typeof(Action<,>),
+        "System.Action`3" => typeof(Action<,,>),
+        "System.Action`4" => typeof(Action<,,,>),
+        "System.Func`1" => typeof(Func<>),
+        "System.Func`2" => typeof(Func<,>),
+        "System.Func`3" => typeof(Func<,,>),
+        "System.Func`4" => typeof(Func<,,,>),
+        "System.Func`5" => typeof(Func<,,,,>),
+        "System.Predicate`1" => typeof(Predicate<>),
+        "System.Comparison`1" => typeof(Comparison<>),
         _ => null,
     };
 
@@ -569,6 +583,12 @@ public static partial class ConstantExpressionEvaluator
                     ("GetParameters", []) => ParameterSequence(method.GetParameters()),
                     ("Invoke", [{ } target, { } invocationArguments]) =>
                         InvokeReflectionMethod(method, target, invocationArguments, context),
+                    ("CreateDelegate", [{ Kind: OperandKind.Type } delegateType]) =>
+                        CreateDelegateFromMethod((TypeRef)delegateType.Box!, method, target: null),
+                    ("CreateDelegate", [{ Kind: OperandKind.Type } delegateType, { Kind: OperandKind.Null }]) =>
+                        CreateDelegateFromMethod((TypeRef)delegateType.Box!, method, target: null),
+                    ("CreateDelegate", [{ Kind: OperandKind.Type } delegateType, { } boundTarget]) =>
+                        CreateDelegateFromMethod((TypeRef)delegateType.Box!, method, boundTarget),
                     _ => MemberUnsupported($"MethodInfo.{name}"),
                 };
             case BclValueKind.ConstructorInfo:

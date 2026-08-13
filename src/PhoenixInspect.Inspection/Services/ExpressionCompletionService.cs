@@ -116,12 +116,12 @@ public static class ExpressionCompletionService
 
     private static readonly ImmutableArray<string> ModeledTypeNames =
     [
-        "Activator", "Array", "BigInteger", "DateOnly", "DateTime", "DateTimeKind", "DateTimeOffset", "DayOfWeek",
-        "Dictionary", "Encoding", "Enum", "Enumerable", "Guid", "ICollection", "IComparable", "IDictionary",
-        "IEnumerable", "IEquatable", "IList", "IReadOnlyCollection", "IReadOnlyDictionary", "IReadOnlyList",
-        "Int128", "KeyValuePair", "List", "Math", "MemberTypes", "Nullable", "Object", "Regex", "RegexOptions",
-        "String", "StringComparison", "StringSplitOptions", "TimeOnly", "TimeSpan", "UInt128", "ValueType",
-        "Version",
+        "Action", "Activator", "Array", "BigInteger", "Comparison", "DateOnly", "DateTime", "DateTimeKind",
+        "DateTimeOffset", "DayOfWeek", "Delegate", "Dictionary", "Encoding", "Enum", "Enumerable", "Func", "Guid",
+        "ICollection", "IComparable", "IDictionary", "IEnumerable", "IEquatable", "IList", "Int128",
+        "IReadOnlyCollection", "IReadOnlyDictionary", "IReadOnlyList", "KeyValuePair", "List", "Math",
+        "MemberTypes", "MulticastDelegate", "Nullable", "Object", "Predicate", "Regex", "RegexOptions", "String",
+        "StringComparison", "StringSplitOptions", "TimeOnly", "TimeSpan", "UInt128", "ValueType", "Version",
     ];
 
     // Members mirror the evaluator's dispatch tables; a member that is a deliberate typed stop (Now, NewGuid,
@@ -173,6 +173,8 @@ public static class ExpressionCompletionService
             ],
             ["Regex"] = ["Count", "Escape", "IsMatch", "Match", "Matches", "Replace", "Split", "Unescape"],
             ["Activator"] = ["CreateInstance"],
+            ["Delegate"] = ["Combine", "CreateDelegate", "Remove", "RemoveAll"],
+            ["MulticastDelegate"] = ["Combine", "CreateDelegate", "Remove", "RemoveAll"],
             ["MemberTypes"] =
             ["All", "Constructor", "Custom", "Event", "Field", "Method", "NestedType", "Property", "TypeInfo"],
             ["RegexOptions"] =

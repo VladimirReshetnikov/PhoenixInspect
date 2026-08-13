@@ -73,6 +73,25 @@ public static partial class ConstantExpressionEvaluator
             [GenericVariance.Invariant]),
         new("System.IComparable`1", "IComparable`1", "System", "IComparable", 1, true, false,
             [GenericVariance.In]),
+        new("System.Action`1", "Action`1", "System", "Action", 1, false, false, [GenericVariance.In]),
+        new("System.Action`2", "Action`2", "System", "Action", 2, false, false,
+            [GenericVariance.In, GenericVariance.In]),
+        new("System.Action`3", "Action`3", "System", "Action", 3, false, false,
+            [GenericVariance.In, GenericVariance.In, GenericVariance.In]),
+        new("System.Action`4", "Action`4", "System", "Action", 4, false, false,
+            [GenericVariance.In, GenericVariance.In, GenericVariance.In, GenericVariance.In]),
+        new("System.Func`1", "Func`1", "System", "Func", 1, false, false, [GenericVariance.Out]),
+        new("System.Func`2", "Func`2", "System", "Func", 2, false, false,
+            [GenericVariance.In, GenericVariance.Out]),
+        new("System.Func`3", "Func`3", "System", "Func", 3, false, false,
+            [GenericVariance.In, GenericVariance.In, GenericVariance.Out]),
+        new("System.Func`4", "Func`4", "System", "Func", 4, false, false,
+            [GenericVariance.In, GenericVariance.In, GenericVariance.In, GenericVariance.Out]),
+        new("System.Func`5", "Func`5", "System", "Func", 5, false, false,
+            [GenericVariance.In, GenericVariance.In, GenericVariance.In, GenericVariance.In,
+                GenericVariance.Out]),
+        new("System.Predicate`1", "Predicate`1", "System", "Predicate", 1, false, false, [GenericVariance.In]),
+        new("System.Comparison`1", "Comparison`1", "System", "Comparison", 1, false, false, [GenericVariance.In]),
     ];
 
     /// <summary>
@@ -83,6 +102,8 @@ public static partial class ConstantExpressionEvaluator
     [
         ("Object", "object", false), ("String", "string", false), ("ValueType", "ValueType", false),
         ("Enum", "Enum", false), ("Array", "Array", false), ("IComparable", "IComparable", true),
+        ("Action", "Action", false), ("Delegate", "Delegate", false),
+        ("MulticastDelegate", "MulticastDelegate", false),
         ("SByte", "sbyte", false), ("Byte", "byte", false), ("Int16", "short", false), ("UInt16", "ushort", false),
         ("Int32", "int", false), ("UInt32", "uint", false), ("Int64", "long", false), ("UInt64", "ulong", false),
         ("Single", "float", false), ("Double", "double", false), ("Decimal", "decimal", false),
@@ -179,6 +200,43 @@ public static partial class ConstantExpressionEvaluator
     private static bool HasConstructedGenericComponent(TypeRef type) =>
         type.IsConstructedGeneric
         || (type.ElementType is { } element && HasConstructedGenericComponent(element));
+
+    // ---- Reference conversions --------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// A reference conversion over the modeled universe: an upcast — including to <c>object</c> — folds to the
+    /// same value, a downcast checks the operand's exact runtime identity against the target, and an
+    /// incompatible cast is the runtime's own <see cref="InvalidCastException"/>. Unboxing null is the
+    /// runtime's <see cref="NullReferenceException"/>; a reference target accepts null unchanged.
+    /// </summary>
+    private static FoldOutcome FoldReferenceCast(TypeRef target, ExpressionSyntax expression, FoldContext context)
+    {
+        var operand = Fold(expression, context);
+        if (operand.Disposition != FoldDisposition.Folded)
+        {
+            return operand;
+        }
+
+        if (operand.Operand.Kind == OperandKind.Null)
+        {
+            return IsValueTypeRef(target)
+                ? FoldOutcome.Error(
+                    "System.NullReferenceException",
+                    "Object reference not set to an instance of an object.")
+                : FoldOutcome.Folded(Operand.Null());
+        }
+
+        if (TryDescribeRuntimeType(operand.Operand) is not { } runtime)
+        {
+            return MemberUnsupported($"a cast of this value to '{target.CSharpName}'");
+        }
+
+        return IsAssignableBetween(target, runtime)
+            ? operand
+            : FoldOutcome.Error(
+                "System.InvalidCastException",
+                $"Unable to cast an object of type '{runtime.CSharpName}' to type '{target.CSharpName}'.");
+    }
 
     // ---- Assignability ----------------------------------------------------------------------------------------------
 
@@ -313,6 +371,37 @@ public static partial class ConstantExpressionEvaluator
         if (IsValueTypeRef(type))
         {
             yield return SystemValueTypeRef;
+            yield return ObjectRef;
+            yield break;
+        }
+
+        if (IsDelegateTypeRef(type))
+        {
+            yield return SystemRef("MulticastDelegate", "MulticastDelegate");
+            yield return SystemRef("Delegate", "Delegate");
+            yield return ObjectRef;
+            yield break;
+        }
+
+        if (type.FullName == "System.MulticastDelegate")
+        {
+            yield return SystemRef("Delegate", "Delegate");
+            yield return ObjectRef;
+            yield break;
+        }
+
+        // The regex value classes declare Capture as the family root: Match extends Group extends Capture.
+        if (type.FullName == "System.Text.RegularExpressions.Match")
+        {
+            yield return NamespacedRef("Group", "System.Text.RegularExpressions");
+            yield return NamespacedRef("Capture", "System.Text.RegularExpressions");
+            yield return ObjectRef;
+            yield break;
+        }
+
+        if (type.FullName == "System.Text.RegularExpressions.Group")
+        {
+            yield return NamespacedRef("Capture", "System.Text.RegularExpressions");
             yield return ObjectRef;
             yield break;
         }
@@ -483,6 +572,8 @@ public static partial class ConstantExpressionEvaluator
             case OperandKind.Temporal:
                 var temporalName = operand.TemporalKind.ToString();
                 return SystemRef(temporalName, temporalName);
+            case OperandKind.Delegate:
+                return DelegatePayloadOf(operand).Type;
             case OperandKind.BclValue:
                 var valueName = operand.BclValueKind.ToString();
                 var valueNamespace = BclValueNamespaceOf(operand.BclValueKind);

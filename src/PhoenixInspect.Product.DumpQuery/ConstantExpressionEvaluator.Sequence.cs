@@ -191,6 +191,20 @@ public static partial class ConstantExpressionEvaluator
             return CreateSequence(new SequencePayload(items, OperandKind.Grouping, default, "IGrouping"));
         }
 
+        if (items[0].Kind == OperandKind.Delegate &&
+            items.All(item => item.Kind == OperandKind.Delegate &&
+                string.Equals(
+                    DelegatePayloadOf(item).Type.FullName,
+                    DelegatePayloadOf(items[0]).Type.FullName,
+                    StringComparison.Ordinal)))
+        {
+            return CreateSequence(new SequencePayload(
+                items,
+                OperandKind.Delegate,
+                default,
+                DelegatePayloadOf(items[0]).Type.CSharpName));
+        }
+
         if (items.All(static item => item.Kind == OperandKind.Sequence))
         {
             return CreateSequence(new SequencePayload(
@@ -980,6 +994,7 @@ public static partial class ConstantExpressionEvaluator
         OperandKind.Temporal => RenderTemporal(item),
         OperandKind.BclValue => RenderBclValue(item),
         OperandKind.Type => $"typeof({((TypeRef)item.Box!).CSharpName})",
+        OperandKind.Delegate => RenderDelegate(DelegatePayloadOf(item)),
         OperandKind.Tuple => RenderTuple(item),
         OperandKind.Anonymous => RenderAnonymous(item),
         OperandKind.Grouping => RenderGrouping(item),

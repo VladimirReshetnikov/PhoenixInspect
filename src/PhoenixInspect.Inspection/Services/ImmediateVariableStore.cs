@@ -55,7 +55,7 @@ public sealed class ImmediateVariableStore
         ArgumentNullException.ThrowIfNull(line);
         ArgumentNullException.ThrowIfNull(evaluateExpression);
 
-        if (!TryParse(line, out var declaredType, out var name, out var initializer))
+        if (!TryParse(line, out var declaredType, out var name, out var initializer, out var initializerIsLambda))
         {
             message = "Usage: TYPE name = expression;  |  var name = expression;  |  name = expression;";
             return false;
@@ -65,6 +65,15 @@ public sealed class ImmediateVariableStore
         {
             message = $"'{name}' is not declared; write a type or 'var' to declare it.";
             return false;
+        }
+
+        // A lambda has no value without a target type; a typed declaration supplies one, so the initializer
+        // evaluates as the conversion the declaration spells: 'Func<int, int> f = x => x + 1;'.
+        if (initializerIsLambda &&
+            declaredType is not null &&
+            !string.Equals(declaredType, "var", StringComparison.Ordinal))
+        {
+            initializer = $"({declaredType})({initializer})";
         }
 
         var evaluation = evaluateExpression(initializer!);
@@ -131,7 +140,12 @@ public sealed class ImmediateVariableStore
         var trimmed = normalized.Contains('.', StringComparison.Ordinal)
             ? normalized[(normalized.LastIndexOf('.') + 1)..]
             : normalized;
-        return string.Equals(trimmed + arraySuffix, evaluation.StoredValueTypeName, StringComparison.Ordinal) ||
+
+        // Type names carry no meaningful spaces, so 'Func<int,int>' matches the stored 'Func<int, int>'.
+        return string.Equals(
+                (trimmed + arraySuffix).Replace(" ", string.Empty, StringComparison.Ordinal),
+                evaluation.StoredValueTypeName?.Replace(" ", string.Empty, StringComparison.Ordinal),
+                StringComparison.Ordinal) ||
             (evaluation.Kind == ConstantValueKind.EnumMember && arraySuffix.Length == 0 &&
                 string.Equals(normalized, evaluation.EnumTypeFullName, StringComparison.Ordinal));
     }
@@ -140,11 +154,20 @@ public sealed class ImmediateVariableStore
         string line,
         out string? declaredType,
         out string? name,
-        out string? initializer)
+        out string? initializer) =>
+        TryParse(line, out declaredType, out name, out initializer, out _);
+
+    private static bool TryParse(
+        string line,
+        out string? declaredType,
+        out string? name,
+        out string? initializer,
+        out bool initializerIsLambda)
     {
         declaredType = null;
         name = null;
         initializer = null;
+        initializerIsLambda = false;
 
         var statement = SyntaxFactory.ParseStatement(
             line.TrimEnd().EndsWith(';') ? line : line + ";");
@@ -166,6 +189,7 @@ public sealed class ImmediateVariableStore
                 declaredType = type.ToString();
                 name = variableName;
                 initializer = value.ToString();
+                initializerIsLambda = value is LambdaExpressionSyntax;
                 return true;
             case ExpressionStatementSyntax
             {
@@ -178,6 +202,7 @@ public sealed class ImmediateVariableStore
             }:
                 name = target;
                 initializer = assigned.ToString();
+                initializerIsLambda = assigned is LambdaExpressionSyntax;
                 return true;
             default:
                 return false;

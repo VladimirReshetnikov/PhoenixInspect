@@ -860,6 +860,20 @@ public static partial class ConstantExpressionEvaluator
     {
         if (!TryResolveCastType(cast.Type, out var target, out var numericKind, out var nullable))
         {
+            // '(Action)(…)' and '(Func<int, int>)(x => x + 1)' are delegate conversions, not value casts.
+            if (TryResolveDelegateTypeRef(cast.Type, context, out var delegateType))
+            {
+                return ConvertToDelegate(delegateType!, cast.Expression, context);
+            }
+
+            // A non-enum modeled type is a reference conversion: '(object) x' upcasts, '(string)(object) x'
+            // downcasts against the runtime identity. Enum targets keep their numeric-conversion path below.
+            if (TryResolveTypeRef(cast.Type, context, out var referenceTarget, out _) &&
+                referenceTarget is { IsEnum: false })
+            {
+                return FoldReferenceCast(referenceTarget, cast.Expression, context);
+            }
+
             return FoldEnumCast(cast, context);
         }
 
@@ -931,6 +945,7 @@ public static partial class ConstantExpressionEvaluator
         SystemEnum,
         SystemArray,
         Activator,
+        SystemDelegate,
     }
 
     private readonly record struct TypeReceiver(
@@ -1148,6 +1163,9 @@ public static partial class ConstantExpressionEvaluator
             case "Activator":
                 receiver = new TypeReceiver(TypeReceiverCategory.Activator, default);
                 return true;
+            case "Delegate" or "MulticastDelegate":
+                receiver = new TypeReceiver(TypeReceiverCategory.SystemDelegate, default);
+                return true;
             case "MemberTypes":
                 receiver = new TypeReceiver(TypeReceiverCategory.KnownEnum, default, MemberTypesFullName);
                 return true;
@@ -1203,6 +1221,8 @@ public static partial class ConstantExpressionEvaluator
                     : MemberUnsupported($"Array.{member}");
             case TypeReceiverCategory.Activator:
                 return MemberUnsupported($"Activator.{member}");
+            case TypeReceiverCategory.SystemDelegate:
+                return MemberUnsupported($"Delegate.{member}");
             default:
                 return DispatchNumericTypeStatic(receiver.Numeric, member);
         }

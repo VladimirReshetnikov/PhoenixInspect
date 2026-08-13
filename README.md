@@ -140,6 +140,20 @@ Everything below is backed by executable tests over real dumps, and nothing is l
   folds to — and `Invoke` on a culture-sensitive or non-deterministic member hits the same typed stop as the
   direct spelling; reflection can never widen what evaluates. Member lists are canonically ordered, mutation
   (`SetValue`) is refused, and info reads are metadata facts of the pinned analysis runtime.
+- **Virtually created delegates.** `Action`/`Func`/`Predicate`/`Comparison` values from every C# spelling —
+  `new Func<int, int>(x => x + 1)`, `(Action)(…)` casts, method groups (`new Func<double, double>(Math.Sqrt)`,
+  `(Func<string, bool>)"hello".Contains` with exact-signature overload selection), typed lambda declarations
+  (`Func<int, int> f = x => x + 1;`), and the `CreateDelegate` family over reflection `MethodInfo`s — invoked
+  through `f(3)`, `.Invoke`, or `DynamicInvoke`, with closures captured at creation. The multicast algebra is
+  the runtime's own: `+`/`Combine`, `-`/`Remove`/`RemoveAll` with last-occurrence sublist semantics, list
+  equality for `==`, plus `Method`, `Target`, `HasSingleTarget`, and `GetInvocationList()`. Every entry folds
+  through the evaluator's own dispatch, so a delegate can never compute anything the direct spelling could not
+  — culture and non-determinism stops hold identically through a delegate call.
+- **Reference conversions with runtime semantics.** Upcasts fold to the same value — `(object) x`, a delegate
+  to `Delegate`, a `Match` to `Capture`, an array to `IEnumerable<T>` — and downcasts check the operand's
+  exact runtime identity: `(string)(object)"abc"` and `(DayOfWeek)(object)DayOfWeek.Friday` round-trip, while
+  an incompatible cast stops with the runtime's own `InvalidCastException` and unboxing null with its
+  `NullReferenceException`.
 - **Type relationships and generic construction.** The runtime's exact assignability relation —
   `IsAssignableFrom`/`IsAssignableTo` with base chains, `Nullable<T>` lifting, array covariance, implemented
   interfaces, and declared variance — plus `IsSubclassOf`, `BaseType`, `IsInstanceOfType`, and generic types in
