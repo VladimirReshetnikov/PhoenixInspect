@@ -1050,6 +1050,76 @@ public sealed partial class ClrmdDumpSession : IDisposable
     }
 
     /// <summary>
+    /// Lists the declared instance-field names of one runtime type found by its full name, across all modules.
+    /// Member-chain completion uses this to offer the next hop after a field whose declared type is known,
+    /// without resolving any heap object; the names are the same field set a chain hop reads.
+    /// </summary>
+    /// <param name="typeName">The runtime full name of the type, as ClrMD spells it.</param>
+    /// <returns>The field names with their declared type names, or typed unavailable/invalid evidence.</returns>
+    /// <exception cref="ArgumentException"><paramref name="typeName"/> is empty or whitespace.</exception>
+    /// <exception cref="ObjectDisposedException">The session is disposed.</exception>
+    public ClrmdEvidenceResult<ClrmdInstanceFieldNameList> ListInstanceFieldNamesByTypeName(string typeName)
+    {
+        ThrowIfDisposed();
+        if (string.IsNullOrWhiteSpace(typeName))
+        {
+            throw new ArgumentException("A runtime type name is required.", nameof(typeName));
+        }
+
+        if (typeName.Length > MaximumRuntimeTypeNameCharacters)
+        {
+            return ClrmdEvidenceResult<ClrmdInstanceFieldNameList>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.TypeUnavailable);
+        }
+
+        try
+        {
+            foreach (var runtimeModule in _runtimeModules.Values)
+            {
+                if (runtimeModule.GetTypeByName(typeName) is not { } runtimeType)
+                {
+                    continue;
+                }
+
+                var names = ImmutableArray.CreateBuilder<(string Name, string? TypeName)>();
+                foreach (var field in runtimeType.Fields)
+                {
+                    if (names.Count >= MaximumRuntimeInstanceFieldCount)
+                    {
+                        break;
+                    }
+
+                    // Compiler-generated backing fields are not spellable in the admitted expression grammar.
+                    if (field.Name is not { Length: > 0 } name || name.Contains('<', StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    names.Add((name, field.Type?.Name));
+                }
+
+                return ClrmdEvidenceResult<ClrmdInstanceFieldNameList>.Create(
+                    ClrmdEvidenceStatus.Exact,
+                    ClrmdValueIssue.None,
+                    new ClrmdInstanceFieldNameList(names.ToImmutable()),
+                    appliedBounds: InstanceFieldTraversalBounds);
+            }
+
+            return ClrmdEvidenceResult<ClrmdInstanceFieldNameList>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.TypeUnavailable);
+        }
+        catch (Exception exception) when (
+            exception is ClrDiagnosticsException or InvalidDataException or ArgumentOutOfRangeException)
+        {
+            return ClrmdEvidenceResult<ClrmdInstanceFieldNameList>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.InvalidData);
+        }
+    }
+
+    /// <summary>
     /// Reads and decodes one Int32 instance field from counted raw dump-memory evidence.
     /// </summary>
     /// <param name="obj">Object selected from this session.</param>

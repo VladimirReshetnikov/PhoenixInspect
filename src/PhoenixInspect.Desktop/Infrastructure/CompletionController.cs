@@ -119,6 +119,14 @@ public sealed class CompletionController
                 return true;
             case Key.Enter:
             case Key.Tab:
+                if (SelectionIsExactTypedToken())
+                {
+                    // The selection adds nothing the user has not already typed; Enter falls through to the
+                    // editor's own submit, so evaluating a fully typed name never costs an extra keystroke.
+                    Close();
+                    return e.Key == Key.Tab;
+                }
+
                 Accept();
                 return true;
             case Key.Escape:
@@ -169,6 +177,11 @@ public sealed class CompletionController
         }
     }
 
+    private bool SelectionIsExactTypedToken() =>
+        owner is { } box
+        && list.SelectedItem is CompletionItem item
+        && string.Equals(TypedToken(box), item.Text, StringComparison.Ordinal);
+
     private bool SelectionExtendsTypedToken()
     {
         // A dot only commits a selection that begins with the typed token, so a loose match — a substring or
@@ -178,11 +191,16 @@ public sealed class CompletionController
             return false;
         }
 
+        var token = TypedToken(box);
+        return token.Length > 0 && item.Text.StartsWith(token, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string TypedToken(TextBox box)
+    {
         var text = box.Text ?? string.Empty;
         var start = Math.Clamp(result.ReplaceStart, 0, text.Length);
         var length = Math.Clamp(result.ReplaceLength, 0, text.Length - start);
-        var token = text.Substring(start, length);
-        return token.Length > 0 && item.Text.StartsWith(token, StringComparison.OrdinalIgnoreCase);
+        return text.Substring(start, length);
     }
 
     private double MeasureCharWidth(TextBox box)

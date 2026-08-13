@@ -61,11 +61,16 @@ public sealed record CompletionItem(string Text, CompletionItemKind Kind, string
 /// The full name of a metadata type whose static members the catalog has not realized yet, or null. A host fetches
 /// them with <see cref="ExpressionCompletionService.ListStaticMemberCompletions"/> and re-queries.
 /// </param>
+/// <param name="PendingInstanceMembers">
+/// The full name of a runtime type whose instance fields the catalog has not realized yet, or null. A host fetches
+/// them with <see cref="ExpressionCompletionService.ListInstanceMemberCompletions"/> and re-queries.
+/// </param>
 public sealed record CompletionResult(
     ImmutableArray<CompletionItem> Items,
     int ReplaceStart,
     int ReplaceLength,
-    string? PendingTypeMembers = null)
+    string? PendingTypeMembers = null,
+    string? PendingInstanceMembers = null)
 {
     /// <summary>Gets the empty result.</summary>
     public static CompletionResult Empty { get; } = new([], 0, 0);
@@ -108,6 +113,13 @@ public sealed record CompletionCatalog
 
     /// <summary>Gets the realized static-member completions, keyed by type full name.</summary>
     public ImmutableDictionary<string, ImmutableArray<CompletionItem>> TypeMembers { get; init; } =
+        ImmutableDictionary<string, ImmutableArray<CompletionItem>>.Empty;
+
+    /// <summary>
+    /// Gets the realized instance-field completions along root member chains, keyed by runtime type full name.
+    /// An empty array is a realized answer too — the type contributed no spellable fields.
+    /// </summary>
+    public ImmutableDictionary<string, ImmutableArray<CompletionItem>> TypeInstanceMembers { get; init; } =
         ImmutableDictionary<string, ImmutableArray<CompletionItem>>.Empty;
 }
 
@@ -257,6 +269,211 @@ public static class ExpressionCompletionService
             ],
             ["StringSplitOptions"] = ["None", "RemoveEmptyEntries", "TrimEntries"],
         }.ToImmutableDictionary(StringComparer.Ordinal);
+
+    // ---- Instance members over stored immediate-variable values ------------------------------------------------
+    // These tables mirror the constant evaluator's instance dispatch exactly, including members that produce a
+    // deliberate explained stop (ToUpper redirects to the invariant form, ToLocalTime is nondeterministic): the
+    // stop is part of the documented surface, so the name still completes.
+
+    private static readonly ImmutableArray<CompletionItem> SequenceInstanceMembers = BuildInstanceItems(
+        ["Length", "LongLength", "Rank"],
+        [
+            "All", "Any", "Append", "Average", "Concat", "Contains", "Count", "Distinct", "ElementAt",
+            "ElementAtOrDefault", "Except", "FindIndex", "FindLastIndex", "First", "FirstOrDefault", "GetLength",
+            "GetLowerBound", "GetType", "GetUpperBound", "GetValue", "GroupBy", "GroupJoin", "Intersect", "Join",
+            "Last", "LastOrDefault", "LongCount", "Max", "Min", "Order", "OrderBy", "OrderByDescending",
+            "OrderDescending", "Prepend", "Reverse", "Select", "SelectMany", "SequenceEqual", "Single",
+            "SingleOrDefault", "Skip", "SkipLast", "SkipWhile", "Sum", "Take", "TakeLast", "TakeWhile", "ThenBy",
+            "ThenByDescending", "ToArray", "ToList", "Union", "Where",
+        ]);
+
+    private static readonly ImmutableArray<CompletionItem> DelegateInstanceMembers = BuildInstanceItems(
+        ["HasSingleTarget", "Method", "Target"],
+        ["DynamicInvoke", "Equals", "GetInvocationList", "GetType", "Invoke", "ToString"]);
+
+    // A plain scalar — a numeric, a Boolean, or a stored enum, which reads back as its underlying value — only
+    // answers the universal members.
+    private static readonly ImmutableArray<CompletionItem> ScalarInstanceMembers = BuildInstanceItems(
+        [],
+        ["GetType", "ToString"]);
+
+    private static readonly ImmutableDictionary<string, ImmutableArray<CompletionItem>> InstanceReceiverMembers =
+        BuildInstanceReceiverTables();
+
+    private static ImmutableDictionary<string, ImmutableArray<CompletionItem>> BuildInstanceReceiverTables()
+    {
+        var tables = new Dictionary<string, ImmutableArray<CompletionItem>>(StringComparer.Ordinal)
+        {
+            ["String"] = BuildInstanceItems(
+                ["Length"],
+                [
+                    "CompareTo", "Contains", "EndsWith", "EnumerateRunes", "Equals", "GetType", "IndexOf",
+                    "Insert", "LastIndexOf", "PadLeft", "PadRight", "Remove", "Replace", "Split", "StartsWith",
+                    "Substring", "ToCharArray", "ToLower", "ToLowerInvariant", "ToString", "ToUpper",
+                    "ToUpperInvariant", "Trim", "TrimEnd", "TrimStart",
+                ]),
+            ["Char"] = BuildInstanceItems([], ["CompareTo", "Equals", "GetHashCode", "GetType", "ToString"]),
+            ["DateTime"] = BuildInstanceItems(
+                [
+                    "Date", "Day", "DayOfWeek", "DayOfYear", "Hour", "Kind", "Millisecond", "Minute", "Month",
+                    "Second", "Ticks", "TimeOfDay", "Year",
+                ],
+                [
+                    "Add", "AddDays", "AddHours", "AddMilliseconds", "AddMinutes", "AddMonths", "AddSeconds",
+                    "AddTicks", "AddYears", "GetType", "Subtract", "ToLocalTime", "ToString", "ToUniversalTime",
+                ]),
+            ["DateTimeOffset"] = BuildInstanceItems(
+                [
+                    "Date", "DateTime", "Day", "DayOfWeek", "DayOfYear", "Hour", "LocalDateTime", "Millisecond",
+                    "Minute", "Month", "Offset", "Second", "Ticks", "TimeOfDay", "UtcDateTime", "UtcTicks",
+                    "Year",
+                ],
+                [
+                    "Add", "AddDays", "AddHours", "AddMilliseconds", "AddMinutes", "AddMonths", "AddSeconds",
+                    "AddTicks", "AddYears", "GetType", "Subtract", "ToLocalTime", "ToOffset", "ToString",
+                    "ToUniversalTime", "ToUnixTimeMilliseconds", "ToUnixTimeSeconds",
+                ]),
+            ["TimeSpan"] = BuildInstanceItems(
+                [
+                    "Days", "Hours", "Milliseconds", "Minutes", "Seconds", "Ticks", "TotalDays", "TotalHours",
+                    "TotalMilliseconds", "TotalMinutes", "TotalSeconds",
+                ],
+                ["Add", "Divide", "Duration", "GetType", "Multiply", "Negate", "Subtract", "ToString"]),
+            ["DateOnly"] = BuildInstanceItems(
+                ["Day", "DayNumber", "DayOfWeek", "DayOfYear", "Month", "Year"],
+                ["AddDays", "AddMonths", "AddYears", "GetType", "ToDateTime", "ToString"]),
+            ["TimeOnly"] = BuildInstanceItems(
+                ["Hour", "Millisecond", "Minute", "Second", "Ticks"],
+                ["Add", "AddHours", "AddMinutes", "GetType", "ToString", "ToTimeSpan"]),
+            ["Guid"] = BuildInstanceItems(["Variant", "Version"], ["CompareTo", "GetType", "ToString"]),
+            ["Version"] = BuildInstanceItems(
+                ["Build", "Major", "MajorRevision", "Minor", "MinorRevision", "Revision"],
+                ["CompareTo", "GetType", "ToString"]),
+            ["DBNull"] = BuildInstanceItems([], ["Equals", "GetType", "GetTypeCode", "ToString"]),
+            ["Rune"] = BuildInstanceItems(
+                ["IsAscii", "IsBmp", "Plane", "Utf16SequenceLength", "Utf8SequenceLength", "Value"],
+                ["CompareTo", "Equals", "GetHashCode", "GetType", "ToString"]),
+            ["Encoding"] = BuildInstanceItems(
+                ["BodyName", "CodePage", "EncodingName", "HeaderName", "IsSingleByte", "Preamble", "WebName"],
+                [
+                    "Equals", "GetByteCount", "GetBytes", "GetCharCount", "GetChars", "GetMaxByteCount",
+                    "GetMaxCharCount", "GetPreamble", "GetString", "GetType",
+                ]),
+            ["Regex"] = BuildInstanceItems(
+                ["Options", "RightToLeft"],
+                [
+                    "Count", "GetGroupNames", "GetGroupNumbers", "GetType", "GroupNameFromNumber",
+                    "GroupNumberFromName", "IsMatch", "Match", "Matches", "Replace", "Split", "ToString",
+                ]),
+            ["Match"] = BuildInstanceItems(
+                ["Groups", "Index", "Length", "Name", "Success", "Value"],
+                ["GetType", "NextMatch", "Result", "ToString"]),
+            ["Group"] = BuildInstanceItems(
+                ["Captures", "Index", "Length", "Name", "Success", "Value"],
+                ["GetType", "ToString"]),
+            ["Capture"] = BuildInstanceItems(["Index", "Length", "Value"], ["GetType", "ToString"]),
+            ["MethodInfo"] = BuildInstanceItems(
+                ["DeclaringType", "IsGenericMethod", "IsPublic", "IsStatic", "MemberType", "Name", "ReturnType"],
+                ["CreateDelegate", "GetParameters", "GetType", "Invoke", "ToString"]),
+            ["ConstructorInfo"] = BuildInstanceItems(
+                ["DeclaringType", "IsPublic", "IsStatic", "MemberType", "Name"],
+                ["GetParameters", "GetType", "Invoke", "ToString"]),
+            ["PropertyInfo"] = BuildInstanceItems(
+                ["CanRead", "CanWrite", "DeclaringType", "MemberType", "Name", "PropertyType"],
+                ["GetGetMethod", "GetIndexParameters", "GetSetMethod", "GetType", "GetValue", "SetValue",
+                    "ToString"]),
+            ["FieldInfo"] = BuildInstanceItems(
+                ["DeclaringType", "FieldType", "IsInitOnly", "IsLiteral", "IsPublic", "IsStatic", "MemberType",
+                    "Name"],
+                ["GetType", "GetValue", "SetValue", "ToString"]),
+            ["ParameterInfo"] = BuildInstanceItems(
+                ["HasDefaultValue", "IsOptional", "Name", "ParameterType", "Position"],
+                ["GetType", "ToString"]),
+        };
+
+        // The materialized regex collections carry Count as a property and otherwise answer the whole sequence
+        // surface.
+        foreach (var collection in (string[])["MatchCollection", "GroupCollection", "CaptureCollection"])
+        {
+            tables[collection] =
+            [
+                .. SequenceInstanceMembers
+                    .Concat([new CompletionItem("Count", CompletionItemKind.Member, "property")])
+                    .GroupBy(static item => item.Text, StringComparer.Ordinal)
+                    .Select(static group => group.First())
+                    .OrderBy(static item => item.Text, StringComparer.OrdinalIgnoreCase),
+            ];
+        }
+
+        // Booleans and every boxed numeric answer only the universal members.
+        foreach (var scalar in (string[])
+        [
+            "Boolean", "SByte", "Byte", "Int16", "UInt16", "Int32", "UInt32", "Int64", "UInt64", "IntPtr",
+            "UIntPtr", "Int128", "UInt128", "BigInteger", "Single", "Double", "Decimal",
+        ])
+        {
+            tables[scalar] = ScalarInstanceMembers;
+        }
+
+        return tables.ToImmutableDictionary(StringComparer.Ordinal);
+    }
+
+    private static ImmutableArray<CompletionItem> BuildInstanceItems(
+        ReadOnlySpan<string> properties,
+        ReadOnlySpan<string> methods)
+    {
+        var items = ImmutableArray.CreateBuilder<CompletionItem>(properties.Length + methods.Length);
+        foreach (var property in properties)
+        {
+            items.Add(new CompletionItem(property, CompletionItemKind.Member, "property"));
+        }
+
+        foreach (var method in methods)
+        {
+            items.Add(new CompletionItem(method, CompletionItemKind.Member, "method"));
+        }
+
+        items.Sort(static (left, right) => StringComparer.OrdinalIgnoreCase.Compare(left.Text, right.Text));
+        return items.MoveToImmutable();
+    }
+
+    /// <summary>
+    /// Maps a stored immediate-variable type name to the instance members the constant evaluator dispatches for
+    /// that value: the string surface for 'String', the sequence surface for any array spelling, the delegate
+    /// surface for a delegate's C# spelling, and the universal members for scalars — including stored enums,
+    /// which read back as their underlying numeric value. An unmodeled name completes nothing.
+    /// </summary>
+    /// <param name="typeName">The stored value's type name, as the variable store spells it.</param>
+    /// <returns>The instance members, possibly empty.</returns>
+    public static ImmutableArray<CompletionItem> InstanceMembersForStoredType(string? typeName)
+    {
+        if (string.IsNullOrEmpty(typeName) || typeName == "null")
+        {
+            return [];
+        }
+
+        if (typeName.EndsWith("[]", StringComparison.Ordinal))
+        {
+            return SequenceInstanceMembers;
+        }
+
+        if (typeName is "Action" or "Delegate"
+            || typeName.StartsWith("Func<", StringComparison.Ordinal)
+            || typeName.StartsWith("Action<", StringComparison.Ordinal)
+            || typeName.StartsWith("Predicate<", StringComparison.Ordinal)
+            || typeName.StartsWith("Comparison<", StringComparison.Ordinal))
+        {
+            return DelegateInstanceMembers;
+        }
+
+        if (InstanceReceiverMembers.TryGetValue(typeName, out var members))
+        {
+            return members;
+        }
+
+        // A dotted name is a stored enum's full type name; the value reads back as its underlying numeric.
+        return typeName.Contains('.', StringComparison.Ordinal) ? ScalarInstanceMembers : [];
+    }
 
     /// <summary>
     /// Builds the session-derived completion catalog: the adopted root's declared fields and the top-level type
@@ -425,6 +642,36 @@ public static class ExpressionCompletionService
     }
 
     /// <summary>
+    /// Reads one runtime type's instance-field completions, for member-chain hops: each item's detail carries the
+    /// field's declared type name, so the next hop can realize its fields in turn.
+    /// </summary>
+    /// <param name="session">The open dump session.</param>
+    /// <param name="typeFullName">The runtime full name of the type, as the previous hop's detail spells it.</param>
+    /// <returns>The instance-field completions; empty when the type is unavailable, which is a realized answer.</returns>
+    /// <exception cref="ArgumentNullException">An argument is null.</exception>
+    public static ImmutableArray<CompletionItem> ListInstanceMemberCompletions(
+        ClrmdDumpSession session,
+        string typeFullName)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(typeFullName);
+        var fields = session.ListInstanceFieldNamesByTypeName(typeFullName);
+        if (fields.Status != ClrmdEvidenceStatus.Exact || fields.Value is not { } list)
+        {
+            return [];
+        }
+
+        return
+        [
+            .. list.Fields
+                .Select(static field => new CompletionItem(field.Name, CompletionItemKind.Field, field.TypeName))
+                .GroupBy(static item => item.Text, StringComparer.Ordinal)
+                .Select(static group => group.First())
+                .OrderBy(static item => item.Text, StringComparer.OrdinalIgnoreCase),
+        ];
+    }
+
+    /// <summary>
     /// Computes the completions for one caret position: member completion after a dot, and keyword-plus-identifier
     /// completion inside a partial token. Purely lexical, so it never fails; an unknown receiver yields no items.
     /// </summary>
@@ -467,7 +714,7 @@ public static class ExpressionCompletionService
             var segments = ReadReceiverSegments(text, prefixStart - 1);
             return segments.Length == 0
                 ? CompletionResult.Empty
-                : CompleteMembers(catalog, segments, prefix, prefixStart, caret);
+                : CompleteMembers(catalog, context, segments, prefix, prefixStart, caret);
         }
 
         if (prefix.Length == 0 && !explicitInvocation)
@@ -504,18 +751,50 @@ public static class ExpressionCompletionService
 
     private static CompletionResult CompleteMembers(
         CompletionCatalog catalog,
+        CompletionContext context,
         ImmutableArray<string> segments,
         string prefix,
         int prefixStart,
         int caret)
     {
         var replaceLength = caret - prefixStart;
+
+        // A member chain rooted at the adopted root walks declared field types: after 'root.A.' the candidates
+        // are the instance fields of A's declared type, realized from the dump on demand — the same field set a
+        // chain hop evaluates. An unknown hop offers nothing rather than guessing.
+        if (catalog.HasRoot
+            && segments.Length >= 1
+            && string.Equals(segments[0], catalog.RootIdentifier, StringComparison.Ordinal))
+        {
+            var chainMembers = catalog.RootMembers;
+            foreach (var segment in segments.Skip(1))
+            {
+                var hop = chainMembers.FirstOrDefault(
+                    member => string.Equals(member.Text, segment, StringComparison.Ordinal));
+                if (hop?.Detail is not { Length: > 0 } declaredType)
+                {
+                    return Finish([], prefixStart, replaceLength);
+                }
+
+                if (!catalog.TypeInstanceMembers.TryGetValue(declaredType, out chainMembers))
+                {
+                    return new CompletionResult(
+                        [], prefixStart, replaceLength, PendingInstanceMembers: declaredType);
+                }
+            }
+
+            return Finish(Score(chainMembers, prefix), prefixStart, replaceLength);
+        }
+
         if (segments is [var single])
         {
-            if (catalog.HasRoot && string.Equals(single, catalog.RootIdentifier, StringComparison.Ordinal))
+            // A declared immediate variable completes the instance members the constant evaluator dispatches
+            // for its stored value's type; a variable with no modeled instance surface offers nothing.
+            if (context.Locals.FirstOrDefault(
+                local => string.Equals(local.Text, single, StringComparison.Ordinal)) is { } localReceiver)
             {
                 return Finish(
-                    Score(catalog.RootMembers, prefix),
+                    Score(InstanceMembersForStoredType(localReceiver.Detail), prefix),
                     prefixStart,
                     replaceLength);
             }
@@ -628,10 +907,10 @@ public static class ExpressionCompletionService
     }
 
     /// <summary>
-    /// Ranks how well a candidate matches the typed token, IDE-style: a case-sensitive prefix beats a
-    /// case-insensitive one, which beats a camel-hump match, which beats a plain substring. A candidate the user
-    /// already typed in full is not offered, and the looser modes need two characters, so a single keystroke never
-    /// floods the list.
+    /// Ranks how well a candidate matches the typed token, IDE-style: an exact match ranks first — so the
+    /// selection never falls to a longer neighbor of a fully typed name — then a case-sensitive prefix, a
+    /// case-insensitive one, a camel-hump match, and a plain substring. The looser modes need two characters, so
+    /// a single keystroke never floods the list.
     /// </summary>
     /// <returns>The rank, lower matching better, or null when the candidate does not match.</returns>
     private static int? Rank(string candidate, string prefix)
@@ -643,7 +922,7 @@ public static class ExpressionCompletionService
 
         if (string.Equals(candidate, prefix, StringComparison.Ordinal))
         {
-            return null;
+            return -1;
         }
 
         if (candidate.StartsWith(prefix, StringComparison.Ordinal))

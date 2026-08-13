@@ -32,6 +32,7 @@ public sealed class CompletionSessionState
 {
     private readonly ICompletionQueryExecutor executor;
     private readonly HashSet<string> pendingTypeMemberFetches = new(StringComparer.Ordinal);
+    private readonly HashSet<string> pendingInstanceMemberFetches = new(StringComparer.Ordinal);
 
     /// <summary>Creates the state over one host executor.</summary>
     /// <param name="executor">The host's quiet session-query discipline.</param>
@@ -96,7 +97,34 @@ public sealed class CompletionSessionState
             _ = RealizeTypeMembersAsync(typeFullName);
         }
 
+        if (result.PendingInstanceMembers is { } instanceTypeFullName)
+        {
+            _ = RealizeInstanceMembersAsync(instanceTypeFullName);
+        }
+
         return result;
+    }
+
+    private async Task RealizeInstanceMembersAsync(string typeFullName)
+    {
+        if (!executor.IsSessionOpen || !pendingInstanceMemberFetches.Add(typeFullName))
+        {
+            return;
+        }
+
+        var members = await executor.RunQuietAsync(
+            session => ExpressionCompletionService.ListInstanceMemberCompletions(session, typeFullName))
+            .ConfigureAwait(true);
+        pendingInstanceMemberFetches.Remove(typeFullName);
+        if (!members.IsDefault)
+        {
+            // An empty list is stored too: the type contributed no fields, and that answer is final.
+            Catalog = Catalog with
+            {
+                TypeInstanceMembers = Catalog.TypeInstanceMembers.SetItem(typeFullName, members),
+            };
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private async Task RealizeTypeMembersAsync(string typeFullName)

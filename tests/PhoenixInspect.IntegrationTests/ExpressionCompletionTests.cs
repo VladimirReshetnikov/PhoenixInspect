@@ -135,6 +135,98 @@ public sealed class ExpressionCompletionTests
         Assert.DoesNotContain(
             ExpressionCompletionService.Complete(CompletionCatalog.Empty, "Math.q", 6).Items,
             static item => item.Text == "Sqrt");
+
+        // A fully typed candidate stays visible and ranks first, so the selection never falls to a longer
+        // neighbor — Enter over it submits instead of rewriting 's' into 'sbyte'.
+        var exact = ExpressionCompletionService.Complete(CompletionCatalog.Empty, "string", 6);
+        Assert.Equal("string", exact.Items[0].Text);
+        Assert.Contains(exact.Items, static item => item.Text == "String");
+    }
+
+    /// <summary>Proves instance-member completion after a declared variable's dot mirrors the evaluator.</summary>
+    [Fact]
+    public void Locals_complete_instance_members_by_stored_type()
+    {
+        var context = new CompletionContext
+        {
+            Locals =
+            [
+                new CompletionItem("s", CompletionItemKind.Local, "String"),
+                new CompletionItem("xs", CompletionItemKind.Local, "Int32[]"),
+                new CompletionItem("f", CompletionItemKind.Local, "Func<int, int>"),
+                new CompletionItem("day", CompletionItemKind.Local, "System.DayOfWeek"),
+                new CompletionItem("t", CompletionItemKind.Local, "TimeSpan"),
+            ],
+        };
+
+        // A string variable offers the folded string surface: the Length property and the instance methods.
+        var text = ExpressionCompletionService.Complete(CompletionCatalog.Empty, "s.", 2, context);
+        Assert.Contains(text.Items, static item => item is { Text: "Length", Detail: "property" });
+        Assert.Contains(text.Items, static item => item is { Text: "Substring", Detail: "method" });
+
+        // Prefix filtering and ranking apply to the instance surface too.
+        var trimmed = ExpressionCompletionService.Complete(CompletionCatalog.Empty, "s.Tr", 4, context);
+        Assert.Equal("Trim", trimmed.Items[0].Text);
+
+        // An array variable offers the sequence surface, including the lambda query operators.
+        var sequence = ExpressionCompletionService.Complete(CompletionCatalog.Empty, "xs.", 3, context);
+        Assert.Contains(sequence.Items, static item => item.Text == "Length");
+        Assert.Contains(sequence.Items, static item => item.Text == "Where");
+        Assert.Contains(sequence.Items, static item => item.Text == "Average");
+
+        // A delegate variable offers the delegate surface; a temporal variable its property set.
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "f.", 2, context).Items,
+            static item => item.Text == "Invoke");
+        Assert.Contains(
+            ExpressionCompletionService.Complete(CompletionCatalog.Empty, "t.Total", 7, context).Items,
+            static item => item.Text == "TotalSeconds");
+
+        // A stored enum reads back as its underlying numeric value, so only the universal members apply.
+        var enumMembers = ExpressionCompletionService.Complete(CompletionCatalog.Empty, "day.", 4, context);
+        Assert.Equal(["GetType", "ToString"], enumMembers.Items.Select(static item => item.Text).ToArray());
+
+        // An unknown receiver still completes nothing rather than guessing.
+        Assert.Empty(ExpressionCompletionService.Complete(CompletionCatalog.Empty, "mystery.", 8, context).Items);
+    }
+
+    /// <summary>Proves root member chains realize instance fields per declared hop type, on demand.</summary>
+    [Fact]
+    public void Root_chains_walk_declared_field_types()
+    {
+        // The first hop past a root field asks the host to realize that field type's instance fields…
+        var pending = ExpressionCompletionService.Complete(SampleCatalog, "root.CurrentBatch.", 18);
+        Assert.Empty(pending.Items);
+        Assert.Equal("Contoso.OrderService.Batch", pending.PendingInstanceMembers);
+
+        // …and once realized, the hop completes from the catalog, chaining detail-to-detail.
+        var realized = SampleCatalog with
+        {
+            TypeInstanceMembers = SampleCatalog.TypeInstanceMembers
+                .SetItem(
+                    "Contoso.OrderService.Batch",
+                    [
+                        new CompletionItem("Orders", CompletionItemKind.Field, "Contoso.OrderService.Order[]"),
+                        new CompletionItem("BatchId", CompletionItemKind.Field, "System.Int32"),
+                    ])
+                .SetItem("System.Int32", []),
+        };
+        var members = ExpressionCompletionService.Complete(realized, "root.CurrentBatch.", 18);
+        Assert.Equal(["BatchId", "Orders"], members.Items.Select(static item => item.Text).ToArray());
+        Assert.Null(members.PendingInstanceMembers);
+
+        var filtered = ExpressionCompletionService.Complete(realized, "root.CurrentBatch.Ord", 21);
+        Assert.Equal(["Orders"], filtered.Items.Select(static item => item.Text).ToArray());
+
+        // A deeper hop pends on the next declared type; a realized empty answer completes nothing, finally.
+        var deeper = ExpressionCompletionService.Complete(realized, "root.CurrentBatch.Orders.", 25);
+        Assert.Equal("Contoso.OrderService.Order[]", deeper.PendingInstanceMembers);
+        var terminal = ExpressionCompletionService.Complete(realized, "root.CurrentBatch.BatchId.", 26);
+        Assert.Empty(terminal.Items);
+        Assert.Null(terminal.PendingInstanceMembers);
+
+        // An unknown hop offers nothing rather than guessing.
+        Assert.Empty(ExpressionCompletionService.Complete(realized, "root.Mystery.", 13).Items);
     }
 
     /// <summary>Proves the immediate-window context: locals, statement keywords, and explicit invocation.</summary>
@@ -261,6 +353,15 @@ public sealed class ExpressionCompletionTests
             var members = ExpressionCompletionService.ListStaticMemberCompletions(
                 session, "Contoso.OrderService.Diagnostics.ServiceState");
             Assert.Contains(members, static item => item.Text == "Dispatcher");
+
+            // Instance fields realize by runtime type name, carrying each field's type for the next hop.
+            var heapObject = promoted.PromotableRoot!.TryResolveHeapObject(session);
+            Assert.NotNull(heapObject);
+            var instanceMembers = ExpressionCompletionService.ListInstanceMemberCompletions(
+                session, heapObject!.TypeName);
+            Assert.Contains(
+                instanceMembers,
+                static item => item is { Text: "RecentDispatchDurationsMs", Kind: CompletionItemKind.Field });
         }
         finally
         {
