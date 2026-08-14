@@ -20,9 +20,9 @@ public sealed class ImmediateViewModel : ObservableObject
     private readonly List<string> history = [];
     private int historyIndex = -1;
     private string inputText = string.Empty;
-    private ImmutableArray<ConstantReferenceAssembly> references = [];
+    private ImmutableArray<ReferenceAssembly> references = [];
     private ReferenceCompletionIndex referenceIndex = ReferenceCompletionIndex.Empty;
-    private ConstantUsingDirectiveSet usings = ConstantUsingDirectiveSet.Empty;
+    private UsingDirectiveSet usings = UsingDirectiveSet.Empty;
     private readonly ImmediateVariableStore variables = new();
 
     /// <summary>Creates the immediate pane.</summary>
@@ -165,7 +165,7 @@ public sealed class ImmediateViewModel : ObservableObject
 
         if (!shell.IsDumpOpen)
         {
-            // The sessionless entry folds the evidence-free constant subset and refuses everything beyond it
+            // The sessionless entry folds the evidence-free deterministic subset and refuses everything beyond it
             // with the typed no-snapshot stop, so the prompt is useful before any dump opens. References,
             // using directives, and declared variables contribute their values even with no snapshot. The fold
             // runs off the UI thread under the shared Cancel affordance, exactly like a session projection.
@@ -216,12 +216,12 @@ public sealed class ImmediateViewModel : ObservableObject
         RenderReport(report);
     }
 
-    private ConstantExpressionEvaluation EvaluateForValue(
+    private ExpressionEvaluation EvaluateForValue(
         string initializer,
-        ImmutableArray<ConstantReferenceAssembly> pinnedReferences,
-        ConstantUsingDirectiveSet pinnedUsings,
+        ImmutableArray<ReferenceAssembly> pinnedReferences,
+        UsingDirectiveSet pinnedUsings,
         CancellationToken cancellationToken) =>
-        ExpressionEvaluationService.EvaluateConstantValue(
+        ExpressionEvaluationService.EvaluateValue(
             initializer,
             pinnedReferences,
             pinnedUsings,

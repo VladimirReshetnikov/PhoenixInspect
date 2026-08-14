@@ -20,10 +20,10 @@ public sealed class EvaluationCancellationTests
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
 
-        var constant = ExpressionEvaluationService.EvaluateConstantValue(
+        var constant = ExpressionEvaluationService.EvaluateValue(
             "1 + 2", cancellationToken: cancellation.Token);
-        Assert.Equal(ConstantExpressionStatus.Invalid, constant.Status);
-        Assert.Equal(ConstantExpressionEvaluator.CancellationCode, constant.DiagnosticCode);
+        Assert.Equal(ExpressionEvaluationStatus.Invalid, constant.Status);
+        Assert.Equal(ExpressionEvaluator.CancellationCode, constant.DiagnosticCode);
 
         var report = ExpressionEvaluationService.EvaluateWithoutSnapshot(
             "1 + 2", cancellationToken: cancellation.Token);
@@ -42,12 +42,12 @@ public sealed class EvaluationCancellationTests
             "Enumerable.Range(0, 4096).Count(x => Enumerable.Range(0, 4096).Count(y => x + y > 99999999) > 4096)";
         using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(250));
         var stopwatch = Stopwatch.StartNew();
-        var evaluation = ExpressionEvaluationService.EvaluateConstantValue(
+        var evaluation = ExpressionEvaluationService.EvaluateValue(
             LongFold, cancellationToken: cancellation.Token);
         stopwatch.Stop();
 
-        Assert.Equal(ConstantExpressionStatus.Invalid, evaluation.Status);
-        Assert.Equal(ConstantExpressionEvaluator.CancellationCode, evaluation.DiagnosticCode);
+        Assert.Equal(ExpressionEvaluationStatus.Invalid, evaluation.Status);
+        Assert.Equal(ExpressionEvaluator.CancellationCode, evaluation.DiagnosticCode);
         Assert.True(
             stopwatch.Elapsed < TimeSpan.FromSeconds(10),
             $"The cancelled evaluation took {stopwatch.Elapsed} to unwind.");
@@ -73,17 +73,17 @@ public sealed class EvaluationCancellationTests
     [Trait("Category", "Fast")]
     public void BigInteger_magnitude_bounds_stop_uninterruptible_calls()
     {
-        var pow = ExpressionEvaluationService.EvaluateConstantValue("BigInteger.Pow(2, 2000000000)");
-        Assert.Equal(ConstantExpressionStatus.Invalid, pow.Status);
-        Assert.Equal("CONSTANT_NUMERIC_MAGNITUDE_BOUND_EXCEEDED", pow.DiagnosticCode);
+        var pow = ExpressionEvaluationService.EvaluateValue("BigInteger.Pow(2, 2000000000)");
+        Assert.Equal(ExpressionEvaluationStatus.Invalid, pow.Status);
+        Assert.Equal("EVAL_NUMERIC_MAGNITUDE_BOUND_EXCEEDED", pow.DiagnosticCode);
 
-        var shift = ExpressionEvaluationService.EvaluateConstantValue("BigInteger.Parse(\"1\") << 2000000000");
-        Assert.Equal(ConstantExpressionStatus.Invalid, shift.Status);
-        Assert.Equal("CONSTANT_NUMERIC_MAGNITUDE_BOUND_EXCEEDED", shift.DiagnosticCode);
+        var shift = ExpressionEvaluationService.EvaluateValue("BigInteger.Parse(\"1\") << 2000000000");
+        Assert.Equal(ExpressionEvaluationStatus.Invalid, shift.Status);
+        Assert.Equal("EVAL_NUMERIC_MAGNITUDE_BOUND_EXCEEDED", shift.DiagnosticCode);
 
         // Bounded arguments still fold exactly.
         Assert.Equal(
-            ConstantExpressionStatus.Exact,
-            ExpressionEvaluationService.EvaluateConstantValue("BigInteger.Pow(2, 64)").Status);
+            ExpressionEvaluationStatus.Exact,
+            ExpressionEvaluationService.EvaluateValue("BigInteger.Pow(2, 64)").Status);
     }
 }

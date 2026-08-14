@@ -44,7 +44,7 @@ public interface IShellServices
 
     /// <summary>
     /// Runs a cancellable sessionless computation off the UI thread while the shell shows a busy indicator with
-    /// a Cancel action, keeping a long constant fold as responsive as a session projection. Cancellation is
+    /// a Cancel action, keeping a long fold as responsive as a session projection. Cancellation is
     /// cooperative: the computation observes the token at its own safe points.
     /// </summary>
     /// <typeparam name="TResult">The immutable result produced by <paramref name="work"/>.</typeparam>

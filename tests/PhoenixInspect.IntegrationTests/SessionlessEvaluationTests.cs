@@ -4,8 +4,8 @@ using Xunit;
 namespace PhoenixInspect.IntegrationTests;
 
 /// <summary>
-/// Proves the sessionless evaluation entry: the evidence-free constant subset folds with no snapshot loaded,
-/// constant-domain errors keep their typed analogues, and anything beyond the subset produces the typed
+/// Proves the sessionless evaluation entry: the evidence-free deterministic subset folds with no snapshot loaded,
+/// evaluator-domain errors keep their typed analogues, and anything beyond the subset produces the typed
 /// no-snapshot stop instead of an attempt.
 /// </summary>
 /// <remarks>
@@ -15,10 +15,10 @@ namespace PhoenixInspect.IntegrationTests;
 /// </remarks>
 public sealed class SessionlessEvaluationTests
 {
-    /// <summary>A pure constant folds, a constant-domain error stays typed, and a dump name refuses.</summary>
+    /// <summary>A pure fold succeeds, an evaluator-domain error stays typed, and a dump name refuses.</summary>
     [Fact]
     [Trait("Category", "Fast")]
-    public void Sessionless_entry_folds_constants_and_refuses_dump_names()
+    public void Sessionless_entry_folds_deterministic_expressions_and_refuses_dump_names()
     {
         var folded = ExpressionEvaluationService.EvaluateWithoutSnapshot("(2 + 3) * 7");
         var divided = ExpressionEvaluationService.EvaluateWithoutSnapshot("1 / 0");
@@ -26,9 +26,9 @@ public sealed class SessionlessEvaluationTests
             "global::PhoenixInspect.W8TestTarget.GenericSlot<int>.Sentinel");
         Assert.Equal(EvaluationSeverity.Exact, folded.Severity);
         Assert.Equal("35", folded.Value);
-        Assert.Equal("Int32 · checked constant folding", folded.ValueKind);
+        Assert.Equal("Int32 · checked folding", folded.ValueKind);
 
-        // The constant-domain error keeps its typed exception analogue with no snapshot, exactly as it would
+        // The evaluator-domain error keeps its typed exception analogue with no snapshot, exactly as it would
         // with one: the evidence-free subset owns its own error vocabulary.
         Assert.Equal(EvaluationSeverity.Stopped, divided.Severity);
         Assert.Equal("Blocked", divided.Status);

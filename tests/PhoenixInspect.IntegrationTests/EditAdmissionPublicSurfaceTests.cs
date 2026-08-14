@@ -19,7 +19,7 @@ public sealed class EditAdmissionPublicSurfaceTests
         Assert.Empty(PublicSessionMethods(typeof(StaticFieldRuntimeComposer)));
 
         Assert.NotEmpty(PublicSessionMethods(typeof(StaticFieldExpressionEvaluator)));
-        Assert.NotEmpty(PublicSessionMethods(typeof(ConstantExpressionEvaluator)));
+        Assert.NotEmpty(PublicSessionMethods(typeof(ExpressionEvaluator)));
         Assert.NotEmpty(PublicSessionMethods(typeof(DumpQueryEngine)));
         Assert.NotEmpty(PublicSessionMethods(typeof(DumpMemberChainEngine)));
         Assert.NotEmpty(PublicSessionMethods(typeof(DumpExpressionEvaluator)));
@@ -33,10 +33,10 @@ public sealed class EditAdmissionPublicSurfaceTests
     [Trait("Category", "Fast")]
     public void Admission_union_values_are_append_only()
     {
-        Assert.Equal(1, (int)ConstantExpressionStatus.NotConstant);
-        Assert.Equal(2, (int)ConstantExpressionStatus.Exact);
-        Assert.Equal(3, (int)ConstantExpressionStatus.Invalid);
-        Assert.Equal(4, (int)ConstantExpressionStatus.Unavailable);
+        Assert.Equal(1, (int)ExpressionEvaluationStatus.NotFolded);
+        Assert.Equal(2, (int)ExpressionEvaluationStatus.Exact);
+        Assert.Equal(3, (int)ExpressionEvaluationStatus.Invalid);
+        Assert.Equal(4, (int)ExpressionEvaluationStatus.Unavailable);
         Assert.Equal(10, (int)StaticFieldExpressionEvaluationStage.EditStateAdmission);
         Assert.Equal(6, (int)DumpExpressionEvaluationOutcomeKind.AdmissionFailure);
         Assert.Equal(9, (int)DumpMethodAcquisitionFailureKind.EditStateAdmission);

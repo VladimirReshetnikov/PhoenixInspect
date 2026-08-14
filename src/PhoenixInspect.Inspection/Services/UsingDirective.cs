@@ -5,7 +5,7 @@ namespace PhoenixInspect.Inspection;
 /// <summary>
 /// Parses the immediate window's <c>using</c> directives — <c>using Namespace;</c>,
 /// <c>using static Namespace.Type;</c>, and <c>using Alias = Namespace(.Type);</c> — and folds each into the
-/// running <see cref="ConstantUsingDirectiveSet"/> so subsequent expressions may omit the imported prefixes.
+/// running <see cref="UsingDirectiveSet"/> so subsequent expressions may omit the imported prefixes.
 /// </summary>
 /// <remarks>
 /// The directive is recognized before evaluation, exactly as <c>#r</c> is, and never evaluates a value. A trailing
@@ -28,8 +28,8 @@ public static class UsingDirective
     /// <returns><see langword="true"/> when a directive was applied.</returns>
     public static bool TryApply(
         string line,
-        ConstantUsingDirectiveSet current,
-        out ConstantUsingDirectiveSet updated,
+        UsingDirectiveSet current,
+        out UsingDirectiveSet updated,
         out string message)
     {
         ArgumentNullException.ThrowIfNull(line);

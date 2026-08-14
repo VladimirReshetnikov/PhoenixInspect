@@ -220,8 +220,8 @@ subset:
 | Anonymous types | `new { root.QueueDepth, Total = xs.Sum() }` with explicit and projected member names, member access, C#'s value-based `Equals`, invariant `ToString`, interpolation, sequences of anonymous shapes, and structured children for watch expansion. `==` is reference equality and therefore a typed stop |
 | `checked`/`unchecked` wrappers | `checked(int.MaxValue + 0)` — `unchecked` wrap-around is a typed stop |
 
-Type, declaration, property, and list patterns need runtime type identity the constant domain does not model, so
-they are typed stops rather than guesses; an interpolated value must be a scalar constant.
+Type, declaration, property, and list patterns need runtime type identity the evaluator's deterministic domain does not model, so
+they are typed stops rather than guesses; an interpolated value must be a scalar value.
 
 A member chain has no hop-count limit: depth is bounded only by the front end's expression-length and node-count
 limits. Each intermediate hop must be a directly declared reference field whose exact declared type is present in
@@ -262,7 +262,7 @@ exactly: `null` and `(int?)null` are exact null results, arithmetic with a null 
 `??` coalesces. A fully qualified enum member or `const` field is read from the declaring module's metadata Constant
 table in the dump — Int32-family and string constants are supported, and other constant types are a typed stop. A
 closed allowlist of deterministic, stateless, culture-independent `string` and `char` members evaluates over
-constant operands: concatenation, ordinal `Contains`/`StartsWith`/`EndsWith`/`IndexOf`, `Substring`, `Trim`, `Pad`,
+exact operands: concatenation, ordinal `Contains`/`StartsWith`/`EndsWith`/`IndexOf`, `Substring`, `Trim`, `Pad`,
 `Insert`, `Remove`, ordinal `Replace`, `ToUpperInvariant`/`ToLowerInvariant`,
 `string.Concat`/`Join`/`IsNullOrEmpty`/`CompareOrdinal`, the `char` classification predicates, indexing and range
 slicing with from-end `^n` indexes, `Length`, equality, relational comparison, Boolean logic, and the conditional

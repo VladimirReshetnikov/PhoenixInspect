@@ -265,7 +265,7 @@ public sealed class ImmediateVariableTests
     private static bool Apply(ImmediateVariableStore store, string line, out string message) =>
         store.TryApply(
             line,
-            initializer => ExpressionEvaluationService.EvaluateConstantValue(
+            initializer => ExpressionEvaluationService.EvaluateValue(
                 initializer,
                 usings: null,
                 localVariables: store.LocalNameResolver),

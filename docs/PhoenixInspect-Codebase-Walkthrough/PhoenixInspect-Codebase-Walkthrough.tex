@@ -248,7 +248,7 @@ At the baseline commit, the public preview has grown far beyond the original one
   \item immutable dump files and suspended live-process sessions;
   \item context-independent fully qualified static fields, plus source-like contextual names when an exact frame and identity-matching Portable PDB are available;
   \item object-graph member chains of arbitrary admitted depth, conditional access, and null coalescing;
-  \item a deterministic constant evaluator covering the C\# numeric tower, strings, chars, arrays, virtual sequences, tuples, anonymous objects, enums, \codeinline{typeof}, temporal values, \typeName{Guid}, \typeName{Version}, query expressions, lambdas, patterns, interpolated strings, and selected pure BCL operations;
+  \item a deterministic expression evaluator covering the C\# numeric tower, strings, chars, arrays, virtual sequences, tuples, anonymous objects, enums, \codeinline{typeof}, temporal values, \typeName{Guid}, \typeName{Version}, query expressions, lambdas, patterns, interpolated strings, and selected pure BCL operations;
   \item composition of exact dump values with folded constants;
   \item bounded interpretation of a closed IL profile for instance-method expressions, with optional versioned pure-call models;
   \item heap-root promotion from strong-handle searches or exact static object-reference fields;
@@ -405,7 +405,7 @@ The dependency direction is one of the clearest explanations of the design. Figu
 \repoPath{PhoenixInspect.Metadata.Abstractions} & Bounded metadata-module capabilities and path-independent module descriptions. \\
 \repoPath{PhoenixInspect.Metadata.SRM} & The \typeName{System.Reflection.Metadata}/PE implementation of those metadata contracts, separated into acquisition and projection. \\
 \repoPath{PhoenixInspect.Host.Dump.ClrMD} & ClrMD lifetime, module/runtime catalogs, raw memory, heap and field observations, frame/PDB evidence, method-body acquisition, static storage, live attach, and typed adapter outcomes. \\
-\repoPath{PhoenixInspect.Product.DumpQuery} & Roslyn parsing and project-owned admission, rooted queries, member chains, static-field binding/evaluation, the deterministic constant evaluator, metadata-authority catalogs, and edit-generation contracts. \\
+\repoPath{PhoenixInspect.Product.DumpQuery} & Roslyn parsing and project-owned admission, rooted queries, member chains, static-field binding/evaluation, the deterministic expression evaluator, metadata-authority catalogs, and edit-generation contracts. \\
 \repoPath{PhoenixInspect.Product.DumpDebugging} & Unified expression routing for method paths, dump-method acquisition, counterfactual memory/import, preparation, execution, and canonical result projection. \\
 \repoPath{PhoenixInspect.Headless.ReferenceConsumer} & Executable public-contract witness, usefulness portfolios, corpus replay, and golden/conformance output independent of a UI. \\
 \repoPath{PhoenixInspect.Inspection} & Host-neutral session ownership, immutable display models, evaluation reporting, completion, process discovery, and source navigation. It adds presentation policy, not analysis semantics. \\
@@ -1003,7 +1003,7 @@ A partial scan may still be useful, but it cannot claim exhaustive absence. That
 
 Field and method signatures are decoded through the bounded core grammar. Token-bearing signature nodes are resolved against the exact catalog and module source that supplied the signature. A matching display name in another assembly is not a substitute. Type forwarding, assembly references, generic instantiation, variance, and assignability are admitted only where the current authority contracts have exact support.
 
-For enum constants and literal fields, the constant evaluator reads the declaring module's metadata Constant table. It does not use the analysis runtime's reflection view of a same-named enum. This is a subtle but essential guarantee: an old dump can be inspected on a machine with newer framework assemblies without silently changing the enum member map.
+For enum constants and literal fields, the expression evaluator reads the declaring module's metadata Constant table. It does not use the analysis runtime's reflection view of a same-named enum. This is a subtle but essential guarantee: an old dump can be inspected on a machine with newer framework assemblies without silently changing the enum member map.
 
 \section{Portable PDB as a separate authority}
 
@@ -1143,7 +1143,7 @@ Object addresses are never globally meaningful. The same numeric address in anot
 
 Field lookup combines runtime type information with declared field identity and bounded ancestry traversal. The returned descriptor carries offset/type/declaration facts needed for later reads. A read then validates object/reference shape, computes address geometry under target pointer width, obtains exact bytes or a typed short/unavailable result, and decodes only the admitted value kinds.
 
-Arrays are represented as immutable virtual sequences when their shape and element reads can be established. The constant evaluator can consume those sequences through deterministic operators without copying target objects into the analysis runtime's ordinary collection semantics. Bounds are retained for dimensions, lengths, element reads, and result materialization.
+Arrays are represented as immutable virtual sequences when their shape and element reads can be established. The expression evaluator can consume those sequences through deterministic operators without copying target objects into the analysis runtime's ordinary collection semantics. Bounds are retained for dimensions, lengths, element reads, and result materialization.
 
 \section{Frames and variables}
 
@@ -1239,7 +1239,7 @@ Opening another world disposes the prior session first. This prevents a rendered
 Begin with \repoPath{ClrmdDumpSession.cs}, \repoPath{ClrmdProcessMemoryReader.cs}, \repoPath{ClrmdModuleInfo.cs}, and \repoPath{SnapshotIdentity.cs}; then follow the relevant partial file for arrays, references, frames, source, or static fields. For execution, read \repoPath{ClrmdDumpExecutionResolver.cs}. For threading, read \repoPath{Inspection/Infrastructure/DumpSessionHost.cs}. Real-dump behavior is concentrated in \repoPath{PhoenixInspect.IntegrationTests}.
 \end{sourcebox}
 
-\chapter{Parsing, binding, rooted queries, and constant evaluation}
+\chapter{Parsing, binding, rooted queries, and expression evaluation}
 \label{ch:query}
 
 \section{Why \texttt{Product.DumpQuery} is larger than its name}
@@ -1251,7 +1251,7 @@ The project began with a narrow root-field query and now contains several cooper
   \item the original W2 rooted field query and immutable plan;
   \item fixed-depth and later arbitrary-depth admitted member chains;
   \item W7/W8 static-field syntax, metadata binding, runtime mapping, and storage reads;
-  \item a large deterministic constant-expression evaluator;
+  \item a large deterministic expression evaluator;
   \item type/enum/array/sequence/temporal/query/anonymous-object value models;
   \item source-anchored metadata authority and edit-generation contracts.
 \end{itemize}
@@ -1375,19 +1375,19 @@ Nullable layout and reference assignability are composed in separate steps so a 
 
 An exact non-null object-reference static field can produce a \typeName{DumpObjectBinding} with provenance identifying the static expression. The inspection layer exposes this as a promotable root. This is necessary because an object can be reachable from a static field without appearing in the bounded strong-handle catalog.
 
-\section{The deterministic constant evaluator}
+\section{The deterministic expression evaluator}
 
-\typeName{ConstantExpressionEvaluator} is split across partial files by semantic family: numeric, syntax, arrays, sequences, queries, lambdas, temporal values, enums, types, tuples, anonymous objects, and supporting value models. It is best understood as a pure interpreter for a closed expression language, not as ``compile and invoke C\#.''
+\typeName{ExpressionEvaluator} is split across partial files by semantic family: numeric, syntax, arrays, sequences, queries, lambdas, temporal values, enums, types, tuples, anonymous objects, and supporting value models. It is best understood as a pure interpreter for a closed expression language, not as ``compile and invoke C\#.''
 
 Its top-level status is one of:
 
 \begin{description}[style=nextline]
-  \item[NotConstant] The expression should fall through to another product pipeline unchanged.
+  \item[NotFolded] The expression should fall through to another product pipeline unchanged.
   \item[Exact] A deterministic value was produced under the admitted constant/profile semantics.
   \item[Invalid] The expression selected this pipeline but violated syntax, typing, bounds, or deterministic operation rules.
 \end{description}
 
-A bare dump field or member chain deliberately remains outside the constant pre-stage so its existing evidence report and replay digest stay byte-identical. A composed expression such as \codeinline{root.QueueDepth * 2 + 1} enters the constant evaluator, which calls the frozen root pipeline for the operand and consumes its exact value.
+A bare dump field or member chain deliberately remains outside the folding pre-stage so its existing evidence report and replay digest stay byte-identical. A composed expression such as \codeinline{root.QueueDepth * 2 + 1} enters the expression evaluator, which calls the frozen root pipeline for the operand and consumes its exact value.
 
 \section{Value families}
 
@@ -1445,7 +1445,7 @@ When debugging an expression result, identify the last completed stage:
 A failure at stage 3 should not be ``fixed'' by making storage lookup more permissive. The typed result and retained exact prefix exist precisely to prevent such cross-layer guessing.
 
 \begin{sourcebox}
-Core reading order: \repoPath{DumpQueryParser.cs}; \repoPath{DumpQueryEngine.cs} and \repoPath{DumpQueryPlan.cs}; member-chain parser/plan/engine files; \repoPath{StaticFieldExpressionEvaluator.cs}; then the partial \repoPath{ConstantExpressionEvaluator.*.cs} families. Tests are organized similarly: parser/plan tests, \repoPath{ConstantExpression*Tests.cs}, and real-dump member/static-field suites.
+Core reading order: \repoPath{DumpQueryParser.cs}; \repoPath{DumpQueryEngine.cs} and \repoPath{DumpQueryPlan.cs}; member-chain parser/plan/engine files; \repoPath{StaticFieldExpressionEvaluator.cs}; then the partial \repoPath{ExpressionEvaluator.*.cs} families. Tests are organized similarly: parser/plan tests, \repoPath{ConstantExpression*Tests.cs}, and real-dump member/static-field suites.
 \end{sourcebox}
 
 
@@ -1684,7 +1684,7 @@ A particularly good example is call-stack probing. The service does not infer a 
 The expression service presents two host-facing paths:
 
 \begin{description}[style=nextline]
-  \item[Static field] Fully qualified or contextual static expressions, with the constant pre-stage and optional root promotion.
+  \item[Static field] Fully qualified or contextual static expressions, with the folding pre-stage and optional root promotion.
   \item[Root relative] Member/method/composed expressions against an adopted root under host-friendly policy options.
 \end{description}
 
@@ -1871,7 +1871,7 @@ Contoso.OrderService.Diagnostics.ServiceState.ProcessedOrderCount
 
 \begin{enumerate}
   \item The CLI/Watch calls \typeName{ExpressionEvaluationService.EvaluateStaticField} on the adapter thread.
-  \item The constant pre-stage asks whether the entire expression is a foldable composition. A bare stored field returns \status{NotConstant} and falls through unchanged.
+  \item The constant pre-stage asks whether the entire expression is a foldable composition. A bare stored field returns \status{NotFolded} and falls through unchanged.
   \item \typeName{StaticFieldExpressionParser} parses once and produces candidate shapes.
   \item The fully qualified binder consults the metadata authority. No frame or PDB is touched.
   \item Exact symbol binding selects module/type/field definition identities.
@@ -1912,7 +1912,7 @@ root.CurrentBatch.Route.Corridor.Name
 \begin{enumerate}
   \item Watch routing detects the standalone root identifier and selects the root-relative path.
   \item \typeName{RootSelection.Resolve} validates that the root belongs to the open snapshot and reconstructs the exact product binding.
-  \item The constant pre-stage sees a bare chain and returns \status{NotConstant}, preserving the member-chain report.
+  \item The constant pre-stage sees a bare chain and returns \status{NotFolded}, preserving the member-chain report.
   \item The member-chain profile admits the parsed segments.
   \item For \codeinline{CurrentBatch}, the engine selects one exact runtime field, reads it, validates a non-null object reference, and creates the next object binding.
   \item The same sequence repeats for \codeinline{Route} and \codeinline{Corridor}.
@@ -2574,7 +2574,7 @@ A productive first pass is:
   \item The matching tests for each file before reading every helper implementation.
 \end{enumerate}
 
-This route reveals architecture before scale. Starting with the constant evaluator's many partials or the desktop XAML can make the repository look like an undifferentiated debugger application.
+This route reveals architecture before scale. Starting with the expression evaluator's many partials or the desktop XAML can make the repository look like an undifferentiated debugger application.
 
 \section{Search vocabulary}
 
@@ -2596,7 +2596,7 @@ Useful repository-wide search terms and what they reveal:
 \codeinline{Snapshot !=} / \codeinline{SnapshotMismatch} & World isolation checks. \\
 \texttt{RejectingExecution\allowbreak Resolver} & Proof that execution does not resolve dynamically. \\
 \codeinline{IsIssuedBy} & Private authority/stamp checks. \\
-\codeinline{NotConstant} & Constant pre-stage fall-through preservation. \\
+\codeinline{NotFolded} & Constant pre-stage fall-through preservation. \\
 \codeinline{AppliedBounds} & Which caps are returned and how hosts expose them. \\
 \codeinline{Provenance} / \codeinline{Lineage} & Source/transform explanations and dynamic propagation. \\
 \texttt{EditedGenerations\allowbreak NotComposed} & E2 conservative refusal seams. \\
@@ -2772,7 +2772,7 @@ If those answers are explicit, the code is probably aligned with the repository.
 \repoPath{Metadata.Abstractions} & Core.Abstractions & Bounded structural metadata module capability. & \repoPath{IMetadataModule.cs}; \repoPath{ModuleId.cs}; \repoPath{ModuleDescriptor.cs}. \\
 \repoPath{Metadata.SRM} & Metadata.Abstractions & SRM/PE acquisition and projection backend. & \repoPath{SrmMetadataModule.cs}; \repoPath{SrmMetadataProjection.cs}; \repoPath{MetadataResolutionServices.cs}. \\
 \repoPath{Host.Dump.ClrMD} & Core.Abstractions; Host.Abstractions; Metadata.SRM & Dump/live world, raw memory, modules, heap, frames, PDB, static storage, method resolver. & \repoPath{ClrmdDumpSession.cs} and partials; \repoPath{ClrmdProcessMemoryReader.cs}; \repoPath{ClrmdDumpExecutionResolver.cs}; static contracts. \\
-\repoPath{Product.DumpQuery} & Core.Abstractions; Host.Dump.ClrMD & Read-only expression parsing/admission, rooted queries, member/static chains, constant semantics, metadata authority. & \repoPath{DumpQueryParser.cs}; \repoPath{DumpQueryEngine.cs}; \repoPath{StaticFieldExpressionEvaluator.cs}; \repoPath{ConstantExpressionEvaluator.*.cs}; edit contracts. \\
+\repoPath{Product.DumpQuery} & Core.Abstractions; Host.Dump.ClrMD & Read-only expression parsing/admission, rooted queries, member/static chains, constant semantics, metadata authority. & \repoPath{DumpQueryParser.cs}; \repoPath{DumpQueryEngine.cs}; \repoPath{StaticFieldExpressionEvaluator.cs}; \repoPath{ExpressionEvaluator.*.cs}; edit contracts. \\
 \repoPath{Product.DumpDebugging} & Core.Abstractions; Core.Execution; Domain.Concrete; Host.Abstractions; Host.Dump.ClrMD; Product.DumpQuery & Method-path classification, dump import, counterfactual preparation/execution/result. & \repoPath{DumpExpressionEvaluator.cs}; \repoPath{CounterfactualMethodRunner.cs}; request/plan/result/memory files. \\
 \repoPath{Headless.ReferenceConsumer} & Core.Abstractions; Host.Dump.ClrMD; Product.DumpQuery; Product.DumpDebugging & Public API witness, portfolios, corpus, goldens. & \repoPath{Program.cs}; \repoPath{UsefulnessPortfolioRunner.cs}; W6/W7 portfolio runners. \\
 \repoPath{Inspection} & Core.Abstractions; Host.Abstractions; Host.Dump.ClrMD; Product.DumpQuery; Product.DumpDebugging & Serialized session, immutable display/report services, completion, source navigation. & \repoPath{DumpSessionHost.cs}; \repoPath{DumpInspectionService.cs}; \repoPath{ExpressionEvaluationService.cs}; \repoPath{SourceNavigationService.cs}. \\
@@ -2814,7 +2814,7 @@ How is a fully qualified static field evaluated? & \repoPath{Product.DumpQuery/S
 Where is metadata name binding implemented? & \repoPath{StaticFieldFullyQualifiedBinder.cs}; contextual binder and metadata-authority files. \\
 How does the original rooted field query work? & \repoPath{DumpQueryParser.cs}; \repoPath{DumpQueryEngine.cs}; \repoPath{DumpQueryPlan.cs}. \\
 Where are member chains handled? & member-chain parser/plan/engine files in Product.DumpQuery and facade files in Product.DumpDebugging. \\
-Where is folded C\# semantics implemented? & \repoPath{ConstantExpressionEvaluator.cs} and its partials by semantic family. \\
+Where is folded C\# semantics implemented? & \repoPath{ExpressionEvaluator.cs} and its partials by semantic family. \\
 How are query and method paths classified? & \repoPath{Product.DumpDebugging/DumpExpressionEvaluator.cs}; classifier/request files. \\
 How is a method plan issued and executed? & \repoPath{CounterfactualMethodRunner.cs}; request/preparation/plan/result files. \\
 How are UI reports made without changing semantics? & \repoPath{Inspection/Services/ExpressionEvaluationService.cs}; \repoPath{Models/EvaluationReport.cs}. \\

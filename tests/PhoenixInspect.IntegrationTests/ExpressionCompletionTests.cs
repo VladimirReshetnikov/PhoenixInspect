@@ -343,7 +343,7 @@ public sealed class ExpressionCompletionTests
     [Fact]
     public void Using_directives_admit_prefixless_names()
     {
-        var usings = ConstantUsingDirectiveSet.Empty
+        var usings = UsingDirectiveSet.Empty
             .WithImportedNamespace("Contoso.OrderService.Diagnostics")
             .WithImportedNamespace("Contoso")
             .WithAlias("D", "Contoso.OrderService.Dispatching")
@@ -403,7 +403,7 @@ public sealed class ExpressionCompletionTests
     [Fact]
     public void References_contribute_types_and_members()
     {
-        var loaded = ConstantReferenceAssembly.TryLoad(
+        var loaded = ReferenceAssembly.TryLoad(
             typeof(ExpressionCompletionService).Assembly.Location, alias: null, out var error);
         Assert.Null(error);
         var index = new ReferenceCompletionIndex([loaded!]);
@@ -430,7 +430,7 @@ public sealed class ExpressionCompletionTests
         // Using directives reach into references exactly as they reach into dump modules.
         var usingContext = context with
         {
-            Usings = ConstantUsingDirectiveSet.Empty.WithImportedNamespace("PhoenixInspect.Inspection"),
+            Usings = UsingDirectiveSet.Empty.WithImportedNamespace("PhoenixInspect.Inspection"),
         };
         Assert.Contains(
             ExpressionCompletionService.Complete(
@@ -442,7 +442,7 @@ public sealed class ExpressionCompletionTests
             static item => item.Text == "MaximumItems");
 
         // An aliased reference is reachable only through its extern alias, so it contributes nothing bare.
-        var aliased = ConstantReferenceAssembly.TryLoad(
+        var aliased = ReferenceAssembly.TryLoad(
             typeof(ExpressionCompletionService).Assembly.Location, alias: "ext", out _);
         Assert.True(new ReferenceCompletionIndex([aliased!]).IsEmpty);
     }

@@ -164,9 +164,9 @@ public static class ExpressionEvaluationService
         ClrmdDumpSession session,
         string expression,
         WatchEvaluationContext context,
-        ImmutableArray<ConstantReferenceAssembly> references,
-        ConstantUsingDirectiveSet? usings,
-        Func<string, ConstantOperandResolution>? localVariables = null,
+        ImmutableArray<ReferenceAssembly> references,
+        UsingDirectiveSet? usings,
+        Func<string, OperandResolution>? localVariables = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(session);
@@ -204,7 +204,7 @@ public static class ExpressionEvaluationService
         Diagnostics =
         [
             new DiagnosticRow(
-                ConstantExpressionEvaluator.CancellationCode,
+                ExpressionEvaluator.CancellationCode,
                 "The host cancelled the request before this expression was evaluated."),
         ],
         Duration = TimeSpan.Zero,
@@ -245,11 +245,11 @@ public static class ExpressionEvaluationService
         return false;
     }
 
-    /// <summary>Evaluates one expression with no snapshot loaded: the evidence-free constant subset alone.</summary>
+    /// <summary>Evaluates one expression with no snapshot loaded: the evidence-free deterministic subset alone.</summary>
     /// <remarks>
     /// This is the same null-session pure pass every loaded-session evaluation already runs first, exposed as its
     /// own entry so an immediate window works before any dump opens. Literals, deterministic arithmetic with the
-    /// typed constant-domain errors, and the closed deterministic library surface fold exactly as they do with a
+    /// typed evaluator-domain errors, and the closed deterministic library surface fold exactly as they do with a
     /// snapshot; anything beyond that subset — a qualified name, a metadata literal, a stored value — refuses with
     /// one typed stop naming the missing snapshot, because there is no target state to read and nothing may be
     /// guessed in its place. Loaded-session behavior is untouched by construction: this entry consults no session
@@ -263,29 +263,29 @@ public static class ExpressionEvaluationService
     /// <param name="usings">The active using directives, or null for none.</param>
     /// <param name="localVariables">The declared-variable resolver, or null when none are declared.</param>
     /// <param name="cancellationToken">The token the evaluation cooperates with at its safe boundaries.</param>
-    /// <returns>A complete display report: an exact constant value or the typed no-snapshot stop.</returns>
+    /// <returns>A complete display report: an exact value or the typed no-snapshot stop.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="expression"/> is null.</exception>
     public static EvaluationReport EvaluateWithoutSnapshot(
         string expression,
-        ImmutableArray<ConstantReferenceAssembly> references = default,
-        ConstantUsingDirectiveSet? usings = null,
-        Func<string, ConstantOperandResolution>? localVariables = null,
+        ImmutableArray<ReferenceAssembly> references = default,
+        UsingDirectiveSet? usings = null,
+        Func<string, OperandResolution>? localVariables = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(expression);
         var effectiveReferences = references.IsDefault ? [] : references;
         var stopwatch = Stopwatch.StartNew();
-        var pureConstant = ConstantExpressionEvaluator.Evaluate(
+        var pureFold = ExpressionEvaluator.Evaluate(
             session: null,
             expression,
-            localVariables is null ? null : new ConstantOperandResolvers { LocalName = localVariables },
+            localVariables is null ? null : new OperandResolvers { LocalName = localVariables },
             effectiveReferences,
             usings,
             cancellationToken);
         stopwatch.Stop();
-        if (pureConstant.Status != ConstantExpressionStatus.NotConstant)
+        if (pureFold.Status != ExpressionEvaluationStatus.NotFolded)
         {
-            return BuildConstantReport(expression, pureConstant, stopwatch.Elapsed);
+            return BuildExpressionReport(expression, pureFold, stopwatch.Elapsed);
         }
 
         return new EvaluationReport
@@ -302,7 +302,7 @@ public static class ExpressionEvaluationService
                 new PropertyRow(
                     "Admission",
                     "Policy",
-                    "Without a loaded snapshot, only the evidence-free constant subset can fold"),
+                    "Without a loaded snapshot, only the evidence-free deterministic subset can fold"),
             ],
             Diagnostics =
             [
@@ -316,7 +316,7 @@ public static class ExpressionEvaluationService
     }
 
     /// <summary>
-    /// Evaluates one expression to its raw constant result with no snapshot, resolving names through the supplied
+    /// Evaluates one expression to its raw evaluation result with no snapshot, resolving names through the supplied
     /// references, using directives, and declared variables. A scratchpad uses this to compute the value a
     /// variable declaration or assignment stores.
     /// </summary>
@@ -325,20 +325,20 @@ public static class ExpressionEvaluationService
     /// <param name="usings">The active using directives, or null for none.</param>
     /// <param name="localVariables">The declared-variable resolver, or null when none are declared.</param>
     /// <param name="cancellationToken">The token the evaluation cooperates with at its safe boundaries.</param>
-    /// <returns>The raw constant evaluation, whose exact value the caller may store.</returns>
+    /// <returns>The raw expression evaluation, whose exact value the caller may store.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="expression"/> is null.</exception>
-    public static ConstantExpressionEvaluation EvaluateConstantValue(
+    public static ExpressionEvaluation EvaluateValue(
         string expression,
-        ImmutableArray<ConstantReferenceAssembly> references = default,
-        ConstantUsingDirectiveSet? usings = null,
-        Func<string, ConstantOperandResolution>? localVariables = null,
+        ImmutableArray<ReferenceAssembly> references = default,
+        UsingDirectiveSet? usings = null,
+        Func<string, OperandResolution>? localVariables = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(expression);
-        return ConstantExpressionEvaluator.Evaluate(
+        return ExpressionEvaluator.Evaluate(
             session: null,
             expression,
-            localVariables is null ? null : new ConstantOperandResolvers { LocalName = localVariables },
+            localVariables is null ? null : new OperandResolvers { LocalName = localVariables },
             references.IsDefault ? [] : references,
             usings,
             cancellationToken);
@@ -390,9 +390,9 @@ public static class ExpressionEvaluationService
         string expression,
         DumpSelectedFrameSelector? contextSelector,
         ImmutableArray<string> portablePdbCandidates,
-        ImmutableArray<ConstantReferenceAssembly> references,
-        ConstantUsingDirectiveSet? usings,
-        Func<string, ConstantOperandResolution>? localVariables = null,
+        ImmutableArray<ReferenceAssembly> references,
+        UsingDirectiveSet? usings,
+        Func<string, OperandResolution>? localVariables = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(session);
@@ -407,20 +407,20 @@ public static class ExpressionEvaluationService
 
         // Preserve the evidence-free subset even when this snapshot cannot establish base-image authority. The
         // null-session pass folds literals, the closed deterministic BCL surface, and declared variables; a
-        // qualified dump name, metadata literal, or resolver-backed value remains NotConstant and must pass
+        // qualified dump name, metadata literal, or resolver-backed value remains NotFolded and must pass
         // edit-state admission below. References are session-independent, so a reference-declared literal or enum
         // answers here too.
-        var pureConstant = ConstantExpressionEvaluator.Evaluate(
+        var pureFold = ExpressionEvaluator.Evaluate(
             session: null,
             expression,
-            localVariables is null ? null : new ConstantOperandResolvers { LocalName = localVariables },
+            localVariables is null ? null : new OperandResolvers { LocalName = localVariables },
             effectiveReferences,
             usings,
             cancellationToken);
-        if (pureConstant.Status != ConstantExpressionStatus.NotConstant)
+        if (pureFold.Status != ExpressionEvaluationStatus.NotFolded)
         {
             stopwatch.Stop();
-            return BuildConstantReport(expression, pureConstant, stopwatch.Elapsed);
+            return BuildExpressionReport(expression, pureFold, stopwatch.Elapsed);
         }
 
         if (BuildModuleEditAdmissionStop(session, expression, stopwatch, out var admittedModuleCount) is
@@ -429,29 +429,29 @@ public static class ExpressionEvaluationService
             return admissionStop;
         }
 
-        // Constant expressions — folded arithmetic, metadata literal fields, and composed expressions consuming
+        // Foldable expressions — folded arithmetic, metadata literal fields, and composed expressions consuming
         // stored static values as operands — are a pre-stage the frozen static-field pipeline rejects by design.
-        // A not-constant disposition falls through untouched, so every bare stored-field answer stays exactly
+        // A not-folded disposition falls through untouched, so every bare stored-field answer stays exactly
         // what it was.
-        var resolvers = new ConstantOperandResolvers
+        var resolvers = new OperandResolvers
         {
             StaticName = name => MapStaticOperand(session, name, contextSelector is null
                 ? StaticFieldExpressionEvaluator.Evaluate(session, name)
                 : StaticFieldExpressionEvaluator.Evaluate(session, name, contextSelector, candidates)),
             LocalName = localVariables,
         };
-        var constant = ConstantExpressionEvaluator.Evaluate(
+        var evaluation = ExpressionEvaluator.Evaluate(
             session,
             expression,
             resolvers,
             effectiveReferences,
             usings,
             cancellationToken);
-        if (constant.Status != ConstantExpressionStatus.NotConstant)
+        if (evaluation.Status != ExpressionEvaluationStatus.NotFolded)
         {
             stopwatch.Stop();
             return WithModuleEditAdmission(
-                BuildConstantReport(expression, constant, stopwatch.Elapsed),
+                BuildExpressionReport(expression, evaluation, stopwatch.Elapsed),
                 admittedModuleCount);
         }
 
@@ -506,14 +506,14 @@ public static class ExpressionEvaluationService
         var stopwatch = Stopwatch.StartNew();
 
         // Evaluate the evidence-free subset before resolving the root. EvaluateWatch deliberately routes a lexical
-        // root token even inside a string/interpolation to this entry point, so a genuinely pure constant must not
+        // root token even inside a string/interpolation to this entry point, so a genuinely pure fold must not
         // become unavailable merely because the surrounding session contains edits.
-        var pureConstant = ConstantExpressionEvaluator.Evaluate(
+        var pureFold = ExpressionEvaluator.Evaluate(
             session: null, expression, resolvers: null, references: default, usings: null, cancellationToken);
-        if (pureConstant.Status != ConstantExpressionStatus.NotConstant)
+        if (pureFold.Status != ExpressionEvaluationStatus.NotFolded)
         {
             stopwatch.Stop();
-            return BuildConstantReport(expression, pureConstant, stopwatch.Elapsed);
+            return BuildExpressionReport(expression, pureFold, stopwatch.Elapsed);
         }
 
         if (BuildModuleEditAdmissionStop(session, expression, stopwatch, out var admittedModuleCount) is
@@ -541,10 +541,10 @@ public static class ExpressionEvaluationService
         }
 
         // A composed expression — arithmetic, comparison, or string composition around one or more root-relative
-        // chains — folds in the constant pre-stage, with each chain evaluated by the frozen root-relative pipeline
+        // chains — folds in the folding pre-stage, with each chain evaluated by the frozen root-relative pipeline
         // and consumed as an exact operand. A bare chain, invocation, or chain-with-fallback never enters the
         // pre-stage, so every existing answer keeps its evidence report and replay identity.
-        var resolvers = new ConstantOperandResolvers
+        var resolvers = new OperandResolvers
         {
             RootIdentifier = rootIdentifier,
             RootChain = chain => MapRootOperand(
@@ -558,13 +558,13 @@ public static class ExpressionEvaluationService
                 name,
                 StaticFieldExpressionEvaluator.Evaluate(session, name)),
         };
-        var constant = ConstantExpressionEvaluator.Evaluate(
+        var evaluation = ExpressionEvaluator.Evaluate(
             session, expression, resolvers, references: default, usings: null, cancellationToken);
-        if (constant.Status != ConstantExpressionStatus.NotConstant)
+        if (evaluation.Status != ExpressionEvaluationStatus.NotFolded)
         {
             stopwatch.Stop();
             return WithModuleEditAdmission(
-                BuildConstantReport(expression, constant, stopwatch.Elapsed),
+                BuildExpressionReport(expression, evaluation, stopwatch.Elapsed),
                 admittedModuleCount);
         }
 
@@ -726,7 +726,7 @@ public static class ExpressionEvaluationService
         };
     }
 
-    private static ConstantOperandResolution MapStaticOperand(
+    private static OperandResolution MapStaticOperand(
         ClrmdDumpSession session,
         string name,
         StaticFieldExpressionEvaluationResult result)
@@ -740,8 +740,8 @@ public static class ExpressionEvaluationService
                 return arrayResolution;
             }
 
-            return ConstantOperandResolution.ForStop(
-                result.DiagnosticCode ?? "CONSTANT_DUMP_OPERAND_NOT_EXACT",
+            return OperandResolution.ForStop(
+                result.DiagnosticCode ?? "EVAL_DUMP_OPERAND_NOT_EXACT",
                 result.DiagnosticMessage
                     ?? $"Operand '{name}' did not produce an exact value; the static-field pipeline reported "
                     + $"{result.Status}.");
@@ -756,27 +756,27 @@ public static class ExpressionEvaluationService
         return value?.Kind switch
         {
             ClrmdStaticFieldTerminalKind.Int32 or ClrmdStaticFieldTerminalKind.NullableInt32Value =>
-                ConstantOperandResolution.FromInt32(value.Int32Value!.Value),
+                OperandResolution.FromInt32(value.Int32Value!.Value),
             ClrmdStaticFieldTerminalKind.Null or ClrmdStaticFieldTerminalKind.NullableInt32NoValue =>
-                ConstantOperandResolution.ExactNull(),
+                OperandResolution.ExactNull(),
             ClrmdStaticFieldTerminalKind.String =>
-                ConstantOperandResolution.FromString(value.StringValue!.Value),
+                OperandResolution.FromString(value.StringValue!.Value),
             ClrmdStaticFieldTerminalKind.ObjectReference =>
                 MapObjectReferenceOperand(session, name, value.ObjectReference!.Address),
-            _ => ConstantOperandResolution.ForStop(
-                "CONSTANT_DUMP_OPERAND_NOT_EXACT",
+            _ => OperandResolution.ForStop(
+                "EVAL_DUMP_OPERAND_NOT_EXACT",
                 $"Operand '{name}' produced no value."),
         };
     }
 
-    private static ConstantOperandResolution MapObjectReferenceOperand(
+    private static OperandResolution MapObjectReferenceOperand(
         ClrmdDumpSession session,
         string name,
         ulong address)
     {
         // A single-dimension array materializes as a read-only virtual sequence; any other object reference has
         // no operand representation.
-        var array = session.ReadSzArrayValue(address, ConstantExpressionEvaluator.MaximumSequenceLength);
+        var array = session.ReadSzArrayValue(address, ExpressionEvaluator.MaximumSequenceLength);
         if (array.Status == ClrmdEvidenceStatus.Exact)
         {
             return MapArrayObservation(array.Value!);
@@ -784,39 +784,39 @@ public static class ExpressionEvaluationService
 
         if (array.Issue == ClrmdValueIssue.MemberShapeUnsupported)
         {
-            return ConstantOperandResolution.ForStop(
-                "CONSTANT_DUMP_OPERAND_TYPE_UNSUPPORTED",
+            return OperandResolution.ForStop(
+                "EVAL_DUMP_OPERAND_TYPE_UNSUPPORTED",
                 $"Operand '{name}' is an object reference; only Int32, Int64, floating-point, Boolean, char, "
                 + "string, null, and single-dimension array dump values compose into expressions.");
         }
 
-        return ConstantOperandResolution.ForStop(
-            "CONSTANT_DUMP_OPERAND_NOT_EXACT",
+        return OperandResolution.ForStop(
+            "EVAL_DUMP_OPERAND_NOT_EXACT",
             $"Operand '{name}' is an array the snapshot cannot answer exactly: {array.Issue}.");
     }
 
-    private static ConstantOperandResolution MapArrayObservation(ClrmdArrayValueObservation observation)
+    private static OperandResolution MapArrayObservation(ClrmdArrayValueObservation observation)
     {
-        var elements = ImmutableArray.CreateBuilder<ConstantOperandResolution>(observation.Elements.Length);
+        var elements = ImmutableArray.CreateBuilder<OperandResolution>(observation.Elements.Length);
         foreach (var element in observation.Elements)
         {
             elements.Add(element switch
             {
-                { IsNull: true } => ConstantOperandResolution.ExactNull(),
-                { Int32Value: { } int32 } => ConstantOperandResolution.FromInt32(int32),
-                { Int64Value: { } int64 } => ConstantOperandResolution.FromInt64(int64),
-                { DoubleValue: { } doubleValue } => ConstantOperandResolution.FromDouble(doubleValue),
-                { SingleValue: { } single } => ConstantOperandResolution.FromSingle(single),
-                { BooleanValue: { } boolean } => ConstantOperandResolution.FromBoolean(boolean),
-                { CharValue: { } character } => ConstantOperandResolution.FromChar(character),
-                _ => ConstantOperandResolution.FromString(element.StringValue!),
+                { IsNull: true } => OperandResolution.ExactNull(),
+                { Int32Value: { } int32 } => OperandResolution.FromInt32(int32),
+                { Int64Value: { } int64 } => OperandResolution.FromInt64(int64),
+                { DoubleValue: { } doubleValue } => OperandResolution.FromDouble(doubleValue),
+                { SingleValue: { } single } => OperandResolution.FromSingle(single),
+                { BooleanValue: { } boolean } => OperandResolution.FromBoolean(boolean),
+                { CharValue: { } character } => OperandResolution.FromChar(character),
+                _ => OperandResolution.FromString(element.StringValue!),
             });
         }
 
-        return ConstantOperandResolution.FromSequence(elements.ToImmutable(), observation.ElementTypeName);
+        return OperandResolution.FromSequence(elements.ToImmutable(), observation.ElementTypeName);
     }
 
-    private static ConstantOperandResolution MapRootOperand(
+    private static OperandResolution MapRootOperand(
         ClrmdDumpSession session,
         DumpQueryRootBinding rootBinding,
         string chain,
@@ -839,12 +839,12 @@ public static class ExpressionEvaluationService
         if (outcome.Kind != DumpExpressionEvaluationOutcomeKind.DerivedQuery ||
             outcome.DerivedQueryResult is not { } stopped)
         {
-            // A chain the root-relative classifier does not admit keeps the whole expression not-constant, so the
+            // A chain the root-relative classifier does not admit keeps the whole expression not-folded, so the
             // frozen path reports the rejection with its own vocabulary.
-            return ConstantOperandResolution.OutsideDomain();
+            return OperandResolution.OutsideDomain();
         }
 
-        var code = "CONSTANT_DUMP_OPERAND_NOT_EXACT";
+        var code = "EVAL_DUMP_OPERAND_NOT_EXACT";
         var message = $"Operand '{chain}' did not produce an exact value.";
         foreach (var diagnostic in stopped.Diagnostics)
         {
@@ -853,15 +853,15 @@ public static class ExpressionEvaluationService
             break;
         }
 
-        return ConstantOperandResolution.ForStop(code, message);
+        return OperandResolution.ForStop(code, message);
     }
 
     private static bool TryMapStaticArrayField(
         ClrmdDumpSession session,
         string name,
-        out ConstantOperandResolution resolution)
+        out OperandResolution resolution)
     {
-        resolution = ConstantOperandResolution.OutsideDomain();
+        resolution = OperandResolution.OutsideDomain();
         var separator = name.LastIndexOf('.');
         if (separator <= 0 || separator == name.Length - 1)
         {
@@ -871,7 +871,7 @@ public static class ExpressionEvaluationService
         var array = session.ReadStaticSzArrayField(
             name[..separator],
             name[(separator + 1)..],
-            ConstantExpressionEvaluator.MaximumSequenceLength);
+            ExpressionEvaluator.MaximumSequenceLength);
         if (array.Status != ClrmdEvidenceStatus.Exact)
         {
             return false;
@@ -885,9 +885,9 @@ public static class ExpressionEvaluationService
         ClrmdDumpSession session,
         DumpQueryRootBinding rootBinding,
         string chain,
-        out ConstantOperandResolution resolution)
+        out OperandResolution resolution)
     {
-        resolution = ConstantOperandResolution.OutsideDomain();
+        resolution = OperandResolution.OutsideDomain();
         if (rootBinding.Root is not { } root || chain.Contains('?', StringComparison.Ordinal))
         {
             return false;
@@ -904,7 +904,7 @@ public static class ExpressionEvaluationService
         var array = session.ReadSzArrayInstancePath(
             root.Address,
             [.. segments[1..]],
-            ConstantExpressionEvaluator.MaximumSequenceLength);
+            ExpressionEvaluator.MaximumSequenceLength);
         if (array.Status != ClrmdEvidenceStatus.Exact)
         {
             return false;
@@ -914,22 +914,22 @@ public static class ExpressionEvaluationService
         return true;
     }
 
-    private static ConstantOperandResolution MapQueryValue(string name, DumpQueryValue? value) => value?.Kind switch
+    private static OperandResolution MapQueryValue(string name, DumpQueryValue? value) => value?.Kind switch
     {
-        DumpQueryValueKind.Null => ConstantOperandResolution.ExactNull(),
-        DumpQueryValueKind.Int32 => ConstantOperandResolution.FromInt32(value.Int32Value!.Value),
-        DumpQueryValueKind.String => ConstantOperandResolution.FromString(value.StringValue!),
-        _ => ConstantOperandResolution.ForStop(
-            "CONSTANT_DUMP_OPERAND_NOT_EXACT",
+        DumpQueryValueKind.Null => OperandResolution.ExactNull(),
+        DumpQueryValueKind.Int32 => OperandResolution.FromInt32(value.Int32Value!.Value),
+        DumpQueryValueKind.String => OperandResolution.FromString(value.StringValue!),
+        _ => OperandResolution.ForStop(
+            "EVAL_DUMP_OPERAND_NOT_EXACT",
             $"Operand '{name}' produced no value."),
     };
 
-    private static EvaluationReport BuildConstantReport(
+    private static EvaluationReport BuildExpressionReport(
         string expression,
-        ConstantExpressionEvaluation constant,
+        ExpressionEvaluation evaluation,
         TimeSpan duration)
     {
-        if (constant.ModuleEditAdmission is { } admission)
+        if (evaluation.ModuleEditAdmission is { } admission)
         {
             var admissionReads = ImmutableArray.CreateBuilder<MemoryReadRow>();
             AddReads(admissionReads, admission.Evidence);
@@ -940,11 +940,11 @@ public static class ExpressionEvaluationService
                 Path = "Session edit-state admission",
                 Severity = EvaluationSeverity.Stopped,
                 Status = invalid ? "Invalid" : "Unavailable",
-                Stage = "Constant evaluation refused before dump metadata or resolver evidence was consulted",
+                Stage = "Expression evaluation refused before dump metadata or resolver evidence was consulted",
                 Value = "No value was produced.",
                 Facts =
                 [
-                    new PropertyRow("Routing", "Entry point", "ConstantExpressionEvaluator"),
+                    new PropertyRow("Routing", "Entry point", "ExpressionEvaluator"),
                     new PropertyRow("Admission", "Disposition", admission.Disposition.ToString()),
                     new PropertyRow(
                         "Admission",
@@ -952,18 +952,18 @@ public static class ExpressionEvaluationService
                         $"{DisplayFormatting.Count(admission.InspectedModuleCount)} of {DisplayFormatting.Count(admission.TotalModuleCount)}"),
                 ],
                 MemoryReads = admissionReads.ToImmutable(),
-                Diagnostics = [new DiagnosticRow(constant.DiagnosticCode!, constant.DiagnosticMessage!)],
+                Diagnostics = [new DiagnosticRow(evaluation.DiagnosticCode!, evaluation.DiagnosticMessage!)],
                 Duration = duration,
-                Sha256 = constant.Sha256,
+                Sha256 = evaluation.Sha256,
             };
         }
 
         var facts = ImmutableArray.CreateBuilder<PropertyRow>();
-        facts.Add(new PropertyRow("Routing", "Entry point", "ConstantExpressionEvaluator"));
+        facts.Add(new PropertyRow("Routing", "Entry point", "ExpressionEvaluator"));
         facts.Add(new PropertyRow(
             "Routing",
             "Domain",
-            "Constant expression",
+            "Expression folding",
             "No runtime value is read: folded arithmetic depends on no dump evidence, and a literal field's value "
             + "comes from the module's metadata Constant table."));
         facts.Add(new PropertyRow(
@@ -972,143 +972,143 @@ public static class ExpressionEvaluationService
             "RoslynCSharpExpressionV1",
             "One complete pinned Roslyn C# expression parse; checked Int32 semantics for arithmetic."));
 
-        var isLiteralField = constant.FieldToken is not null;
+        var isLiteralField = evaluation.FieldToken is not null;
         if (isLiteralField)
         {
-            facts.Add(new PropertyRow("Constant", "Module", constant.ModuleName ?? DisplayFormatting.Absent));
+            facts.Add(new PropertyRow("Constant", "Module", evaluation.ModuleName ?? DisplayFormatting.Absent));
             facts.Add(new PropertyRow(
                 "Constant",
                 "Metadata digest",
-                DisplayFormatting.ShortDigest(constant.ModuleContentSha256)));
-            facts.Add(new PropertyRow("Constant", "TypeDef", DisplayFormatting.Token(constant.TypeToken!.Value)));
-            facts.Add(new PropertyRow("Constant", "FieldDef", DisplayFormatting.Token(constant.FieldToken!.Value)));
+                DisplayFormatting.ShortDigest(evaluation.ModuleContentSha256)));
+            facts.Add(new PropertyRow("Constant", "TypeDef", DisplayFormatting.Token(evaluation.TypeToken!.Value)));
+            facts.Add(new PropertyRow("Constant", "FieldDef", DisplayFormatting.Token(evaluation.FieldToken!.Value)));
             facts.Add(new PropertyRow(
                 "Constant",
                 "Constant type code",
-                constant.UnderlyingTypeName ?? DisplayFormatting.Absent));
+                evaluation.UnderlyingTypeName ?? DisplayFormatting.Absent));
         }
 
-        if (constant.ModuleCount > 0)
+        if (evaluation.ModuleCount > 0)
         {
             facts.Add(new PropertyRow(
                 "Constant",
                 "Modules scanned",
-                $"{DisplayFormatting.Count(constant.ModulesScanned)} of {DisplayFormatting.Count(constant.ModuleCount)}",
+                $"{DisplayFormatting.Count(evaluation.ModulesScanned)} of {DisplayFormatting.Count(evaluation.ModuleCount)}",
                 "The uniqueness claim spans the module instances whose complete metadata was exactly readable."));
         }
 
-        if (constant.Status == ConstantExpressionStatus.Invalid)
+        if (evaluation.Status == ExpressionEvaluationStatus.Invalid)
         {
             // A cooperatively cancelled fold is its own outcome, not a semantic block: the user asked the
             // evaluation to stop, and it stopped at a safe boundary without producing a value.
             var cancelled = string.Equals(
-                constant.DiagnosticCode,
-                ConstantExpressionEvaluator.CancellationCode,
+                evaluation.DiagnosticCode,
+                ExpressionEvaluator.CancellationCode,
                 StringComparison.Ordinal);
             return new EvaluationReport
             {
                 Expression = expression,
-                Path = "Constant expression",
+                Path = "Expression folding",
                 Severity = EvaluationSeverity.Stopped,
                 Status = cancelled ? "Cancelled" : "Blocked",
                 Stage = cancelled
                     ? "The evaluation stopped at a safe fold boundary on the host's cancellation request"
-                    : "The expression is constant-shaped but has no value under C# constant semantics",
+                    : "The expression folds but produced no value under the evaluator's checked deterministic semantics",
                 Value = "No value was produced.",
                 Facts = facts.ToImmutable(),
-                Diagnostics = [new DiagnosticRow(constant.DiagnosticCode!, constant.DiagnosticMessage!)],
+                Diagnostics = [new DiagnosticRow(evaluation.DiagnosticCode!, evaluation.DiagnosticMessage!)],
                 Duration = duration,
-                Sha256 = constant.Sha256,
+                Sha256 = evaluation.Sha256,
             };
         }
 
-        var (value, valueKind) = constant.Kind switch
+        var (value, valueKind) = evaluation.Kind switch
         {
-            ConstantValueKind.EnumMember => (
-                $"{ShortTypeName(constant.EnumTypeFullName!)}.{constant.EnumMemberName} "
-                + $"({constant.ValueText ?? constant.Int32Value!.Value.ToString(CultureInfo.InvariantCulture)})",
-                $"Enum {constant.EnumTypeFullName} · underlying {constant.UnderlyingTypeName}"),
-            ConstantValueKind.String => (
-                DisplayFormatting.QuotedString(constant.StringValue!),
-                $"String constant (length {DisplayFormatting.Count(constant.StringValue!.Length)})"),
-            ConstantValueKind.Char => (
-                $"'{DisplayFormatting.QuotedString(constant.CharValue!.Value.ToString())[1..^1]}'",
-                "Char constant"),
-            ConstantValueKind.Boolean => (
-                constant.BooleanValue!.Value ? "true" : "false",
-                "Boolean constant"),
-            ConstantValueKind.Numeric => (
-                constant.ValueText!,
-                $"{constant.ValueTypeName} constant"),
-            ConstantValueKind.Temporal => (
-                constant.ValueText!,
-                $"{constant.ValueTypeName} · invariant round-trip form"),
-            ConstantValueKind.BclValue => (
-                constant.ValueText!,
-                $"{constant.ValueTypeName} · invariant form"),
-            ConstantValueKind.Type => (
-                constant.ValueText!,
+            ExpressionValueKind.EnumMember => (
+                $"{ShortTypeName(evaluation.EnumTypeFullName!)}.{evaluation.EnumMemberName} "
+                + $"({evaluation.ValueText ?? evaluation.Int32Value!.Value.ToString(CultureInfo.InvariantCulture)})",
+                $"Enum {evaluation.EnumTypeFullName} · underlying {evaluation.UnderlyingTypeName}"),
+            ExpressionValueKind.String => (
+                DisplayFormatting.QuotedString(evaluation.StringValue!),
+                $"String value (length {DisplayFormatting.Count(evaluation.StringValue!.Length)})"),
+            ExpressionValueKind.Char => (
+                $"'{DisplayFormatting.QuotedString(evaluation.CharValue!.Value.ToString())[1..^1]}'",
+                "Char value"),
+            ExpressionValueKind.Boolean => (
+                evaluation.BooleanValue!.Value ? "true" : "false",
+                "Boolean value"),
+            ExpressionValueKind.Numeric => (
+                evaluation.ValueText!,
+                $"{evaluation.ValueTypeName} value"),
+            ExpressionValueKind.Temporal => (
+                evaluation.ValueText!,
+                $"{evaluation.ValueTypeName} · invariant round-trip form"),
+            ExpressionValueKind.BclValue => (
+                evaluation.ValueText!,
+                $"{evaluation.ValueTypeName} · invariant form"),
+            ExpressionValueKind.Type => (
+                evaluation.ValueText!,
                 "Type · evaluator type reference"),
-            ConstantValueKind.Null => (
+            ExpressionValueKind.Null => (
                 "null",
                 "Exactly null"),
-            ConstantValueKind.Sequence => (
-                constant.ValueText!,
-                $"{constant.ValueTypeName} · virtual array "
-                + $"(length {constant.Int32Value!.Value.ToString(CultureInfo.InvariantCulture)})"),
-            ConstantValueKind.Tuple => (
-                constant.ValueText!,
-                $"{constant.ValueTypeName} · tuple"),
-            ConstantValueKind.Anonymous => (
-                constant.ValueText!,
-                $"{constant.ValueTypeName} · anonymous type"),
+            ExpressionValueKind.Sequence => (
+                evaluation.ValueText!,
+                $"{evaluation.ValueTypeName} · virtual array "
+                + $"(length {evaluation.Int32Value!.Value.ToString(CultureInfo.InvariantCulture)})"),
+            ExpressionValueKind.Tuple => (
+                evaluation.ValueText!,
+                $"{evaluation.ValueTypeName} · tuple"),
+            ExpressionValueKind.Anonymous => (
+                evaluation.ValueText!,
+                $"{evaluation.ValueTypeName} · anonymous type"),
             _ => (
-                constant.Int32Value!.Value.ToString(CultureInfo.InvariantCulture),
+                evaluation.Int32Value!.Value.ToString(CultureInfo.InvariantCulture),
                 isLiteralField
-                    ? $"Int32 constant literal field ({constant.UnderlyingTypeName})"
-                    : "Int32 · checked constant folding"),
+                    ? $"Int32 literal field ({evaluation.UnderlyingTypeName})"
+                    : "Int32 · checked folding"),
         };
-        if (!isLiteralField && constant.MetadataLiteralsConsumed > 0)
+        if (!isLiteralField && evaluation.MetadataLiteralsConsumed > 0)
         {
             facts.Add(new PropertyRow(
                 "Constant",
                 "Metadata literals consumed",
-                DisplayFormatting.Count(constant.MetadataLiteralsConsumed),
+                DisplayFormatting.Count(evaluation.MetadataLiteralsConsumed),
                 "Qualified names inside the expression resolved as literal fields from module metadata."));
         }
 
-        if (constant.DumpValuesConsumed > 0)
+        if (evaluation.DumpValuesConsumed > 0)
         {
             facts.Add(new PropertyRow(
                 "Constant",
                 "Dump values consumed",
-                DisplayFormatting.Count(constant.DumpValuesConsumed),
+                DisplayFormatting.Count(evaluation.DumpValuesConsumed),
                 "Names inside the expression resolved to exact values through the frozen dump pipelines."));
         }
 
         return new EvaluationReport
         {
             Expression = expression,
-            Path = "Constant expression",
+            Path = "Expression folding",
             Severity = EvaluationSeverity.Exact,
             Status = "Exact",
             Stage = isLiteralField
                 ? "Literal read from complete module metadata"
-                : constant.DumpValuesConsumed > 0
+                : evaluation.DumpValuesConsumed > 0
                     ? "Folded with exact dump-value operands"
-                    : constant.MetadataLiteralsConsumed > 0
+                    : evaluation.MetadataLiteralsConsumed > 0
                         ? "Folded with metadata literal operands"
                         : "Folded without dump evidence",
             Value = value,
             ValueKind = valueKind,
             Facts = facts.ToImmutable(),
             Duration = duration,
-            Sha256 = constant.Sha256,
-            Children = MapChildren(constant.Children),
+            Sha256 = evaluation.Sha256,
+            Children = MapChildren(evaluation.Children),
         };
     }
 
-    private static ImmutableArray<ValueChildRow> MapChildren(ImmutableArray<ConstantValueChild> children) =>
+    private static ImmutableArray<ValueChildRow> MapChildren(ImmutableArray<ExpressionValueChild> children) =>
         children.IsDefaultOrEmpty
             ? []
             : [.. children.Select(static child => new ValueChildRow(

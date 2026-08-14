@@ -33,30 +33,30 @@ public sealed class EnumMetadataIntegrationTests
 
             // ConsoleColor is not in the evaluator's closed BCL table, so every answer below comes from the
             // dump module's counted metadata.
-            var cast = ConstantExpressionEvaluator.Evaluate(session, "(System.ConsoleColor)10");
-            Assert.Equal(ConstantExpressionStatus.Exact, cast.Status);
-            Assert.Equal(ConstantValueKind.EnumMember, cast.Kind);
+            var cast = ExpressionEvaluator.Evaluate(session, "(System.ConsoleColor)10");
+            Assert.Equal(ExpressionEvaluationStatus.Exact, cast.Status);
+            Assert.Equal(ExpressionValueKind.EnumMember, cast.Kind);
             Assert.Equal("Green", cast.EnumMemberName);
             Assert.Equal("System.ConsoleColor", cast.EnumTypeFullName);
 
-            var isEnum = ConstantExpressionEvaluator.Evaluate(session, "typeof(System.ConsoleColor).IsEnum");
-            Assert.Equal(ConstantExpressionStatus.Exact, isEnum.Status);
+            var isEnum = ExpressionEvaluator.Evaluate(session, "typeof(System.ConsoleColor).IsEnum");
+            Assert.Equal(ExpressionEvaluationStatus.Exact, isEnum.Status);
             Assert.True(isEnum.BooleanValue);
 
-            var names = ConstantExpressionEvaluator.Evaluate(
+            var names = ExpressionEvaluator.Evaluate(
                 session, "Enum.GetNames(typeof(System.ConsoleColor)).Length");
-            Assert.Equal(ConstantExpressionStatus.Exact, names.Status);
+            Assert.Equal(ExpressionEvaluationStatus.Exact, names.Status);
             Assert.Equal(16, names.Int32Value);
 
-            var parsed = ConstantExpressionEvaluator.Evaluate(
+            var parsed = ExpressionEvaluator.Evaluate(
                 session, "Enum.Parse(typeof(System.ConsoleColor), \"DarkBlue\")");
-            Assert.Equal(ConstantExpressionStatus.Exact, parsed.Status);
+            Assert.Equal(ExpressionEvaluationStatus.Exact, parsed.Status);
             Assert.Equal("DarkBlue", parsed.EnumMemberName);
             Assert.Equal(1, parsed.Int32Value);
 
-            var defined = ConstantExpressionEvaluator.Evaluate(
+            var defined = ExpressionEvaluator.Evaluate(
                 session, "Enum.IsDefined(typeof(System.ConsoleColor), 99)");
-            Assert.Equal(ConstantExpressionStatus.Exact, defined.Status);
+            Assert.Equal(ExpressionEvaluationStatus.Exact, defined.Status);
             Assert.False(defined.BooleanValue);
         }
         finally

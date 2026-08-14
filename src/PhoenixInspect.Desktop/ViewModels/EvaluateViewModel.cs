@@ -475,7 +475,7 @@ public sealed class EvaluateViewModel : ObservableObject
                 "System.DayOfWeek.Monday",
                 ExpressionPath.StaticField));
             Samples.Add(new ExpressionSample(
-                "Constant arithmetic",
+                "Checked arithmetic",
                 "(2 + 3) * 4",
                 ExpressionPath.StaticField));
             Samples.Add(new ExpressionSample(
@@ -576,7 +576,7 @@ public sealed class EvaluateViewModel : ObservableObject
             return false;
         }
 
-        // The static-field path stays available before any dump opens: the evidence-free constant subset folds
+        // The static-field path stays available before any dump opens: the evidence-free deterministic subset folds
         // without a snapshot, and everything beyond it produces the typed no-snapshot stop rather than a disabled
         // button. The root-relative path needs a selected heap object, which only a loaded dump can supply.
         if (!shell.IsDumpOpen)
@@ -594,9 +594,9 @@ public sealed class EvaluateViewModel : ObservableObject
         EvaluationReport? produced;
         if (!shell.IsDumpOpen)
         {
-            // The sessionless entry consults no session surface: pure constants fold, and anything beyond the
+            // The sessionless entry consults no session surface: pure deterministic expressions fold, and anything beyond the
             // evidence-free subset reports the typed no-snapshot stop. The fold runs off the UI thread under
-            // the shared Cancel affordance, so a long constant fold stays cancellable.
+            // the shared Cancel affordance, so a long fold stays cancellable.
             produced = await shell.RunCancellableAsync(
                 "Evaluating expression…",
                 cancellationToken => ExpressionEvaluationService.EvaluateWithoutSnapshot(

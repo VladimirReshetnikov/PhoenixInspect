@@ -130,7 +130,7 @@ public sealed class PreviewDemoIntegrationTests
                 EvaluationSeverity.Exact, "30.045"),
         ];
 
-    /// <summary>The exact rendered answer the demo must produce for each constant expression.</summary>
+    /// <summary>The exact rendered answer the demo must produce for each deterministic expression.</summary>
     private static readonly ImmutableArray<(string Expression, EvaluationSeverity Severity, string Value)>
         ConstantExpectations =
         [
@@ -144,7 +144,7 @@ public sealed class PreviewDemoIntegrationTests
             ("\"batch-2026-07-30-0042\"[6..^5]", EvaluationSeverity.Exact, "\"2026-07-30\""),
             ("Math.Round(Math.PI, 4)", EvaluationSeverity.Exact, "3.1416"),
 
-            // Stored static values compose into constant folding, including a Nullable with a fallback.
+            // Stored static values compose into expression folding, including a Nullable with a fallback.
             ("Contoso.OrderService.Diagnostics.ServiceState.ProcessedOrderCount + 1",
                 EvaluationSeverity.Exact, "84214"),
             ("Contoso.OrderService.Diagnostics.ServiceState.LastFailureCode ?? 0",

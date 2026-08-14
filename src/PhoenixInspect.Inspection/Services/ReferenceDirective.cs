@@ -6,7 +6,7 @@ namespace PhoenixInspect.Inspection;
 /// <summary>
 /// Parses and applies the immediate window's <c>#r</c> directive: reference an assembly by path or from the local
 /// NuGet cache, optionally binding an extern alias with <c>as</c>, so its literal fields, enums, and type names
-/// participate in constant evaluation.
+/// participate in expression evaluation.
 /// </summary>
 /// <remarks>
 /// The NuGet form resolves only from the machine's already-populated package cache; no network fetch or restore is
@@ -30,8 +30,8 @@ public static class ReferenceDirective
     /// <returns><see langword="true"/> when a reference was added.</returns>
     public static bool TryApply(
         string line,
-        ImmutableArray<ConstantReferenceAssembly> current,
-        out ImmutableArray<ConstantReferenceAssembly> updated,
+        ImmutableArray<ReferenceAssembly> current,
+        out ImmutableArray<ReferenceAssembly> updated,
         out string message)
     {
         ArgumentNullException.ThrowIfNull(line);
@@ -48,7 +48,7 @@ public static class ReferenceDirective
             return false;
         }
 
-        var reference = ConstantReferenceAssembly.TryLoad(path, alias, out var loadError);
+        var reference = ReferenceAssembly.TryLoad(path, alias, out var loadError);
         if (reference is null)
         {
             message = loadError!;

@@ -42,7 +42,7 @@ public sealed class UsingDirectiveTests
         var references = LoadReference(alias: null, out var path);
         try
         {
-            var usings = ConstantUsingDirectiveSet.Empty.WithImportedNamespace("Contoso.Widgets");
+            var usings = UsingDirectiveSet.Empty.WithImportedNamespace("Contoso.Widgets");
 
             // Without the import, the prefix-less name is beyond the subset; with it, both bind.
             Assert.Equal(
@@ -74,7 +74,7 @@ public sealed class UsingDirectiveTests
         var references = LoadReference(alias: null, out var path);
         try
         {
-            var usings = ConstantUsingDirectiveSet.Empty.WithStaticImport("Contoso.Widgets.Limits");
+            var usings = UsingDirectiveSet.Empty.WithStaticImport("Contoso.Widgets.Limits");
             var constant = ExpressionEvaluationService.EvaluateWithoutSnapshot(
                 "MaxWidgets", references, usings);
             Assert.Equal(EvaluationSeverity.Exact, constant.Severity);
@@ -94,13 +94,13 @@ public sealed class UsingDirectiveTests
         var references = LoadReference(alias: null, out var path);
         try
         {
-            var namespaceAlias = ConstantUsingDirectiveSet.Empty.WithAlias("W", "Contoso.Widgets");
+            var namespaceAlias = UsingDirectiveSet.Empty.WithAlias("W", "Contoso.Widgets");
             var viaNamespaceAlias = ExpressionEvaluationService.EvaluateWithoutSnapshot(
                 "W.Limits.MaxWidgets", references, namespaceAlias);
             Assert.Equal(EvaluationSeverity.Exact, viaNamespaceAlias.Severity);
             Assert.Equal("4096", viaNamespaceAlias.Value);
 
-            var typeAlias = ConstantUsingDirectiveSet.Empty.WithAlias("WS", "Contoso.Widgets.WidgetState");
+            var typeAlias = UsingDirectiveSet.Empty.WithAlias("WS", "Contoso.Widgets.WidgetState");
             var viaTypeAlias = ExpressionEvaluationService.EvaluateWithoutSnapshot(
                 "(int)WS.Running", references, typeAlias);
             Assert.Equal(EvaluationSeverity.Exact, viaTypeAlias.Severity);
@@ -120,7 +120,7 @@ public sealed class UsingDirectiveTests
         Assert.True(UsingDirective.IsDirective("using System;"));
         Assert.False(UsingDirective.IsDirective("1 + 1"));
 
-        var set = ConstantUsingDirectiveSet.Empty;
+        var set = UsingDirectiveSet.Empty;
         Assert.True(UsingDirective.TryApply("using Contoso.Widgets;", set, out set, out var nsMessage));
         Assert.Equal("using Contoso.Widgets", nsMessage);
 
@@ -135,10 +135,10 @@ public sealed class UsingDirectiveTests
         Assert.Contains("not a valid", invalidMessage, StringComparison.Ordinal);
     }
 
-    private static ImmutableArray<ConstantReferenceAssembly> LoadReference(string? alias, out string path)
+    private static ImmutableArray<ReferenceAssembly> LoadReference(string? alias, out string path)
     {
         path = CompileReference();
-        var reference = ConstantReferenceAssembly.TryLoad(path, alias, out var loadError);
+        var reference = ReferenceAssembly.TryLoad(path, alias, out var loadError);
         Assert.Null(loadError);
         return ImmutableArray.Create(reference!);
     }

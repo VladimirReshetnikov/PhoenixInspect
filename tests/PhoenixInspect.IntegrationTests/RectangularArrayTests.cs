@@ -11,8 +11,8 @@ namespace PhoenixInspect.IntegrationTests;
 /// </summary>
 public sealed class RectangularArrayTests
 {
-    private static ConstantExpressionEvaluation Evaluate(string expression) =>
-        ExpressionEvaluationService.EvaluateConstantValue(expression);
+    private static ExpressionEvaluation Evaluate(string expression) =>
+        ExpressionEvaluationService.EvaluateValue(expression);
 
     /// <summary>Proves nested initializers fold with inferred dimensions and C#'s uniformity rules.</summary>
     [Fact]
@@ -20,14 +20,14 @@ public sealed class RectangularArrayTests
     public void Nested_initializers_fold_rectangular_arrays()
     {
         var created = Evaluate("new int[,]{{1,2},{3,4}}");
-        Assert.Equal(ConstantExpressionStatus.Exact, created.Status);
+        Assert.Equal(ExpressionEvaluationStatus.Exact, created.Status);
         Assert.Equal("{ { 1, 2 }, { 3, 4 } }", created.ValueText);
         Assert.Equal("Int32[,]", created.StoredValueTypeName);
 
         // Explicit sizes must agree with the initializer's shape; ragged rows are refused, as C# requires.
-        Assert.Equal(ConstantExpressionStatus.Exact, Evaluate("new int[2,2]{{1,2},{3,4}}").Status);
-        Assert.Equal(ConstantExpressionStatus.Invalid, Evaluate("new int[3,2]{{1,2},{3,4}}").Status);
-        Assert.Equal(ConstantExpressionStatus.Invalid, Evaluate("new int[,]{{1,2},{3}}").Status);
+        Assert.Equal(ExpressionEvaluationStatus.Exact, Evaluate("new int[2,2]{{1,2},{3,4}}").Status);
+        Assert.Equal(ExpressionEvaluationStatus.Invalid, Evaluate("new int[3,2]{{1,2},{3,4}}").Status);
+        Assert.Equal(ExpressionEvaluationStatus.Invalid, Evaluate("new int[,]{{1,2},{3}}").Status);
 
         // 'new T[m,n]' zero-fills, and a three-dimensional shape works the same way.
         Assert.Equal("{ { 0, 0, 0 }, { 0, 0, 0 } }", Evaluate("new int[2,3]").ValueText);
@@ -56,9 +56,9 @@ public sealed class RectangularArrayTests
         Assert.Equal("{ 2, 4 }", Evaluate(Grid + ".Where(x => x % 2 == 0).ToArray()").ValueText);
 
         // Wrong index counts and out-of-range dimensions are typed stops.
-        Assert.Equal(ConstantExpressionStatus.Invalid, Evaluate(Grid + "[1]").Status);
-        Assert.Equal(ConstantExpressionStatus.Invalid, Evaluate(Grid + ".GetLength(2)").Status);
-        Assert.Equal(ConstantExpressionStatus.Invalid, Evaluate(Grid + "[2,0]").Status);
+        Assert.Equal(ExpressionEvaluationStatus.Invalid, Evaluate(Grid + "[1]").Status);
+        Assert.Equal(ExpressionEvaluationStatus.Invalid, Evaluate(Grid + ".GetLength(2)").Status);
+        Assert.Equal(ExpressionEvaluationStatus.Invalid, Evaluate(Grid + "[2,0]").Status);
     }
 
     /// <summary>Proves Array.CreateInstance in its modeled shapes, including non-zero lower bounds.</summary>
@@ -67,7 +67,7 @@ public sealed class RectangularArrayTests
     public void CreateInstance_builds_zero_filled_arrays_with_bounds()
     {
         var square = Evaluate("Array.CreateInstance(typeof(int), [2, 2], [0, 0])");
-        Assert.Equal(ConstantExpressionStatus.Exact, square.Status);
+        Assert.Equal(ExpressionEvaluationStatus.Exact, square.Status);
         Assert.Equal("{ { 0, 0 }, { 0, 0 } }", square.ValueText);
         Assert.Equal("Int32[,]", square.StoredValueTypeName);
 
@@ -80,15 +80,15 @@ public sealed class RectangularArrayTests
         Assert.Equal(5, Evaluate(Offset + ".GetLowerBound(0)").Int32Value);
         Assert.Equal(6, Evaluate(Offset + ".GetUpperBound(0)").Int32Value);
         Assert.Equal(0, Evaluate(Offset + ".GetValue(6)").Int32Value);
-        Assert.Equal(ConstantExpressionStatus.Invalid, Evaluate(Offset + ".GetValue(0)").Status);
+        Assert.Equal(ExpressionEvaluationStatus.Invalid, Evaluate(Offset + ".GetValue(0)").Status);
 
         // Unmodeled element types, mismatched bounds ranks, and the deterministic caps are typed stops.
         Assert.Equal(
-            ConstantExpressionStatus.Invalid, Evaluate("Array.CreateInstance(typeof(int[]), 2)").Status);
+            ExpressionEvaluationStatus.Invalid, Evaluate("Array.CreateInstance(typeof(int[]), 2)").Status);
         Assert.Equal(
-            ConstantExpressionStatus.Invalid,
+            ExpressionEvaluationStatus.Invalid,
             Evaluate("Array.CreateInstance(typeof(int), [2, 2], [0])").Status);
         Assert.Equal(
-            ConstantExpressionStatus.Invalid, Evaluate("Array.CreateInstance(typeof(int), [65, 65])").Status);
+            ExpressionEvaluationStatus.Invalid, Evaluate("Array.CreateInstance(typeof(int), [65, 65])").Status);
     }
 }

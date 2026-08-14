@@ -8,12 +8,12 @@ namespace PhoenixInspect.Inspection;
 
 /// <summary>
 /// The declared variables of an immediate-window session. A statement declares, initializes, or reassigns a
-/// variable whose value is any expression the constant evaluator folds to a scalar; later expressions then read
+/// variable whose value is any expression the evaluator folds to a scalar; later expressions then read
 /// the variable by name, and compose with it, through the evaluator's local-name resolver.
 /// </summary>
 /// <remarks>
-/// The store holds constant values only, because that is the whole domain the immediate window evaluates: a
-/// variable is a named, reusable constant, not a live object. The stored domains span the evaluator's operand
+/// The store holds exactly folded values only, because that is the whole domain the immediate window evaluates: a
+/// variable is a named, reusable value, not a live object. The stored domains span the evaluator's operand
 /// carriers — scalars, every numeric kind, date and time values, deterministic BCL values such as Guid and the
 /// Regex family, and sequences of those elements. A declaration's optional type is checked against the folded
 /// value's kind so <c>int x = "hi"</c> is rejected rather than silently stored, and a value outside the operand
@@ -24,10 +24,10 @@ public sealed class ImmediateVariableStore
     private readonly Dictionary<string, StoredVariable> variables = new(StringComparer.Ordinal);
 
     /// <summary>Gets the resolver the evaluator consults for a bare identifier that names a variable.</summary>
-    public Func<string, ConstantOperandResolution> LocalNameResolver => name =>
+    public Func<string, OperandResolution> LocalNameResolver => name =>
         variables.TryGetValue(name, out var stored)
             ? stored.Value
-            : ConstantOperandResolution.OutsideDomain();
+            : OperandResolution.OutsideDomain();
 
     /// <summary>Lists the declared variables as completion items, annotated with their value types.</summary>
     /// <returns>The items, ordered by name.</returns>
@@ -58,7 +58,7 @@ public sealed class ImmediateVariableStore
     /// <returns><see langword="true"/> when the statement was applied and a value stored.</returns>
     public bool TryApply(
         string line,
-        Func<string, ConstantExpressionEvaluation> evaluateExpression,
+        Func<string, ExpressionEvaluation> evaluateExpression,
         out string message)
     {
         ArgumentNullException.ThrowIfNull(line);
@@ -86,11 +86,11 @@ public sealed class ImmediateVariableStore
         }
 
         var evaluation = evaluateExpression(initializer!);
-        if (evaluation.Status != ConstantExpressionStatus.Exact)
+        if (evaluation.Status != ExpressionEvaluationStatus.Exact)
         {
             message = evaluation.DiagnosticMessage is { } diagnostic
                 ? $"'{name}' was not assigned: {diagnostic}"
-                : $"'{name}' was not assigned: the initializer is not a constant value.";
+                : $"'{name}' was not assigned: the initializer did not fold to an exact value.";
             return false;
         }
 
@@ -115,7 +115,7 @@ public sealed class ImmediateVariableStore
         return true;
     }
 
-    private static bool TypeMatchesValue(string declaredType, ConstantExpressionEvaluation evaluation)
+    private static bool TypeMatchesValue(string declaredType, ExpressionEvaluation evaluation)
     {
         // The declared type is matched by its C# keyword or its BCL short or full name against the folded kind, so
         // 'int', 'Int32', and 'System.Int32' all accept an Int32 value while 'int x = "s"' is refused. An array
@@ -155,7 +155,7 @@ public sealed class ImmediateVariableStore
                 (trimmed + arraySuffix).Replace(" ", string.Empty, StringComparison.Ordinal),
                 evaluation.StoredValueTypeName?.Replace(" ", string.Empty, StringComparison.Ordinal),
                 StringComparison.Ordinal) ||
-            (evaluation.Kind == ConstantValueKind.EnumMember && arraySuffix.Length == 0 &&
+            (evaluation.Kind == ExpressionValueKind.EnumMember && arraySuffix.Length == 0 &&
                 string.Equals(normalized, evaluation.EnumTypeFullName, StringComparison.Ordinal));
     }
 
@@ -218,5 +218,5 @@ public sealed class ImmediateVariableStore
         }
     }
 
-    private readonly record struct StoredVariable(ConstantOperandResolution Value, string TypeName);
+    private readonly record struct StoredVariable(OperandResolution Value, string TypeName);
 }

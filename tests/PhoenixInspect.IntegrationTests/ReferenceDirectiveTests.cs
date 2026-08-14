@@ -42,7 +42,7 @@ public sealed class ReferenceDirectiveTests
         var path = CompileReference("Contoso.Widgets");
         try
         {
-            var reference = ConstantReferenceAssembly.TryLoad(path, alias: null, out var loadError);
+            var reference = ReferenceAssembly.TryLoad(path, alias: null, out var loadError);
             Assert.Null(loadError);
             Assert.NotNull(reference);
             var references = ImmutableArray.Create(reference!);
@@ -99,7 +99,7 @@ public sealed class ReferenceDirectiveTests
         var path = CompileReference("Contoso.Widgets");
         try
         {
-            var aliased = ConstantReferenceAssembly.TryLoad(path, alias: "widgets", out var loadError);
+            var aliased = ReferenceAssembly.TryLoad(path, alias: "widgets", out var loadError);
             Assert.Null(loadError);
             var references = ImmutableArray.Create(aliased!);
 
@@ -140,7 +140,7 @@ public sealed class ReferenceDirectiveTests
             Assert.True(ReferenceDirective.IsDirective("#r \"a.dll\""));
             Assert.False(ReferenceDirective.IsDirective("1 + 1"));
 
-            ImmutableArray<ConstantReferenceAssembly> set = [];
+            ImmutableArray<ReferenceAssembly> set = [];
             Assert.True(ReferenceDirective.TryApply(
                 $"#r \"{path}\"",
                 set,

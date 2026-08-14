@@ -89,7 +89,7 @@ introducing a usage pattern the libraries do not support.
 
 Expression evaluation also has one shared Edit-and-Continue safety gate. The session reads and caches each managed
 module's runtime-descriptor-derived flags and generation counter from the already-open dump or suspended live target;
-it never reopens a dump path. Pure constants remain evidence-free. Before any metadata, storage, adopted-root, or
+it never reopens a dump path. Pure deterministic expressions remain evidence-free. Before any metadata, storage, adopted-root, or
 method-IL evidence contributes to an answer, every loaded module must prove an exact zero applied-generation count.
 Applied edits produce `EXPLORER_MODULE_EDITED_GENERATIONS_NOT_COMPOSED`; unavailable or contradictory edit-state
 evidence produces its own typed stop. The hosts therefore refuse rather than displaying an exact-looking value from

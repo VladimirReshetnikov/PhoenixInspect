@@ -211,26 +211,26 @@ public sealed class EncEditRefusalTests
                 Assert.Equal("Folded without dump evidence", pure.Stage);
                 Assert.Empty(pure.MemoryReads);
 
-                var pureDirect = ConstantExpressionEvaluator.Evaluate(hostSession, "2 + 2");
-                var pureWithoutSession = ConstantExpressionEvaluator.Evaluate(session: null, "2 + 2");
-                Assert.Equal(ConstantExpressionStatus.Exact, pureDirect.Status);
+                var pureDirect = ExpressionEvaluator.Evaluate(hostSession, "2 + 2");
+                var pureWithoutSession = ExpressionEvaluator.Evaluate(session: null, "2 + 2");
+                Assert.Equal(ExpressionEvaluationStatus.Exact, pureDirect.Status);
                 Assert.Null(pureDirect.ModuleEditAdmission);
                 Assert.Equal(pureWithoutSession.Sha256, pureDirect.Sha256);
 
                 // A type that may be an enum declared in dump-module metadata is not a pure typed error. The
                 // evidence-free probe defers that one resolution attempt, and this edited session must therefore
                 // retain the same admission refusal without scanning metadata through the constant evaluator.
-                var deferredType = ConstantExpressionEvaluator.Evaluate(
+                var deferredType = ExpressionEvaluator.Evaluate(
                     hostSession,
                     "typeof(System.ConsoleColor).IsEnum");
-                Assert.Equal(ConstantExpressionStatus.Unavailable, deferredType.Status);
+                Assert.Equal(ExpressionEvaluationStatus.Unavailable, deferredType.Status);
                 Assert.Same(admission, deferredType.ModuleEditAdmission);
                 Assert.Equal("DUMP_MODULE_EDITED_GENERATIONS_NOT_COMPOSED", deferredType.DiagnosticCode);
                 Assert.Equal(0, deferredType.ModulesScanned);
                 Assert.Equal(0, deferredType.MetadataLiteralsConsumed);
 
-                var directConstant = ConstantExpressionEvaluator.Evaluate(hostSession, expression);
-                Assert.Equal(ConstantExpressionStatus.Unavailable, directConstant.Status);
+                var directConstant = ExpressionEvaluator.Evaluate(hostSession, expression);
+                Assert.Equal(ExpressionEvaluationStatus.Unavailable, directConstant.Status);
                 Assert.Same(admission, directConstant.ModuleEditAdmission);
                 Assert.Equal("DUMP_MODULE_EDITED_GENERATIONS_NOT_COMPOSED", directConstant.DiagnosticCode);
 

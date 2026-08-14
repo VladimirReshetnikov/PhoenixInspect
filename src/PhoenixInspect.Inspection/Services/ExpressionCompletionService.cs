@@ -52,7 +52,7 @@ public sealed record CompletionContext
     /// Gets the active using directives: imported namespaces and aliases let dump-metadata names complete and
     /// resolve without their prefixes, and static imports offer their members as bare identifiers.
     /// </summary>
-    public ConstantUsingDirectiveSet Usings { get; init; } = ConstantUsingDirectiveSet.Empty;
+    public UsingDirectiveSet Usings { get; init; } = UsingDirectiveSet.Empty;
 
     /// <summary>Gets the '#r'-referenced assemblies' completion facts, or null with no references.</summary>
     public ReferenceCompletionIndex? References { get; init; }
@@ -92,7 +92,7 @@ public sealed record SignatureHelp(
 /// <remarks>The realized-member cache is not thread-safe; one editor consults it from its UI thread.</remarks>
 public sealed class ReferenceCompletionIndex
 {
-    private readonly ImmutableArray<ConstantReferenceAssembly> globalReferences;
+    private readonly ImmutableArray<ReferenceAssembly> globalReferences;
     private readonly Dictionary<string, ImmutableArray<CompletionItem>> realizedMembers = new(StringComparer.Ordinal);
 
     /// <summary>Gets the empty index.</summary>
@@ -101,7 +101,7 @@ public sealed class ReferenceCompletionIndex
     /// <summary>Builds the index over the current references.</summary>
     /// <param name="references">The referenced assemblies; aliased ones are skipped.</param>
     /// <exception cref="ArgumentNullException"><paramref name="references"/> is default.</exception>
-    public ReferenceCompletionIndex(ImmutableArray<ConstantReferenceAssembly> references)
+    public ReferenceCompletionIndex(ImmutableArray<ReferenceAssembly> references)
     {
         if (references.IsDefault)
         {
@@ -398,7 +398,7 @@ public static class ExpressionCompletionService
         }.ToImmutableDictionary(StringComparer.Ordinal);
 
     // ---- Instance members over modeled values ------------------------------------------------------------------
-    // These tables mirror the constant evaluator's instance dispatch exactly, including members that produce a
+    // These tables mirror the expression evaluator's instance dispatch exactly, including members that produce a
     // deliberate explained stop (ToUpper redirects to the invariant form, ToLocalTime is nondeterministic): the
     // stop is part of the documented surface, so the name still completes. Each member also records the type of
     // the value it folds to, when the evaluator models one, which is what lets chains keep completing:
@@ -740,7 +740,7 @@ public static class ExpressionCompletionService
     };
 
     /// <summary>
-    /// Maps a stored immediate-variable type name to the instance members the constant evaluator dispatches for
+    /// Maps a stored immediate-variable type name to the instance members the expression evaluator dispatches for
     /// that value: the string surface for 'String', the sequence surface for any array spelling, the delegate
     /// surface for a delegate's C# spelling, and the universal members for scalars — including stored enums,
     /// which read back as their underlying numeric value. An unmodeled name completes nothing.
