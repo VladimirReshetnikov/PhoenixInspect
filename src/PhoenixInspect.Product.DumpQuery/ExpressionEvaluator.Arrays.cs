@@ -65,7 +65,9 @@ public static partial class ExpressionEvaluator
 
         // 'object[]' is the reflection argument carrier: its elements keep their own folded domains, so a mixed
         // argument list like 'new object[] { 1, "a" }' passes to Invoke without a common-element conversion.
-        if (type is PredefinedTypeSyntax { Keyword.RawKind: (int)SyntaxKind.ObjectKeyword })
+        // 'dynamic[]' erases to object[], so it shares the same descriptor.
+        if (type is PredefinedTypeSyntax { Keyword.RawKind: (int)SyntaxKind.ObjectKeyword }
+            or IdentifierNameSyntax { Identifier.ValueText: "dynamic" })
         {
             descriptor = new ElementDescriptor(OperandKind.Null, default, default, default, null, "Object");
             return true;

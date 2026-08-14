@@ -17,7 +17,8 @@ namespace PhoenixInspect.Inspection;
 /// carriers — scalars, every numeric kind, date and time values, deterministic BCL values such as Guid and the
 /// Regex family, and sequences of those elements. A declaration's optional type is checked against the folded
 /// value's kind so <c>int x = "hi"</c> is rejected rather than silently stored, and a value outside the operand
-/// domain — a tuple or an anonymous object — is reported as unsupported rather than truncated.
+/// domain — a tuple or an anonymous object — is reported as unsupported rather than truncated. A
+/// <c>dynamic</c> declaration admits any storable value: late binding is how the evaluator dispatches anyway.
 /// </remarks>
 public sealed class ImmediateVariableStore
 {
@@ -77,10 +78,12 @@ public sealed class ImmediateVariableStore
         }
 
         // A lambda has no value without a target type; a typed declaration supplies one, so the initializer
-        // evaluates as the conversion the declaration spells: 'Func<int, int> f = x => x + 1;'.
+        // evaluates as the conversion the declaration spells: 'Func<int, int> f = x => x + 1;'. 'var' and
+        // 'dynamic' supply none, exactly as C# refuses 'dynamic d = x => x + 1;'.
         if (initializerIsLambda &&
             declaredType is not null &&
-            !string.Equals(declaredType, "var", StringComparison.Ordinal))
+            !string.Equals(declaredType, "var", StringComparison.Ordinal) &&
+            !string.Equals(declaredType, "dynamic", StringComparison.Ordinal))
         {
             initializer = $"({declaredType})({initializer})";
         }
@@ -102,8 +105,12 @@ public sealed class ImmediateVariableStore
         }
 
         var valueTypeName = evaluation.StoredValueTypeName ?? "value";
+
+        // 'var' infers and freezes the value's type; 'dynamic' declares late binding, so any value is admitted
+        // and every later member dispatch follows the stored value's runtime kind — the evaluator's native mode.
         if (declaredType is not null &&
             !string.Equals(declaredType, "var", StringComparison.Ordinal) &&
+            !string.Equals(declaredType, "dynamic", StringComparison.Ordinal) &&
             !TypeMatchesValue(declaredType, evaluation))
         {
             message = $"'{name}' declared '{declaredType}' cannot hold a {valueTypeName} value.";

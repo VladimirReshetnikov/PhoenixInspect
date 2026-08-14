@@ -900,6 +900,14 @@ public static partial class ExpressionEvaluator
                     : runeSource;
             }
 
+            // '(dynamic) x' changes only the static view: the value is untouched, and every later member
+            // dispatch is already late-bound over the folded operand's runtime kind — the evaluator's native
+            // mode. The cast therefore folds to its operand.
+            if (castTypeName == "dynamic")
+            {
+                return Fold(cast.Expression, context);
+            }
+
             // A non-enum modeled type is a reference conversion: '(object) x' upcasts, '(string)(object) x'
             // downcasts against the runtime identity. Enum targets keep their numeric-conversion path below.
             if (TryResolveTypeRef(cast.Type, context, out var referenceTarget, out _) &&

@@ -304,6 +304,12 @@ public static partial class ExpressionEvaluator
     /// <summary>Folds <c>default(T)</c> for the supported value domains.</summary>
     private static FoldOutcome FoldDefaultExpression(DefaultExpressionSyntax defaultExpression)
     {
+        // 'default(dynamic)' is null: dynamic erases to object, whose default is the null reference.
+        if (defaultExpression.Type is IdentifierNameSyntax { Identifier.ValueText: "dynamic" })
+        {
+            return FoldOutcome.Folded(Operand.Null());
+        }
+
         if (!TryResolveCastType(defaultExpression.Type, out var target, out var numericKind, out var nullable))
         {
             return FoldOutcome.NotArithmetic();

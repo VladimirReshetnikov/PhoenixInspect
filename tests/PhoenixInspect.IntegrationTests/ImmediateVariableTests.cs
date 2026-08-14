@@ -262,6 +262,33 @@ public sealed class ImmediateVariableTests
         Assert.False(ImmediateVariableStore.IsStatement("Math.Max(1, 2)"));
     }
 
+    /// <summary>A dynamic declaration admits any value, rebinding late over the stored runtime kind.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Dynamic_declarations_admit_any_value_and_bind_late()
+    {
+        var store = new ImmediateVariableStore();
+
+        // 'dynamic' admits any storable value without a declared-type check.
+        Assert.True(Apply(store, "dynamic d = 5;", out var declared));
+        Assert.Contains("d = 5", declared, StringComparison.Ordinal);
+        Assert.Equal(
+            "7",
+            ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                "d + 2", localVariables: store.LocalNameResolver).Value);
+
+        // Reassignment may change the runtime kind, and member dispatch follows the new value.
+        Assert.True(Apply(store, "d = \"text\";", out _));
+        Assert.Equal(
+            "4",
+            ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                "d.Length", localVariables: store.LocalNameResolver).Value);
+
+        // A lambda still has no value without a target type, exactly as C# refuses the same declaration.
+        Assert.False(Apply(store, "dynamic f = x => x + 1;", out var lambdaMessage));
+        Assert.Contains("not assigned", lambdaMessage, StringComparison.Ordinal);
+    }
+
     private static bool Apply(ImmediateVariableStore store, string line, out string message) =>
         store.TryApply(
             line,

@@ -269,9 +269,9 @@ public static class ExpressionCompletionService
 
     private static readonly ImmutableArray<string> Keywords =
     [
-        "and", "bool", "byte", "char", "checked", "decimal", "default", "double", "false", "float", "global",
-        "int", "is", "long", "nameof", "new", "not", "null", "object", "or", "sbyte", "short", "sizeof", "string",
-        "switch", "true", "typeof", "uint", "ulong", "unchecked", "ushort", "when",
+        "and", "bool", "byte", "char", "checked", "decimal", "default", "double", "dynamic", "false", "float",
+        "global", "int", "is", "long", "nameof", "new", "not", "null", "object", "or", "sbyte", "short",
+        "sizeof", "string", "switch", "true", "typeof", "uint", "ulong", "unchecked", "ushort", "when",
     ];
 
     // Statement keywords complete only at the start of a line, and only in editors that admit statements: the
