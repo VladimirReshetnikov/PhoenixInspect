@@ -48,6 +48,18 @@ public static partial class ExpressionEvaluator
         Decimal,
     }
 
+    // The active checked/unchecked context of the evaluation thread. Every pass runs on its own dedicated
+    // thread, and FoldCheckedExpression saves and restores the flag around its inner fold, so the scope is
+    // exactly the lexical checked/unchecked region — the same semantics the compiler gives the keyword.
+    [ThreadStatic]
+    private static bool uncheckedContext;
+
+    internal static bool UncheckedContext
+    {
+        get => uncheckedContext;
+        set => uncheckedContext = value;
+    }
+
     private static bool IsIntegral(NumericKind kind) => kind <= NumericKind.BigInteger;
 
     private static bool IsSigned(NumericKind kind) => kind is
@@ -439,6 +451,14 @@ public static partial class ExpressionEvaluator
         var (min, max) = IntegralBounds(target);
         if (result < min || result > max)
         {
+            // In an unchecked context, arithmetic overflow wraps with two's-complement semantics, exactly as
+            // C# defines. Division overflow — MinValue / -1 — still throws at runtime even unchecked, so it
+            // keeps the typed stop.
+            if (uncheckedContext && kind is not (SyntaxKind.DivideExpression or SyntaxKind.ModuloExpression))
+            {
+                return FoldedInteger(target, WrapBits(target, result));
+            }
+
             return FoldOutcome.Error(
                 OverflowCode,
                 $"The expression overflows {target} under checked evaluation.");
@@ -686,6 +706,11 @@ public static partial class ExpressionEvaluator
                             var (min, max) = IntegralBounds(target);
                             if (negated < min || negated > max)
                             {
+                                if (uncheckedContext)
+                                {
+                                    return FoldedInteger(target, WrapBits(target, negated));
+                                }
+
                                 return FoldOutcome.Error(
                                     OverflowCode,
                                     $"The expression overflows {target} under checked evaluation.");
@@ -774,6 +799,14 @@ public static partial class ExpressionEvaluator
                     var (min, max) = IntegralBounds(target);
                     if (truncated < min || truncated > max)
                     {
+                        // An unchecked integral conversion keeps the low bits, exactly as C# defines. An
+                        // out-of-range floating source stays a typed stop: its unchecked result was
+                        // platform-defined for most of .NET's history, and the evaluator does not model it.
+                        if (uncheckedContext && IsIntegral(sourceKind))
+                        {
+                            return FoldedInteger(target, WrapBits(target, truncated));
+                        }
+
                         return FoldOutcome.Error(
                             OverflowCode,
                             $"The value {FormatNumeric(sourceKind, box)} does not fit {target} under checked conversion.");
@@ -1096,6 +1129,7 @@ public static partial class ExpressionEvaluator
         Char,
         Numeric,
         Math,
+        MathF,
         Enumerable,
         KnownEnum,
         Temporal,
@@ -1316,6 +1350,9 @@ public static partial class ExpressionEvaluator
             case "Math":
                 receiver = new TypeReceiver(TypeReceiverCategory.Math, default);
                 return true;
+            case "MathF":
+                receiver = new TypeReceiver(TypeReceiverCategory.MathF, default);
+                return true;
             case "Enumerable":
                 receiver = new TypeReceiver(TypeReceiverCategory.Enumerable, default);
                 return true;
@@ -1429,6 +1466,14 @@ public static partial class ExpressionEvaluator
                     "PI" => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Double, Math.PI)),
                     "E" => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Double, Math.E)),
                     "Tau" => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Double, Math.Tau)),
+                    _ => MemberUnsupported(member),
+                };
+            case TypeReceiverCategory.MathF:
+                return member switch
+                {
+                    "PI" => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, MathF.PI)),
+                    "E" => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, MathF.E)),
+                    "Tau" => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, MathF.Tau)),
                     _ => MemberUnsupported(member),
                 };
             case TypeReceiverCategory.KnownEnum:
@@ -1828,6 +1873,89 @@ public static partial class ExpressionEvaluator
             return ParseNumeric(kind, digits);
         }
 
+        // The generic-math statics every numeric type exposes: T.Max/Min/Clamp with the type's own parameters,
+        // so the arguments must convert implicitly, exactly as the BCL overloads require.
+        switch (name, arguments)
+        {
+            case ("Max" or "Min", [{ } first, { } second])
+                when HasImplicitNumericConversion(first, kind) && HasImplicitNumericConversion(second, kind):
+            {
+                var left = ConvertNumericOperand(first, kind);
+                if (left.Disposition != FoldDisposition.Folded)
+                {
+                    return left;
+                }
+
+                var right = ConvertNumericOperand(second, kind);
+                if (right.Disposition != FoldDisposition.Folded)
+                {
+                    return right;
+                }
+
+                return NumericMinMax(kind, left.Operand, right.Operand, wantMin: name == "Min");
+            }
+
+            case ("Clamp", [{ } value, { } lower, { } upper])
+                when HasImplicitNumericConversion(value, kind) &&
+                    HasImplicitNumericConversion(lower, kind) &&
+                    HasImplicitNumericConversion(upper, kind):
+            {
+                var clampValue = ConvertNumericOperand(value, kind);
+                if (clampValue.Disposition != FoldDisposition.Folded)
+                {
+                    return clampValue;
+                }
+
+                var clampLower = ConvertNumericOperand(lower, kind);
+                if (clampLower.Disposition != FoldDisposition.Folded)
+                {
+                    return clampLower;
+                }
+
+                var clampUpper = ConvertNumericOperand(upper, kind);
+                if (clampUpper.Disposition != FoldDisposition.Folded)
+                {
+                    return clampUpper;
+                }
+
+                var boundsInverted = ComputeNumericComparison(
+                    SyntaxKind.GreaterThanExpression, clampLower.Operand, clampUpper.Operand);
+                if (boundsInverted.Disposition != FoldDisposition.Folded)
+                {
+                    return boundsInverted;
+                }
+
+                if (boundsInverted.Operand.Boolean)
+                {
+                    return FoldOutcome.Error(
+                        "System.ArgumentException",
+                        $"{CSharpNameOfNumeric(kind)}.Clamp requires the minimum to be less than or equal "
+                        + "to the maximum.");
+                }
+
+                var belowLower = ComputeNumericComparison(
+                    SyntaxKind.LessThanExpression, clampValue.Operand, clampLower.Operand);
+                if (belowLower.Disposition != FoldDisposition.Folded)
+                {
+                    return belowLower;
+                }
+
+                if (belowLower.Operand.Boolean)
+                {
+                    return FoldOutcome.Folded(clampLower.Operand);
+                }
+
+                var aboveUpper = ComputeNumericComparison(
+                    SyntaxKind.GreaterThanExpression, clampValue.Operand, clampUpper.Operand);
+                if (aboveUpper.Disposition != FoldDisposition.Folded)
+                {
+                    return aboveUpper;
+                }
+
+                return FoldOutcome.Folded(aboveUpper.Operand.Boolean ? clampUpper.Operand : clampValue.Operand);
+            }
+        }
+
         if (kind == NumericKind.Decimal)
         {
             return DispatchDecimalStatic(name, arguments);
@@ -2069,6 +2197,21 @@ public static partial class ExpressionEvaluator
                     return FoldOutcome.Folded(Operand.FromNumeric(
                         NumericKind.BigInteger,
                         name == "Min" ? BigInteger.Min(l, r) : BigInteger.Max(l, r)));
+                case "Clamp" when arguments is
+                    [{ IsNumeric: true } clampValue, { IsNumeric: true } lower, { IsNumeric: true } upper]:
+                    var candidate = ToTruncatedBigInteger(NumericKindOf(clampValue), BoxOf(clampValue));
+                    var minimum = ToTruncatedBigInteger(NumericKindOf(lower), BoxOf(lower));
+                    var maximum = ToTruncatedBigInteger(NumericKindOf(upper), BoxOf(upper));
+                    if (minimum > maximum)
+                    {
+                        return FoldOutcome.Error(
+                            "System.ArgumentException",
+                            "BigInteger.Clamp requires the minimum to be less than or equal to the maximum.");
+                    }
+
+                    return FoldOutcome.Folded(Operand.FromNumeric(
+                        NumericKind.BigInteger,
+                        BigInteger.Max(minimum, BigInteger.Min(maximum, candidate))));
                 case "GreatestCommonDivisor" when arguments is
                     [{ IsNumeric: true } left, { IsNumeric: true } right]:
                     return FoldOutcome.Folded(Operand.FromNumeric(
@@ -2084,6 +2227,43 @@ public static partial class ExpressionEvaluator
                             ToTruncatedBigInteger(NumericKindOf(value), BoxOf(value)),
                             ToTruncatedBigInteger(NumericKindOf(exponent), BoxOf(exponent)),
                             ToTruncatedBigInteger(NumericKindOf(modulus), BoxOf(modulus)))));
+                case "Add" or "Subtract" or "Multiply" or "Divide" or "Remainder" or "Compare"
+                    when arguments is [{ IsNumeric: true } left, { IsNumeric: true } right]:
+                    var first = ToTruncatedBigInteger(NumericKindOf(left), BoxOf(left));
+                    var second = ToTruncatedBigInteger(NumericKindOf(right), BoxOf(right));
+                    if (name is "Divide" or "Remainder" && second.IsZero)
+                    {
+                        return FoldOutcome.Error(
+                            "System.DivideByZeroException", "Attempted to divide by zero.");
+                    }
+
+                    return name == "Compare"
+                        ? FoldOutcome.Folded(Operand.FromInt32(BigInteger.Compare(first, second)))
+                        : FoldOutcome.Folded(Operand.FromNumeric(NumericKind.BigInteger, name switch
+                        {
+                            "Add" => first + second,
+                            "Subtract" => first - second,
+                            "Multiply" => first * second,
+                            "Divide" => first / second,
+                            _ => first % second,
+                        }));
+                case "Log" or "Log10" when arguments is [{ IsNumeric: true } value]:
+                    // BigInteger.Log answers in double; a non-positive argument throws, and the caller's
+                    // ArgumentException arm maps it to the typed stop.
+                    var logOperand = ToTruncatedBigInteger(NumericKindOf(value), BoxOf(value));
+                    return FoldOutcome.Folded(Operand.FromNumeric(
+                        NumericKind.Double,
+                        name == "Log" ? BigInteger.Log(logOperand) : BigInteger.Log10(logOperand)));
+                case "Log" when arguments is [{ IsNumeric: true } value, { } logBase] &&
+                    TryArgDouble(logBase, out var baseValue):
+                    return FoldOutcome.Folded(Operand.FromNumeric(
+                        NumericKind.Double,
+                        BigInteger.Log(ToTruncatedBigInteger(NumericKindOf(value), BoxOf(value)), baseValue)));
+                case "Log2" when arguments is [{ IsNumeric: true } value]:
+                    // The IBinaryNumber Log2: a BigInteger floor-of-log₂, not a double.
+                    return FoldOutcome.Folded(Operand.FromNumeric(
+                        NumericKind.BigInteger,
+                        BigInteger.Log2(ToTruncatedBigInteger(NumericKindOf(value), BoxOf(value)))));
                 default:
                     return MemberUnsupported($"BigInteger.{name}");
             }
@@ -2099,6 +2279,264 @@ public static partial class ExpressionEvaluator
         catch (ArgumentException exception)
         {
             return FoldOutcome.Error(exception.GetType().FullName!, exception.Message);
+        }
+    }
+
+    /// <summary>
+    /// Answers whether the operand converts to the target kind under C#'s implicit numeric conversions,
+    /// including the constant conversion an int value inside the target's range enjoys.
+    /// </summary>
+    private static bool HasImplicitNumericConversion(Operand operand, NumericKind target)
+    {
+        if (!operand.IsNumeric)
+        {
+            return false;
+        }
+
+        var source = NumericKindOf(operand);
+        if (source == target)
+        {
+            return true;
+        }
+
+        if (operand.Kind == OperandKind.Int32 && IsIntegral(target) && target != NumericKind.BigInteger)
+        {
+            var (min, max) = IntegralBounds(target);
+            if (operand.Int32 >= min && operand.Int32 <= max)
+            {
+                return true;
+            }
+        }
+
+        return source switch
+        {
+            NumericKind.SByte => target is NumericKind.Int16 or NumericKind.Int32 or NumericKind.Int64
+                or NumericKind.IntPtr or NumericKind.Int128 or NumericKind.BigInteger or NumericKind.Single
+                or NumericKind.Double or NumericKind.Decimal or NumericKind.NFloat,
+            NumericKind.Byte => target is NumericKind.Int16 or NumericKind.UInt16 or NumericKind.Int32
+                or NumericKind.UInt32 or NumericKind.Int64 or NumericKind.UInt64 or NumericKind.IntPtr
+                or NumericKind.UIntPtr or NumericKind.Int128 or NumericKind.UInt128 or NumericKind.BigInteger
+                or NumericKind.Single or NumericKind.Double or NumericKind.Decimal or NumericKind.NFloat,
+            NumericKind.Int16 => target is NumericKind.Int32 or NumericKind.Int64 or NumericKind.IntPtr
+                or NumericKind.Int128 or NumericKind.BigInteger or NumericKind.Single or NumericKind.Double
+                or NumericKind.Decimal or NumericKind.NFloat,
+            NumericKind.UInt16 => target is NumericKind.Int32 or NumericKind.UInt32 or NumericKind.Int64
+                or NumericKind.UInt64 or NumericKind.IntPtr or NumericKind.UIntPtr or NumericKind.Int128
+                or NumericKind.UInt128 or NumericKind.BigInteger or NumericKind.Single or NumericKind.Double
+                or NumericKind.Decimal or NumericKind.NFloat,
+            NumericKind.Int32 => target is NumericKind.Int64 or NumericKind.IntPtr or NumericKind.Int128
+                or NumericKind.BigInteger or NumericKind.Single or NumericKind.Double or NumericKind.Decimal
+                or NumericKind.NFloat,
+            NumericKind.UInt32 => target is NumericKind.Int64 or NumericKind.UInt64 or NumericKind.UIntPtr
+                or NumericKind.Int128 or NumericKind.UInt128 or NumericKind.BigInteger or NumericKind.Single
+                or NumericKind.Double or NumericKind.Decimal or NumericKind.NFloat,
+            NumericKind.Int64 => target is NumericKind.Int128 or NumericKind.BigInteger or NumericKind.Single
+                or NumericKind.Double or NumericKind.Decimal or NumericKind.NFloat,
+            NumericKind.UInt64 => target is NumericKind.UInt128 or NumericKind.BigInteger or NumericKind.Single
+                or NumericKind.Double or NumericKind.Decimal or NumericKind.NFloat,
+            NumericKind.IntPtr => target is NumericKind.Int64 or NumericKind.Int128 or NumericKind.BigInteger
+                or NumericKind.Single or NumericKind.Double or NumericKind.Decimal or NumericKind.NFloat,
+            NumericKind.UIntPtr => target is NumericKind.UInt64 or NumericKind.UInt128 or NumericKind.BigInteger
+                or NumericKind.Single or NumericKind.Double or NumericKind.Decimal or NumericKind.NFloat,
+            NumericKind.Int128 or NumericKind.UInt128 => target == NumericKind.BigInteger,
+            NumericKind.Single => target is NumericKind.Double or NumericKind.NFloat,
+            NumericKind.NFloat => target == NumericKind.Double,
+            // Half, double, decimal, and BigInteger convert implicitly to no other numeric kind.
+            _ => false,
+        };
+    }
+
+    /// <summary>Computes T.Min or T.Max over two operands already converted to the kind.</summary>
+    private static FoldOutcome NumericMinMax(NumericKind kind, Operand left, Operand right, bool wantMin)
+    {
+        var l = BoxOf(left);
+        var r = BoxOf(right);
+        return kind switch
+        {
+            NumericKind.Half => FoldOutcome.Folded(Operand.FromNumeric(
+                kind, wantMin ? Half.Min((Half)l, (Half)r) : Half.Max((Half)l, (Half)r))),
+            NumericKind.NFloat or NumericKind.Double => FoldOutcome.Folded(Operand.FromNumeric(
+                kind, wantMin ? Math.Min((double)l, (double)r) : Math.Max((double)l, (double)r))),
+            NumericKind.Single => FoldOutcome.Folded(Operand.FromNumeric(
+                kind, wantMin ? Math.Min((float)l, (float)r) : Math.Max((float)l, (float)r))),
+            NumericKind.Decimal => FoldOutcome.Folded(Operand.FromNumeric(
+                kind, wantMin ? Math.Min((decimal)l, (decimal)r) : Math.Max((decimal)l, (decimal)r))),
+            _ => FoldedInteger(kind, wantMin
+                ? BigInteger.Min(ToBigInteger(kind, l), ToBigInteger(kind, r))
+                : BigInteger.Max(ToBigInteger(kind, l), ToBigInteger(kind, r))),
+        };
+    }
+
+    /// <summary>
+    /// The instance surface every numeric kind shares: CompareTo and Equals with the kind's own parameter, and
+    /// the value-based hash. Both compute over the receiver's exact kind, so the IEEE Equals answers true for
+    /// NaN against NaN — value equality, not the '==' operator — exactly as the BCL defines.
+    /// </summary>
+    private static FoldOutcome DispatchNumericInstanceMethod(Operand receiver, string name, List<Operand> arguments)
+    {
+        var kind = NumericKindOf(receiver);
+        switch (name, arguments)
+        {
+            case ("CompareTo" or "Equals", [{ } other]) when HasImplicitNumericConversion(other, kind):
+                var converted = ConvertNumericOperand(other, kind);
+                if (converted.Disposition != FoldDisposition.Folded)
+                {
+                    return converted;
+                }
+
+                var left = BoxOf(receiver);
+                var right = BoxOf(converted.Operand);
+                return name == "Equals"
+                    ? FoldOutcome.Folded(Operand.FromBoolean(left.Equals(right)))
+                    : FoldOutcome.Folded(Operand.FromInt32(((IComparable)left).CompareTo(right)));
+            case ("GetHashCode", []):
+                // Numeric hashes are value-derived and stable, unlike string's randomized hash.
+                return FoldOutcome.Folded(Operand.FromInt32(BoxOf(receiver).GetHashCode()));
+            default:
+                return FoldOutcome.NotArithmetic();
+        }
+    }
+
+    /// <summary>The few instance properties the numeric kinds expose: BigInteger's classifiers and decimal.Scale.</summary>
+    private static FoldOutcome DispatchNumericInstanceProperty(Operand receiver, string member)
+    {
+        var kind = NumericKindOf(receiver);
+        if (kind == NumericKind.BigInteger)
+        {
+            var value = (BigInteger)BoxOf(receiver);
+            return member switch
+            {
+                "Sign" => FoldOutcome.Folded(Operand.FromInt32(value.Sign)),
+                "IsZero" => FoldOutcome.Folded(Operand.FromBoolean(value.IsZero)),
+                "IsOne" => FoldOutcome.Folded(Operand.FromBoolean(value.IsOne)),
+                "IsEven" => FoldOutcome.Folded(Operand.FromBoolean(value.IsEven)),
+                "IsPowerOfTwo" => FoldOutcome.Folded(Operand.FromBoolean(value.IsPowerOfTwo)),
+                _ => FoldOutcome.NotArithmetic(),
+            };
+        }
+
+        if (kind == NumericKind.Decimal && member == "Scale")
+        {
+            return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Byte, ((decimal)BoxOf(receiver)).Scale));
+        }
+
+        return FoldOutcome.NotArithmetic();
+    }
+
+    // ---- System.MathF ---------------------------------------------------------------------------------------------
+
+    private static bool TryArgSingle(Operand operand, out float value)
+    {
+        // Mirrors the implicit conversions to float: the integral kinds through 64 bits and float itself;
+        // double, NFloat, decimal, Half, and the wide integrals do not convert implicitly.
+        value = 0;
+        if (!operand.IsNumeric)
+        {
+            return false;
+        }
+
+        var kind = NumericKindOf(operand);
+        if (kind is NumericKind.Double or NumericKind.NFloat or NumericKind.Decimal or NumericKind.Half
+            or NumericKind.BigInteger or NumericKind.Int128 or NumericKind.UInt128)
+        {
+            return false;
+        }
+
+        value = ToSingleValue(kind, BoxOf(operand));
+        return true;
+    }
+
+    private static FoldOutcome DispatchMathF(string name, List<Operand> arguments)
+    {
+        try
+        {
+            return DispatchMathFCore(name, arguments);
+        }
+        catch (ArithmeticException exception)
+        {
+            return FoldOutcome.Error(exception.GetType().FullName!, exception.Message);
+        }
+        catch (ArgumentException exception)
+        {
+            return FoldOutcome.Error(exception.GetType().FullName!, exception.Message);
+        }
+    }
+
+    private static FoldOutcome DispatchMathFCore(string name, List<Operand> arguments)
+    {
+        switch (name)
+        {
+            case "Abs" when arguments is [{ } x] && TryArgSingle(x, out var abs):
+                return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, MathF.Abs(abs)));
+            case "Sign" when arguments is [{ } x] && TryArgSingle(x, out var sign):
+                return FoldOutcome.Folded(Operand.FromInt32(MathF.Sign(sign)));
+            case "Min" or "Max" when arguments is [{ } a, { } b] &&
+                TryArgSingle(a, out var minMaxLeft) && TryArgSingle(b, out var minMaxRight):
+                return FoldOutcome.Folded(Operand.FromNumeric(
+                    NumericKind.Single,
+                    name == "Min" ? MathF.Min(minMaxLeft, minMaxRight) : MathF.Max(minMaxLeft, minMaxRight)));
+            case "Floor" when arguments is [{ } x] && TryArgSingle(x, out var floor):
+                return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, MathF.Floor(floor)));
+            case "Ceiling" when arguments is [{ } x] && TryArgSingle(x, out var ceiling):
+                return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, MathF.Ceiling(ceiling)));
+            case "Truncate" when arguments is [{ } x] && TryArgSingle(x, out var truncate):
+                return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, MathF.Truncate(truncate)));
+            case "Round" when arguments is [{ } x] && TryArgSingle(x, out var round):
+                return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, MathF.Round(round)));
+            case "Round" when arguments is [{ } x, { } d] &&
+                TryArgSingle(x, out var roundValue) && TryImplicitInt32(d, out var digits):
+                return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, MathF.Round(roundValue, digits)));
+            case "ILogB" when arguments is [{ } x] && TryArgSingle(x, out var ilogb):
+                return FoldOutcome.Folded(Operand.FromInt32(MathF.ILogB(ilogb)));
+            case "ScaleB" when arguments is [{ } x, { } n] &&
+                TryArgSingle(x, out var scale) && TryImplicitInt32(n, out var power):
+                return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, MathF.ScaleB(scale, power)));
+            case "ReciprocalEstimate" or "ReciprocalSqrtEstimate":
+                return FoldOutcome.Error(
+                    MemberUnsupportedCode,
+                    $"'MathF.{name}' is a hardware-dependent estimate and is not deterministic across machines.");
+            case "Sqrt" or "Cbrt" or "Exp" or "Log" or "Log2" or "Log10" or "Sin" or "Cos" or "Tan" or "Asin"
+                or "Acos" or "Atan" or "Sinh" or "Cosh" or "Tanh" or "Asinh" or "Acosh" or "Atanh"
+                or "BitIncrement" or "BitDecrement" when arguments is [{ } x] && TryArgSingle(x, out var unary):
+                return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, name switch
+                {
+                    "Sqrt" => MathF.Sqrt(unary),
+                    "Cbrt" => MathF.Cbrt(unary),
+                    "Exp" => MathF.Exp(unary),
+                    "Log" => MathF.Log(unary),
+                    "Log2" => MathF.Log2(unary),
+                    "Log10" => MathF.Log10(unary),
+                    "Sin" => MathF.Sin(unary),
+                    "Cos" => MathF.Cos(unary),
+                    "Tan" => MathF.Tan(unary),
+                    "Asin" => MathF.Asin(unary),
+                    "Acos" => MathF.Acos(unary),
+                    "Atan" => MathF.Atan(unary),
+                    "Sinh" => MathF.Sinh(unary),
+                    "Cosh" => MathF.Cosh(unary),
+                    "Tanh" => MathF.Tanh(unary),
+                    "Asinh" => MathF.Asinh(unary),
+                    "Acosh" => MathF.Acosh(unary),
+                    "Atanh" => MathF.Atanh(unary),
+                    "BitIncrement" => MathF.BitIncrement(unary),
+                    _ => MathF.BitDecrement(unary),
+                }));
+            case "Pow" or "Atan2" or "Log" or "IEEERemainder" or "CopySign" when arguments is [{ } a, { } b] &&
+                TryArgSingle(a, out var first) && TryArgSingle(b, out var second):
+                return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, name switch
+                {
+                    "Pow" => MathF.Pow(first, second),
+                    "Atan2" => MathF.Atan2(first, second),
+                    "Log" => MathF.Log(first, second),
+                    "IEEERemainder" => MathF.IEEERemainder(first, second),
+                    _ => MathF.CopySign(first, second),
+                }));
+            case "FusedMultiplyAdd" when arguments is [{ } a, { } b, { } c] &&
+                TryArgSingle(a, out var x1) && TryArgSingle(b, out var x2) && TryArgSingle(c, out var x3):
+                return FoldOutcome.Folded(Operand.FromNumeric(
+                    NumericKind.Single, MathF.FusedMultiplyAdd(x1, x2, x3)));
+            default:
+                return MemberUnsupported($"MathF.{name}");
         }
     }
 

@@ -193,7 +193,8 @@ subset:
 | Constant arithmetic over every C# numeric type | `(86400 / 24) / 60`, `0.1 + 0.2`, `10m / 4`, `1UL << 40` |
 | Numeric casts and conversions, including nullable targets | `(long)int.MaxValue + 1`, `(int?)null` |
 | Enum member or const field | `System.DayOfWeek.Monday` |
-| `System.Math`, `BigInteger`, and numeric type statics | `Math.Round(Math.PI, 4)`, `BigInteger.Pow(2, 100)`, `double.NaN`, `nint.MaxValue`, `IntPtr.Size`, `Half.MaxValue`, `NFloat.Epsilon`, `int.Parse("5")`, `decimal.Round(1.2345m, 2)` |
+| `System.Math`, `MathF`, `BigInteger`, and numeric type statics | `Math.Round(Math.PI, 4)`, `MathF.Sqrt(4f)` at float precision, `BigInteger.Pow(2, 100)`, `BigInteger.Log2(1024)`, `double.NaN`, `nint.MaxValue`, `IntPtr.Size`, `Half.MaxValue`, `NFloat.Epsilon`, `int.Parse("5")`, `decimal.Round(1.2345m, 2)`, and the generic-math trio every numeric type exposes — `int.Clamp(10, 0, 5)`, `Half.Max((Half)1, (Half)2)` — with implicit-conversion argument admission |
+| Numeric instance members | `(5).CompareTo(3)`, `double.NaN.Equals(0.0 / 0.0)` (value equality: `true`), `(3).GetHashCode()`, `BigInteger.Pow(2, 10).IsPowerOfTwo`, `1.500m.Scale` |
 | Invariant `ToString`, with or without a format | `(255).ToString("X4")`, `(0.1 + 0.2).ToString()` |
 | Deterministic string/char operations over constants | `("a" + "b").ToUpperInvariant()`, `"text".Contains('x')` |
 | Index and range expressions on constant strings | `"hello"[^1]`, `"hello"[1..^1]` |
@@ -204,7 +205,8 @@ subset:
 | Expression lambdas over sequences: `Select`/`Where` (with index), `Any`/`All`/`Count`, `First`/`Last`/`Single` (+`OrDefault`), `Sum`/`Min`/`Max`/`Average` selectors, `OrderBy`(`Descending`), `TakeWhile`/`SkipWhile`, `ToArray`/`ToList` | `xs.Where(x => x % 2 == 1).Select(x => x * x).Sum()`, `root.DurationsMs.Select(ms => ms / 1000.0).ToArray()` — expression bodies only; block bodies, captures of mutable state, and `Aggregate` are typed stops |
 | Read-only arrays from the dump heap | `root.Batch.Tags[..]`, `root.DurationsMs.Max()`, `Some.Type.Corridors[0]` |
 | Interpolated strings, invariant, with alignment and formats | `$"depth {root.QueueDepth,4}"`, `$"{255:X4}"` |
-| `is` patterns: constant, `null`, relational, `and`/`or`/`not` | `root.QueueDepth is > 0 and < 100`, `root.Failure?.Code is not null` |
+| `is` patterns: constant, `null`, relational, `and`/`or`/`not`, type | `root.QueueDepth is > 0 and < 100`, `root.Failure?.Code is not null`, `root.QueueDepth is int and > 3` |
+| `is`/`as` type tests from runtime identity | `5 is int` → `true`, `5 is long` → `false`, `root.Name is string`, `5 as int?`, `root.Name as object` — the evaluator always knows a folded value's exact runtime kind, so the test answers as running C# would; `as` admits reference and nullable targets only |
 | `switch` expressions over the same patterns, with `when` | `root.QueueDepth switch { > 10 => "busy", _ => "idle" }` |
 | `nameof`, `default(T)`, `sizeof(T)` | `nameof(root.Batch.Id)`, `default(int?)`, `sizeof(decimal)` |
 | `dynamic`: declarations, identity casts, `dynamic[]`, `default(dynamic)` | `dynamic d = root.Name;` then `d.Length`, `((dynamic)"a,b").Split(',')` — the evaluator dispatches on runtime kinds, so late binding is its native mode |
@@ -219,9 +221,9 @@ subset:
 | Tuple literals with C#'s exact semantics | `(1, "a")`, named elements (`(count: 1, name: "x").count`), `ItemN` access incl. nested (`((1, 2), 3).Item1.Item2`), element-wise `==`/`!=` with numeric promotion, invariant `ToString` (`(1, "a").ToString()` → `"(1, a)"`), and interpolation. Compound results — tuples and arrays — expose structured children (`ItemN`/declared names, `[i]`) so hosts expand them like Visual Studio's Watch window |
 | C# query expressions, the full grammar | `from`/`where`/`let`/`orderby … descending`/`select`, multiple and dependent `from`, `group … by … into` with real groupings (`g.Key`, `g.Sum()`, iterable), `join` and `join … into`, query continuations, and `from T x in e` casts — translated by the specification's own rules onto the folded operator surface (`SelectMany`, `GroupBy`, `Join`, `GroupJoin`, `ThenBy`), with anonymous objects as the transparent identifiers, so results and typed stops are identical to the method syntax |
 | Anonymous types | `new { root.QueueDepth, Total = xs.Sum() }` with explicit and projected member names, member access, C#'s value-based `Equals`, invariant `ToString`, interpolation, sequences of anonymous shapes, and structured children for watch expansion. `==` is reference equality and therefore a typed stop |
-| `checked`/`unchecked` wrappers | `checked(int.MaxValue + 0)` — `unchecked` wrap-around is a typed stop |
+| `checked`/`unchecked` with C#'s exact context semantics | Checked is the default; `unchecked(int.MaxValue + 1)` → `int.MinValue`, `unchecked((byte)300)` → `44`, nesting re-switches lexically, and `int.MinValue / -1` overflows even unchecked, exactly as running code |
 
-Type, declaration, property, and list patterns need runtime type identity the evaluator's deterministic domain does not model, so
+Declaration, property, and list patterns bind names or read members the evaluator's deterministic domain does not model, so
 they are typed stops rather than guesses; an interpolated value must be a scalar value.
 
 A member chain has no hop-count limit: depth is bounded only by the front end's expression-length and node-count

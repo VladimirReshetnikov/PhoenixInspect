@@ -1865,6 +1865,9 @@ public static partial class ExpressionEvaluator
                 return Fold(parenthesized.Expression, context);
             case PrefixUnaryExpressionSyntax unary:
                 return FoldUnary(unary, context);
+            case BinaryExpressionSyntax typeTest
+                when typeTest.Kind() is SyntaxKind.IsExpression or SyntaxKind.AsExpression:
+                return FoldTypeTest(typeTest, context);
             case BinaryExpressionSyntax binary:
                 return FoldBinary(binary, context);
             case ConditionalExpressionSyntax conditional:
@@ -2473,6 +2476,8 @@ public static partial class ExpressionEvaluator
                 FoldOutcome.Folded(PayloadOfGrouping(receiver).Key),
             (OperandKind.Delegate, var delegateMember) =>
                 DispatchDelegateProperty(receiver, delegateMember),
+            (OperandKind.Numeric, var numericMember) =>
+                DispatchNumericInstanceProperty(receiver, numericMember),
             _ => FoldOutcome.NotArithmetic(),
         };
 
@@ -2654,6 +2659,8 @@ public static partial class ExpressionEvaluator
                 return DispatchStaticChar(name, arguments);
             case TypeReceiverCategory.Math:
                 return DispatchMath(name, arguments);
+            case TypeReceiverCategory.MathF:
+                return DispatchMathF(name, arguments);
             case TypeReceiverCategory.Enumerable:
                 return DispatchEnumerable(name, arguments);
             case TypeReceiverCategory.KnownEnum:
@@ -2717,6 +2724,15 @@ public static partial class ExpressionEvaluator
             return accessed.Disposition == FoldDisposition.NotArithmetic
                 ? MemberUnsupported(name)
                 : accessed;
+        }
+
+        if (receiver.Kind is OperandKind.Int32 or OperandKind.Numeric)
+        {
+            var numericOutcome = DispatchNumericInstanceMethod(receiver, name, arguments);
+            if (numericOutcome.Disposition != FoldDisposition.NotArithmetic)
+            {
+                return numericOutcome;
+            }
         }
 
         return receiver.Kind switch

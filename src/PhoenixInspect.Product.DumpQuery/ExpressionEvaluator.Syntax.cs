@@ -14,7 +14,6 @@ namespace PhoenixInspect.Product.DumpQuery;
 public static partial class ExpressionEvaluator
 {
     private const string PatternUnsupportedCode = "EVAL_PATTERN_UNSUPPORTED";
-    private const string UncheckedUnsupportedCode = "EVAL_UNCHECKED_UNSUPPORTED";
     private const string SwitchUnmatchedCode = "System.Runtime.CompilerServices.SwitchExpressionException";
 
     /// <summary>
@@ -121,6 +120,130 @@ public static partial class ExpressionEvaluator
                     "An interpolated value must be a scalar value: a string, char, Boolean, number, null, or "
                     + "an enum member without a format clause.");
         }
+    }
+
+    /// <summary>
+    /// Folds <c>x is T</c> and <c>x as T</c> over the folded operand. The evaluator always knows the exact
+    /// runtime kind of a folded value, so both answer from runtime identity, exactly as C# defines them:
+    /// <c>is</c> yields the Boolean test, and <c>as</c> yields the value or null for the reference and
+    /// nullable targets C# admits.
+    /// </summary>
+    private static FoldOutcome FoldTypeTest(BinaryExpressionSyntax binary, FoldContext context)
+    {
+        if (binary.Right is not TypeSyntax type)
+        {
+            return FoldOutcome.NotArithmetic();
+        }
+
+        var value = Fold(binary.Left, context);
+        if (value.Disposition != FoldDisposition.Folded)
+        {
+            return value;
+        }
+
+        var matched = MatchRuntimeType(value.Operand, type);
+        if (matched.Disposition == FoldDisposition.NotArithmetic)
+        {
+            // 'x is Name' with an unmodeled name: C# admits a constant here, so a name that folds to a value
+            // compares as the constant pattern it is; a name that stays unresolved keeps the whole test
+            // not-folded, so the frozen pipelines answer names only they know.
+            if (binary.IsKind(SyntaxKind.IsExpression))
+            {
+                var expected = Fold(binary.Right, context);
+                return expected.Disposition == FoldDisposition.Folded
+                    ? MatchConstant(value.Operand, expected.Operand)
+                    : FoldOutcome.NotArithmetic();
+            }
+
+            return matched;
+        }
+
+        if (matched.Disposition != FoldDisposition.Folded || binary.IsKind(SyntaxKind.IsExpression))
+        {
+            return matched;
+        }
+
+        // 'as' never throws, but C# admits only reference and nullable value targets; a bare value type is a
+        // compile error there and a typed stop here.
+        var referenceTarget =
+            type is PredefinedTypeSyntax
+            {
+                Keyword.RawKind: (int)SyntaxKind.ObjectKeyword or (int)SyntaxKind.StringKeyword,
+            } ||
+            type is IdentifierNameSyntax { Identifier.ValueText: "dynamic" or "Object" or "String" };
+        if (!referenceTarget && type is not NullableTypeSyntax)
+        {
+            return FoldOutcome.Error(
+                OperandTypeCode,
+                "'as' requires a reference or nullable value type; cast instead for the other value kinds.");
+        }
+
+        return FoldOutcome.Folded(matched.Operand.Boolean ? value.Operand : Operand.Null());
+    }
+
+    /// <summary>
+    /// Answers whether a folded value's runtime kind is the named type, over the evaluator's modeled domains:
+    /// object and dynamic, the scalar kinds, string, char, bool, the temporal kinds, the modeled BCL value
+    /// types, and the known enums. A nullable target tests as its underlying type — null carries no runtime
+    /// type, so <c>(int?)null is int?</c> is false in running C# as well.
+    /// </summary>
+    private static FoldOutcome MatchRuntimeType(Operand value, TypeSyntax type)
+    {
+        var test = type is NullableTypeSyntax nullableType ? nullableType.ElementType : type;
+        if (test is PredefinedTypeSyntax { Keyword.RawKind: (int)SyntaxKind.ObjectKeyword }
+            or IdentifierNameSyntax { Identifier.ValueText: "dynamic" or "Object" })
+        {
+            return FoldOutcome.Folded(Operand.FromBoolean(value.Kind != OperandKind.Null));
+        }
+
+        if (value.Kind == OperandKind.Null)
+        {
+            return FoldOutcome.Folded(Operand.FromBoolean(false));
+        }
+
+        if (TryResolveCastType(test, out var castTarget, out var numericKind, out _))
+        {
+            return FoldOutcome.Folded(Operand.FromBoolean(castTarget switch
+            {
+                CastTarget.Char => value.Kind == OperandKind.Char,
+                CastTarget.Boolean => value.Kind == OperandKind.Boolean,
+                CastTarget.String => value.Kind == OperandKind.String,
+                _ => value.IsNumeric && NumericKindOf(value) == numericKind,
+            }));
+        }
+
+        if (test is IdentifierNameSyntax && TryReadTypeReceiver(test, out var receiver))
+        {
+            bool? known = receiver.Category switch
+            {
+                TypeReceiverCategory.String => value.Kind == OperandKind.String,
+                TypeReceiverCategory.Char => value.Kind == OperandKind.Char,
+                TypeReceiverCategory.Numeric => value.IsNumeric && NumericKindOf(value) == receiver.Numeric,
+                TypeReceiverCategory.Temporal => value.Kind == OperandKind.Temporal &&
+                    value.TemporalKind == receiver.Temporal,
+                TypeReceiverCategory.BclValue => value.Kind == OperandKind.BclValue &&
+                    value.BclValueKind == receiver.Value,
+                TypeReceiverCategory.KnownEnum => value.Kind == OperandKind.Enum &&
+                    string.Equals(value.EnumTypeFullName, receiver.EnumTypeFullName, StringComparison.Ordinal),
+                _ => null,
+            };
+            if (known is { } matches)
+            {
+                return FoldOutcome.Folded(Operand.FromBoolean(matches));
+            }
+        }
+
+        if (test is IdentifierNameSyntax or QualifiedNameSyntax)
+        {
+            // An unresolved bare or dotted name may be a constant, or a dump-declared type only the frozen
+            // pipelines know; not-arithmetic lets the caller decide instead of stopping here.
+            return FoldOutcome.NotArithmetic();
+        }
+
+        return FoldOutcome.Error(
+            PatternUnsupportedCode,
+            "A type test admits the modeled types only: object, dynamic, the numeric kinds, string, char, "
+            + "bool, the temporal kinds, the modeled BCL value types, and the known enums.");
     }
 
     /// <summary>Folds an <c>is</c> pattern over the folded left value.</summary>
@@ -262,11 +385,13 @@ public static partial class ExpressionEvaluator
                 return MatchPattern(value, parenthesized.Pattern, context);
             case DiscardPatternSyntax:
                 return FoldOutcome.Folded(Operand.FromBoolean(true));
+            case TypePatternSyntax typePattern:
+                return MatchRuntimeType(value, typePattern.Type);
             default:
                 return FoldOutcome.Error(
                     PatternUnsupportedCode,
-                    "Only constant, null, relational, and/or/not, parenthesized, and discard patterns are "
-                    + "supported; type, declaration, property, and list patterns need runtime type identity "
+                    "Only constant, null, relational, and/or/not, parenthesized, discard, and type patterns "
+                    + "are supported; declaration, property, and list patterns bind names or read members "
                     + "this evaluator does not model.");
         }
     }
@@ -384,23 +509,22 @@ public static partial class ExpressionEvaluator
 
     /// <summary>
     /// Folds <c>checked(e)</c> and <c>unchecked(e)</c>. The evaluator computes with checked semantics
-    /// everywhere, so <c>checked</c> is a pass-through. <c>unchecked</c> passes through when nothing overflows —
-    /// where the two semantics agree — and reports a typed stop when the inner expression overflows, because
-    /// wrap-around results are deliberately not modeled.
+    /// by default, so <c>checked</c> restates the ambient mode; <c>unchecked</c> switches its lexical region to
+    /// C#'s wrap-around semantics — integral arithmetic wraps with two's complement, and integral conversions
+    /// keep the low bits — exactly as the compiler defines for the keyword.
     /// </summary>
     private static FoldOutcome FoldCheckedExpression(CheckedExpressionSyntax checkedExpression, FoldContext context)
     {
-        var inner = Fold(checkedExpression.Expression, context);
-        if (checkedExpression.IsKind(SyntaxKind.UncheckedExpression) &&
-            inner is { Disposition: FoldDisposition.Error, Code: OverflowCode })
+        var outer = UncheckedContext;
+        UncheckedContext = checkedExpression.IsKind(SyntaxKind.UncheckedExpression);
+        try
         {
-            return FoldOutcome.Error(
-                UncheckedUnsupportedCode,
-                "The inner expression overflows, and unchecked wrap-around is deliberately not modeled; the "
-                + "checked evaluation of the same expression reports the overflow.");
+            return Fold(checkedExpression.Expression, context);
         }
-
-        return inner;
+        finally
+        {
+            UncheckedContext = outer;
+        }
     }
 
     /// <summary>

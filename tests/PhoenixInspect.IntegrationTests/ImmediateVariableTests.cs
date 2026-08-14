@@ -318,6 +318,55 @@ public sealed class ImmediateVariableTests
         Assert.Contains("not assigned", lambdaMessage, StringComparison.Ordinal);
     }
 
+    /// <summary>Compound assignments and increments rewrite as the operation they abbreviate.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Compound_assignments_and_increments_apply()
+    {
+        var store = new ImmediateVariableStore();
+        Assert.True(Apply(store, "int x = 5;", out _));
+
+        Assert.True(ImmediateVariableStore.IsStatement("x += 2"));
+        Assert.True(Apply(store, "x += 2;", out var added));
+        Assert.Contains("x = 7", added, StringComparison.Ordinal);
+
+        Assert.True(Apply(store, "x *= 3;", out var multiplied));
+        Assert.Contains("x = 21", multiplied, StringComparison.Ordinal);
+
+        Assert.True(Apply(store, "x -= 1;", out _));
+        Assert.True(Apply(store, "x /= 4;", out var divided));
+        Assert.Contains("x = 5", divided, StringComparison.Ordinal);
+
+        Assert.True(Apply(store, "x++;", out var incremented));
+        Assert.Contains("x = 6", incremented, StringComparison.Ordinal);
+
+        Assert.True(Apply(store, "--x;", out var decremented));
+        Assert.Contains("x = 5", decremented, StringComparison.Ordinal);
+
+        // The operand parenthesizes, so 'x *= 2 + 1' means 'x * (2 + 1)'.
+        Assert.True(Apply(store, "x *= 2 + 1;", out var precedence));
+        Assert.Contains("x = 15", precedence, StringComparison.Ordinal);
+
+        // A shift and a bitwise compound follow the same rewrite.
+        Assert.True(Apply(store, "x <<= 2;", out var shifted));
+        Assert.Contains("x = 60", shifted, StringComparison.Ordinal);
+        Assert.True(Apply(store, "x &= 0xF;", out var masked));
+        Assert.Contains("x = 12", masked, StringComparison.Ordinal);
+
+        // A compound assignment to an undeclared name is refused, exactly as a plain assignment is.
+        Assert.False(Apply(store, "unknown += 1;", out var undeclared));
+        Assert.Contains("not declared", undeclared, StringComparison.Ordinal);
+
+        // A string compound concatenates, and checked semantics still guard the rewrite.
+        Assert.True(Apply(store, "string s = \"ab\";", out _));
+        Assert.True(Apply(store, "s += \"cd\";", out var concatenated));
+        Assert.Contains("abcd", concatenated, StringComparison.Ordinal);
+
+        Assert.True(Apply(store, "int big = int.MaxValue;", out _));
+        Assert.False(Apply(store, "big += 1;", out var overflowed));
+        Assert.Contains("not assigned", overflowed, StringComparison.Ordinal);
+    }
+
     private static bool Apply(ImmediateVariableStore store, string line, out string message) =>
         store.TryApply(
             line,

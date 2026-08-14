@@ -126,7 +126,7 @@ public sealed class ImmediateVariableStore
                 {
                     var convertedTypeName = converted.StoredValueTypeName ?? "value";
                     variables[name!] = new StoredVariable(convertedStored, convertedTypeName);
-                    message = $"{name} = {converted.ValueText ?? converted.Expression}  // {convertedTypeName}";
+                    message = $"{name} = {RenderValue(converted)}  // {convertedTypeName}";
                     return true;
                 }
 
@@ -142,9 +142,22 @@ public sealed class ImmediateVariableStore
         }
 
         variables[name!] = new StoredVariable(stored, valueTypeName);
-        message = $"{name} = {evaluation.ValueText ?? evaluation.Expression}  // {valueTypeName}";
+        message = $"{name} = {RenderValue(evaluation)}  // {valueTypeName}";
         return true;
     }
+
+    /// <summary>
+    /// Renders the stored value for the confirmation line, preferring the value itself over the initializer
+    /// text so a rewritten statement such as <c>x += 2</c> confirms with the result, not the rewrite.
+    /// </summary>
+    private static string RenderValue(ExpressionEvaluation evaluation) =>
+        evaluation.ValueText
+        ?? evaluation.EnumMemberName
+        ?? evaluation.Int32Value?.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        ?? (evaluation.BooleanValue is { } boolean ? boolean ? "true" : "false" : null)
+        ?? (evaluation.StringValue is { } text ? $"\"{text}\"" : null)
+        ?? (evaluation.CharValue is { } character ? $"'{character}'" : null)
+        ?? evaluation.Expression;
 
     private static bool TypeMatchesValue(string declaredType, ExpressionEvaluation evaluation)
     {
@@ -269,10 +282,65 @@ public sealed class ImmediateVariableStore
                 initializer = assigned.ToString();
                 initializerIsLambda = assigned is LambdaExpressionSyntax;
                 return true;
+            case ExpressionStatementSyntax
+            {
+                Expression: AssignmentExpressionSyntax
+                {
+                    Left: IdentifierNameSyntax { Identifier.ValueText: { } compoundTarget },
+                    Right: { } operand,
+                } compound,
+            } when CompoundOperator(compound.Kind()) is { } op:
+                // A compound assignment rewrites as the operation it abbreviates, with the operand
+                // parenthesized so 'x *= 2 + 1' means 'x * (2 + 1)', exactly as C# defines it.
+                name = compoundTarget;
+                initializer = $"{compoundTarget} {op} ({operand})";
+                return true;
+            case ExpressionStatementSyntax
+            {
+                Expression: PostfixUnaryExpressionSyntax
+                {
+                    RawKind: (int)SyntaxKind.PostIncrementExpression or (int)SyntaxKind.PostDecrementExpression,
+                    Operand: IdentifierNameSyntax { Identifier.ValueText: { } postfixTarget },
+                } postfix,
+            }:
+                name = postfixTarget;
+                initializer = $"{postfixTarget} {(postfix.IsKind(
+                    SyntaxKind.PostIncrementExpression) ? "+" : "-")} 1";
+                return true;
+            case ExpressionStatementSyntax
+            {
+                Expression: PrefixUnaryExpressionSyntax
+                {
+                    RawKind: (int)SyntaxKind.PreIncrementExpression or (int)SyntaxKind.PreDecrementExpression,
+                    Operand: IdentifierNameSyntax { Identifier.ValueText: { } prefixTarget },
+                } prefix,
+            }:
+                name = prefixTarget;
+                initializer = $"{prefixTarget} {(prefix.IsKind(
+                    SyntaxKind.PreIncrementExpression) ? "+" : "-")} 1";
+                return true;
             default:
                 return false;
         }
     }
+
+    /// <summary>Maps a compound-assignment kind to the binary operator it abbreviates; null for others.</summary>
+    private static string? CompoundOperator(SyntaxKind kind) => kind switch
+    {
+        SyntaxKind.AddAssignmentExpression => "+",
+        SyntaxKind.SubtractAssignmentExpression => "-",
+        SyntaxKind.MultiplyAssignmentExpression => "*",
+        SyntaxKind.DivideAssignmentExpression => "/",
+        SyntaxKind.ModuloAssignmentExpression => "%",
+        SyntaxKind.AndAssignmentExpression => "&",
+        SyntaxKind.OrAssignmentExpression => "|",
+        SyntaxKind.ExclusiveOrAssignmentExpression => "^",
+        SyntaxKind.LeftShiftAssignmentExpression => "<<",
+        SyntaxKind.RightShiftAssignmentExpression => ">>",
+        SyntaxKind.UnsignedRightShiftAssignmentExpression => ">>>",
+        SyntaxKind.CoalesceAssignmentExpression => "??",
+        _ => null,
+    };
 
     private readonly record struct StoredVariable(OperandResolution Value, string TypeName);
 }

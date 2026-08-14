@@ -138,7 +138,7 @@ public sealed class ExpressionEvaluatorSyntaxTests
     /// <param name="expectedCode">The stable diagnostic code.</param>
     [Theory]
     [InlineData("5 switch { > 10 => 1 }", "System.Runtime.CompilerServices.SwitchExpressionException")]
-    [InlineData("unchecked(int.MaxValue + 1)", "EVAL_UNCHECKED_UNSUPPORTED")]
+    
     [InlineData("checked(int.MaxValue + 1)", "System.OverflowException")]
     [InlineData("1 switch { var x => 2 }", "EVAL_PATTERN_UNSUPPORTED")]
     [InlineData("\"a\" switch { string s => 1, _ => 0 }", "EVAL_PATTERN_UNSUPPORTED")]

@@ -289,7 +289,7 @@ public static class ExpressionCompletionService
         "Enum", "Enumerable",
         "Func", "Guid", "Half", "ICollection", "IComparable", "IDictionary", "IEnumerable", "IEquatable",
         "IList", "Int128", "IntPtr", "IReadOnlyCollection", "IReadOnlyDictionary", "IReadOnlyList",
-        "KeyValuePair", "List", "Math", "NFloat",
+        "KeyValuePair", "List", "Math", "MathF", "NFloat",
         "MemberTypes", "MulticastDelegate", "Nullable", "Object", "Predicate", "Regex", "RegexOptions", "Rune",
         "String", "StringComparison", "StringSplitOptions", "TimeOnly", "TimeSpan", "TypeCode", "UInt128",
         "UIntPtr", "UnicodeCategory", "ValueType", "Version",
@@ -304,6 +304,14 @@ public static class ExpressionCompletionService
             [
                 "Abs", "Acos", "Acosh", "Asin", "Asinh", "Atan", "Atan2", "Atanh", "BitDecrement", "BitIncrement",
                 "Cbrt", "Ceiling", "Clamp", "CopySign", "Cos", "Cosh", "E", "Exp", "Floor", "FusedMultiplyAdd",
+                "IEEERemainder", "ILogB", "Log", "Log10", "Log2", "Max", "Min", "PI", "Pow", "ReciprocalEstimate",
+                "ReciprocalSqrtEstimate", "Round", "ScaleB", "Sign", "Sin", "Sinh", "Sqrt", "Tan", "Tanh", "Tau",
+                "Truncate",
+            ],
+            ["MathF"] =
+            [
+                "Abs", "Acos", "Acosh", "Asin", "Asinh", "Atan", "Atan2", "Atanh", "BitDecrement", "BitIncrement",
+                "Cbrt", "Ceiling", "CopySign", "Cos", "Cosh", "E", "Exp", "Floor", "FusedMultiplyAdd",
                 "IEEERemainder", "ILogB", "Log", "Log10", "Log2", "Max", "Min", "PI", "Pow", "ReciprocalEstimate",
                 "ReciprocalSqrtEstimate", "Round", "ScaleB", "Sign", "Sin", "Sinh", "Sqrt", "Tan", "Tanh", "Tau",
                 "Truncate",
@@ -374,57 +382,60 @@ public static class ExpressionCompletionService
                 "Compiled", "CultureInvariant", "ECMAScript", "ExplicitCapture", "IgnoreCase",
                 "IgnorePatternWhitespace", "Multiline", "NonBacktracking", "None", "RightToLeft", "Singleline",
             ],
-            ["int"] = ["MaxValue", "MinValue", "Parse"],
-            ["uint"] = ["MaxValue", "MinValue", "Parse"],
-            ["long"] = ["MaxValue", "MinValue", "Parse"],
-            ["ulong"] = ["MaxValue", "MinValue", "Parse"],
-            ["nint"] = ["MaxValue", "MinValue", "Parse", "Size", "Zero"],
-            ["nuint"] = ["MaxValue", "MinValue", "Parse", "Size", "Zero"],
-            ["IntPtr"] = ["MaxValue", "MinValue", "Parse", "Size", "Zero"],
-            ["UIntPtr"] = ["MaxValue", "MinValue", "Parse", "Size", "Zero"],
-            ["short"] = ["MaxValue", "MinValue", "Parse"],
-            ["ushort"] = ["MaxValue", "MinValue", "Parse"],
-            ["byte"] = ["MaxValue", "MinValue", "Parse"],
-            ["sbyte"] = ["MaxValue", "MinValue", "Parse"],
-            ["Int128"] = ["MaxValue", "MinValue", "NegativeOne", "One", "Parse", "Zero"],
-            ["UInt128"] = ["MaxValue", "MinValue", "One", "Parse", "Zero"],
+            ["int"] = ["Clamp", "Max", "MaxValue", "Min", "MinValue", "Parse"],
+            ["uint"] = ["Clamp", "Max", "MaxValue", "Min", "MinValue", "Parse"],
+            ["long"] = ["Clamp", "Max", "MaxValue", "Min", "MinValue", "Parse"],
+            ["ulong"] = ["Clamp", "Max", "MaxValue", "Min", "MinValue", "Parse"],
+            ["nint"] = ["Clamp", "Max", "MaxValue", "Min", "MinValue", "Parse", "Size", "Zero"],
+            ["nuint"] = ["Clamp", "Max", "MaxValue", "Min", "MinValue", "Parse", "Size", "Zero"],
+            ["IntPtr"] = ["Clamp", "Max", "MaxValue", "Min", "MinValue", "Parse", "Size", "Zero"],
+            ["UIntPtr"] = ["Clamp", "Max", "MaxValue", "Min", "MinValue", "Parse", "Size", "Zero"],
+            ["short"] = ["Clamp", "Max", "MaxValue", "Min", "MinValue", "Parse"],
+            ["ushort"] = ["Clamp", "Max", "MaxValue", "Min", "MinValue", "Parse"],
+            ["byte"] = ["Clamp", "Max", "MaxValue", "Min", "MinValue", "Parse"],
+            ["sbyte"] = ["Clamp", "Max", "MaxValue", "Min", "MinValue", "Parse"],
+            ["Int128"] = ["Clamp", "Max", "MaxValue", "Min", "MinValue", "NegativeOne", "One", "Parse", "Zero"],
+            ["UInt128"] = ["Clamp", "Max", "MaxValue", "Min", "MinValue", "One", "Parse", "Zero"],
             ["BigInteger"] =
             [
-                "Abs", "GreatestCommonDivisor", "Max", "Min", "MinusOne", "ModPow", "Negate", "One", "Parse",
-                "Pow", "Zero",
+                "Abs", "Add", "Clamp", "Compare", "Divide", "GreatestCommonDivisor", "Log", "Log10", "Log2",
+                "Max", "Min", "MinusOne", "ModPow", "Multiply", "Negate", "One", "Parse", "Pow", "Remainder",
+                "Subtract", "Zero",
             ],
             ["decimal"] =
             [
-                "Add", "Ceiling", "Compare", "Divide", "Floor", "MaxValue", "MinusOne", "MinValue", "Multiply",
-                "Negate", "One", "Parse", "Remainder", "Round", "Subtract", "Truncate", "Zero",
+                "Add", "Ceiling", "Clamp", "Compare", "Divide", "Floor", "Max", "MaxValue", "Min", "MinusOne",
+                "MinValue", "Multiply", "Negate", "One", "Parse", "Remainder", "Round", "Subtract", "Truncate",
+                "Zero",
             ],
             ["double"] =
             [
-                "E", "Epsilon", "IsEvenInteger", "IsFinite", "IsInfinity", "IsInteger", "IsNaN", "IsNegative",
-                "IsNegativeInfinity", "IsNormal", "IsOddInteger", "IsPositive", "IsPositiveInfinity",
-                "IsRealNumber", "IsSubnormal", "MaxValue", "MinValue", "NaN", "NegativeInfinity", "NegativeZero",
-                "Parse", "Pi", "PositiveInfinity", "Tau",
+                "Clamp", "E", "Epsilon", "IsEvenInteger", "IsFinite", "IsInfinity", "IsInteger", "IsNaN",
+                "IsNegative", "IsNegativeInfinity", "IsNormal", "IsOddInteger", "IsPositive",
+                "IsPositiveInfinity", "IsRealNumber", "IsSubnormal", "Max", "MaxValue", "Min", "MinValue",
+                "NaN", "NegativeInfinity", "NegativeZero", "Parse", "Pi", "PositiveInfinity", "Tau",
             ],
             ["float"] =
             [
-                "E", "Epsilon", "IsEvenInteger", "IsFinite", "IsInfinity", "IsInteger", "IsNaN", "IsNegative",
-                "IsNegativeInfinity", "IsNormal", "IsOddInteger", "IsPositive", "IsPositiveInfinity",
-                "IsRealNumber", "IsSubnormal", "MaxValue", "MinValue", "NaN", "NegativeInfinity", "NegativeZero",
-                "Parse", "Pi", "PositiveInfinity", "Tau",
+                "Clamp", "E", "Epsilon", "IsEvenInteger", "IsFinite", "IsInfinity", "IsInteger", "IsNaN",
+                "IsNegative", "IsNegativeInfinity", "IsNormal", "IsOddInteger", "IsPositive",
+                "IsPositiveInfinity", "IsRealNumber", "IsSubnormal", "Max", "MaxValue", "Min", "MinValue",
+                "NaN", "NegativeInfinity", "NegativeZero", "Parse", "Pi", "PositiveInfinity", "Tau",
             ],
             ["Half"] =
             [
-                "E", "Epsilon", "IsEvenInteger", "IsFinite", "IsInfinity", "IsInteger", "IsNaN", "IsNegative",
-                "IsNegativeInfinity", "IsNormal", "IsOddInteger", "IsPositive", "IsPositiveInfinity",
-                "IsRealNumber", "IsSubnormal", "MaxValue", "MinValue", "NaN", "NegativeInfinity", "NegativeOne",
-                "NegativeZero", "One", "Parse", "Pi", "PositiveInfinity", "Tau", "Zero",
+                "Clamp", "E", "Epsilon", "IsEvenInteger", "IsFinite", "IsInfinity", "IsInteger", "IsNaN",
+                "IsNegative", "IsNegativeInfinity", "IsNormal", "IsOddInteger", "IsPositive",
+                "IsPositiveInfinity", "IsRealNumber", "IsSubnormal", "Max", "MaxValue", "Min", "MinValue",
+                "NaN", "NegativeInfinity", "NegativeOne", "NegativeZero", "One", "Parse", "Pi",
+                "PositiveInfinity", "Tau", "Zero",
             ],
             ["NFloat"] =
             [
-                "E", "Epsilon", "IsEvenInteger", "IsFinite", "IsInfinity", "IsInteger", "IsNaN", "IsNegative",
-                "IsNegativeInfinity", "IsNormal", "IsOddInteger", "IsPositive", "IsPositiveInfinity",
-                "IsRealNumber", "IsSubnormal", "MaxValue", "MinValue", "NaN", "NegativeInfinity", "NegativeZero",
-                "Parse", "Pi", "PositiveInfinity", "Size", "Tau",
+                "Clamp", "E", "Epsilon", "IsEvenInteger", "IsFinite", "IsInfinity", "IsInteger", "IsNaN",
+                "IsNegative", "IsNegativeInfinity", "IsNormal", "IsOddInteger", "IsPositive",
+                "IsPositiveInfinity", "IsRealNumber", "IsSubnormal", "Max", "MaxValue", "Min", "MinValue",
+                "NaN", "NegativeInfinity", "NegativeZero", "Parse", "Pi", "PositiveInfinity", "Size", "Tau",
             ],
             ["string"] = ["Empty"],
             ["DayOfWeek"] =
@@ -515,9 +526,17 @@ public static class ExpressionCompletionService
 
     private static readonly ImmutableArray<CompletionItem> DelegateInstanceMembers = DelegateSurface.Items;
 
-    // A plain scalar — a numeric, a Boolean, or a stored enum, which reads back as its underlying value — only
-    // answers the universal members.
+    // A numeric scalar answers the universal members plus the instance trio every numeric kind shares:
+    // CompareTo and Equals with the kind's own parameter, and the value-based hash.
     private static readonly InstanceSurface ScalarSurface = new(
+        [],
+        [
+            ("CompareTo", "Int32"), ("Equals", "Boolean"), ("GetHashCode", "Int32"), ("GetType", "Type"),
+            ("ToString", "String"),
+        ]);
+
+    // A Boolean or a stored enum — which reads back as its underlying value — only answers the universal members.
+    private static readonly InstanceSurface BooleanSurface = new(
         [],
         [("GetType", "Type"), ("ToString", "String")]);
 
@@ -752,15 +771,34 @@ public static class ExpressionCompletionService
         tables["GroupCollection"] = CollectionSurface("Group");
         tables["CaptureCollection"] = CollectionSurface("Capture");
 
-        // Booleans and every boxed numeric answer only the universal members.
+        // Every boxed numeric answers the shared scalar surface; Booleans keep the universal pair only.
         foreach (var scalar in (string[])
         [
-            "Boolean", "SByte", "Byte", "Int16", "UInt16", "Int32", "UInt32", "Int64", "UInt64", "IntPtr",
-            "UIntPtr", "Int128", "UInt128", "BigInteger", "Half", "NFloat", "Single", "Double", "Decimal",
+            "SByte", "Byte", "Int16", "UInt16", "Int32", "UInt32", "Int64", "UInt64", "IntPtr",
+            "UIntPtr", "Int128", "UInt128", "Half", "NFloat", "Single", "Double",
         ])
         {
             tables[scalar] = ScalarSurface;
         }
+
+        tables["Boolean"] = BooleanSurface;
+
+        // BigInteger and decimal add the few instance properties the evaluator models beyond the shared trio.
+        tables["BigInteger"] = new InstanceSurface(
+            [
+                ("IsEven", "Boolean"), ("IsOne", "Boolean"), ("IsPowerOfTwo", "Boolean"), ("IsZero", "Boolean"),
+                ("Sign", "Int32"),
+            ],
+            [
+                ("CompareTo", "Int32"), ("Equals", "Boolean"), ("GetHashCode", "Int32"), ("GetType", "Type"),
+                ("ToString", "String"),
+            ]);
+        tables["Decimal"] = new InstanceSurface(
+            [("Scale", "Byte")],
+            [
+                ("CompareTo", "Int32"), ("Equals", "Boolean"), ("GetHashCode", "Int32"), ("GetType", "Type"),
+                ("ToString", "String"),
+            ]);
 
         return tables.ToImmutableDictionary(StringComparer.Ordinal);
     }
@@ -867,6 +905,9 @@ public static class ExpressionCompletionService
             ["Math.E"] = "Double",
             ["Math.PI"] = "Double",
             ["Math.Tau"] = "Double",
+            ["MathF.E"] = "Single",
+            ["MathF.PI"] = "Single",
+            ["MathF.Tau"] = "Single",
             ["int.MaxValue"] = "Int32",
             ["int.MinValue"] = "Int32",
             ["uint.MaxValue"] = "UInt32",
@@ -1377,6 +1418,7 @@ public static class ExpressionCompletionService
         "MulticastDelegate" => typeof(MulticastDelegate),
         "DBNull" => typeof(DBNull),
         "Math" => typeof(Math),
+        "MathF" => typeof(MathF),
         "Array" => typeof(Array),
         "Convert" => typeof(Convert),
         "Activator" => typeof(Activator),
