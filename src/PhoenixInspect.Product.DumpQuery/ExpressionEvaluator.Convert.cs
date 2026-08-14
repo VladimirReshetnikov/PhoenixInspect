@@ -81,7 +81,7 @@ public static partial class ExpressionEvaluator
                 return true;
             case OperandKind.Numeric when value.NumericKind is not
                 (NumericKind.BigInteger or NumericKind.Int128 or NumericKind.UInt128 or
-                    NumericKind.IntPtr or NumericKind.UIntPtr):
+                    NumericKind.IntPtr or NumericKind.UIntPtr or NumericKind.Half or NumericKind.NFloat):
                 box = value.Box;
                 return true;
             case OperandKind.Temporal when value.TemporalKind == TemporalKind.DateTime:

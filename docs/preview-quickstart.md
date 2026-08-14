@@ -193,7 +193,7 @@ subset:
 | Constant arithmetic over every C# numeric type | `(86400 / 24) / 60`, `0.1 + 0.2`, `10m / 4`, `1UL << 40` |
 | Numeric casts and conversions, including nullable targets | `(long)int.MaxValue + 1`, `(int?)null` |
 | Enum member or const field | `System.DayOfWeek.Monday` |
-| `System.Math`, `BigInteger`, and numeric type statics | `Math.Round(Math.PI, 4)`, `BigInteger.Pow(2, 100)`, `double.NaN`, `nint.MaxValue`, `IntPtr.Size` |
+| `System.Math`, `BigInteger`, and numeric type statics | `Math.Round(Math.PI, 4)`, `BigInteger.Pow(2, 100)`, `double.NaN`, `nint.MaxValue`, `IntPtr.Size`, `Half.MaxValue`, `NFloat.Epsilon`, `int.Parse("5")`, `decimal.Round(1.2345m, 2)` |
 | Invariant `ToString`, with or without a format | `(255).ToString("X4")`, `(0.1 + 0.2).ToString()` |
 | Deterministic string/char operations over constants | `("a" + "b").ToUpperInvariant()`, `"text".Contains('x')` |
 | Index and range expressions on constant strings | `"hello"[^1]`, `"hello"[1..^1]` |

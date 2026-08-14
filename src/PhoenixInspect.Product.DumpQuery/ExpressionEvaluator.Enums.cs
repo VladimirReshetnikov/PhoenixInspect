@@ -1225,6 +1225,16 @@ public static partial class ExpressionEvaluator
         NumericKind.UInt32 => "uint",
         NumericKind.Int64 => "long",
         NumericKind.UInt64 => "ulong",
+        NumericKind.IntPtr => "nint",
+        NumericKind.UIntPtr => "nuint",
+        NumericKind.Int128 => "Int128",
+        NumericKind.UInt128 => "UInt128",
+        NumericKind.BigInteger => "BigInteger",
+        NumericKind.Half => "Half",
+        NumericKind.NFloat => "NFloat",
+        NumericKind.Single => "float",
+        NumericKind.Double => "double",
+        NumericKind.Decimal => "decimal",
         _ => "int",
     };
 }

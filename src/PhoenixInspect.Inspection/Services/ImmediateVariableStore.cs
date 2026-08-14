@@ -198,7 +198,7 @@ public sealed class ImmediateVariableStore
     private static readonly ImmutableHashSet<string> NumericTypeNames = ImmutableHashSet.Create(
         StringComparer.Ordinal,
         "SByte", "Byte", "Int16", "UInt16", "Int32", "UInt32", "Int64", "UInt64", "IntPtr", "UIntPtr",
-        "Int128", "UInt128", "BigInteger", "Single", "Double", "Decimal");
+        "Int128", "UInt128", "BigInteger", "Half", "NFloat", "Single", "Double", "Decimal");
 
     /// <summary>Gets whether a declared type names a numeric domain the cast-conversion fallback covers.</summary>
     private static bool IsNumericTypeName(string declaredType)

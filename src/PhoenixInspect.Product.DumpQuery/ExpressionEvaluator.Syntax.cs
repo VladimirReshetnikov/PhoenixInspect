@@ -343,6 +343,8 @@ public static partial class ExpressionEvaluator
         NumericKind.Int128 => (System.Int128)0,
         NumericKind.UInt128 => (System.UInt128)0,
         NumericKind.BigInteger => System.Numerics.BigInteger.Zero,
+        NumericKind.Half => Half.Zero,
+        NumericKind.NFloat => 0d,
         NumericKind.Single => 0f,
         NumericKind.Double => 0d,
         _ => 0m,
@@ -367,10 +369,10 @@ public static partial class ExpressionEvaluator
             _ => numericKind switch
             {
                 NumericKind.SByte or NumericKind.Byte => 1,
-                NumericKind.Int16 or NumericKind.UInt16 => 2,
+                NumericKind.Int16 or NumericKind.UInt16 or NumericKind.Half => 2,
                 NumericKind.Int32 or NumericKind.UInt32 or NumericKind.Single => 4,
                 NumericKind.Int64 or NumericKind.UInt64 or NumericKind.Double or
-                    NumericKind.IntPtr or NumericKind.UIntPtr => 8,
+                    NumericKind.IntPtr or NumericKind.UIntPtr or NumericKind.NFloat => 8,
                 NumericKind.Int128 or NumericKind.UInt128 or NumericKind.Decimal => 16,
                 _ => null,
             },

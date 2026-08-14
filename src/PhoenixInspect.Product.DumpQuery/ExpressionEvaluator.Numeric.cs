@@ -21,8 +21,10 @@ public static partial class ExpressionEvaluator
     private const string NumericMagnitudeCode = "EVAL_NUMERIC_MAGNITUDE_BOUND_EXCEEDED";
 
     /// <summary>
-    /// The numeric value domains the fold engine computes over. <c>nint</c>/<c>nuint</c> fold at 64 bits, matching
-    /// the x64 processes the preview targets; the result states its kind so the assumption is visible.
+    /// The numeric value domains the fold engine computes over. <c>nint</c>/<c>nuint</c> and <c>NFloat</c> fold
+    /// at 64 bits, matching the x64 processes the preview targets; the result states its kind so the assumption
+    /// is visible. <c>Half</c> computes at true IEEE binary16 precision. Integral members precede
+    /// <see cref="BigInteger"/>, which <see cref="IsIntegral"/> relies on.
     /// </summary>
     private enum NumericKind
     {
@@ -39,6 +41,8 @@ public static partial class ExpressionEvaluator
         Int128,
         UInt128,
         BigInteger,
+        Half,
+        NFloat,
         Single,
         Double,
         Decimal,
@@ -107,10 +111,16 @@ public static partial class ExpressionEvaluator
         NumericKind.Int128 => (double)(Int128)box,
         NumericKind.UInt128 => (double)(UInt128)box,
         NumericKind.BigInteger => (double)(BigInteger)box,
+        NumericKind.Half => (double)(Half)box,
+        NumericKind.NFloat => (double)box,
         NumericKind.Single => (float)box,
         NumericKind.Double => (double)box,
         _ => (double)(decimal)box,
     };
+
+    // NFloat folds at 64 bits, so its box is a double; Half narrows through its exact binary16 value.
+    private static Half ToHalfValue(NumericKind kind, object box) =>
+        kind == NumericKind.Half ? (Half)box : (Half)ToDoubleValue(kind, box);
 
     private static float ToSingleValue(NumericKind kind, object box) => kind switch
     {
@@ -125,6 +135,8 @@ public static partial class ExpressionEvaluator
         NumericKind.Int128 => (float)(Int128)box,
         NumericKind.UInt128 => (float)(UInt128)box,
         NumericKind.BigInteger => (float)(BigInteger)box,
+        NumericKind.Half => (float)(Half)box,
+        NumericKind.NFloat => (float)(double)box,
         NumericKind.Single => (float)box,
         NumericKind.Double => (float)(double)box,
         _ => (float)(decimal)box,
@@ -167,6 +179,8 @@ public static partial class ExpressionEvaluator
         NumericKind.UInt64 or NumericKind.UIntPtr => (object)(ulong)value,
         NumericKind.Int128 => (object)(Int128)value,
         NumericKind.UInt128 => (object)(UInt128)value,
+        NumericKind.Half => (object)(Half)(float)value,
+        NumericKind.NFloat => (object)(double)value,
         NumericKind.Single => (object)(float)value,
         NumericKind.Double => (object)(double)value,
         NumericKind.Decimal => (object)(decimal)value,
@@ -202,6 +216,42 @@ public static partial class ExpressionEvaluator
         var b = NumericKindOf(right);
         error = default;
         target = NumericKind.Int32;
+
+        // Half defines operators only with itself: C# provides no implicit conversions into or out of the
+        // binary16 domain, so a mixed operand needs an explicit cast.
+        if (a == NumericKind.Half || b == NumericKind.Half)
+        {
+            if (a != b)
+            {
+                var otherThanHalf = a == NumericKind.Half ? b : a;
+                error = FoldOutcome.Error(
+                    OperandTypeCode,
+                    $"No operator combines Half with {otherThanHalf} operands; convert one operand explicitly.");
+                return false;
+            }
+
+            target = NumericKind.Half;
+            return true;
+        }
+
+        // NFloat pairs like the 64-bit float it folds as: double wins, decimal and the wide integrals refuse,
+        // and every remaining pairing computes as NFloat.
+        if (a == NumericKind.NFloat || b == NumericKind.NFloat)
+        {
+            var otherThanNFloat = a == NumericKind.NFloat ? b : a;
+            if (otherThanNFloat is NumericKind.Decimal or NumericKind.BigInteger or NumericKind.Int128
+                or NumericKind.UInt128)
+            {
+                error = FoldOutcome.Error(
+                    OperandTypeCode,
+                    $"No operator combines NFloat with {otherThanNFloat} operands; convert one operand "
+                    + "explicitly.");
+                return false;
+            }
+
+            target = otherThanNFloat == NumericKind.Double ? NumericKind.Double : NumericKind.NFloat;
+            return true;
+        }
 
         if (a == NumericKind.Decimal || b == NumericKind.Decimal)
         {
@@ -326,6 +376,10 @@ public static partial class ExpressionEvaluator
 
         return target switch
         {
+            NumericKind.Half => ComputeHalf(kind, ToHalfValue(NumericKindOf(left), BoxOf(left)),
+                ToHalfValue(NumericKindOf(right), BoxOf(right))),
+            NumericKind.NFloat => ComputeNFloat(kind, ToDoubleValue(NumericKindOf(left), BoxOf(left)),
+                ToDoubleValue(NumericKindOf(right), BoxOf(right))),
             NumericKind.Single => ComputeSingle(kind, ToSingleValue(NumericKindOf(left), BoxOf(left)),
                 ToSingleValue(NumericKindOf(right), BoxOf(right))),
             NumericKind.Double => ComputeDouble(kind, ToDoubleValue(NumericKindOf(left), BoxOf(left)),
@@ -451,6 +505,30 @@ public static partial class ExpressionEvaluator
         return FoldedInteger(target, WrapBits(target, result));
     }
 
+    // Half computes at true IEEE binary16 precision: .NET's Half operators round each result to binary16,
+    // which is the correct semantics for the type rather than an approximation.
+    private static FoldOutcome ComputeHalf(SyntaxKind kind, Half l, Half r) => kind switch
+    {
+        SyntaxKind.AddExpression => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Half, l + r)),
+        SyntaxKind.SubtractExpression => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Half, l - r)),
+        SyntaxKind.MultiplyExpression => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Half, l * r)),
+        SyntaxKind.DivideExpression => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Half, l / r)),
+        SyntaxKind.ModuloExpression => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Half, l % r)),
+        _ => FoldOutcome.Error(OperandTypeCode, "Bitwise operators do not apply to floating-point operands."),
+    };
+
+    // NFloat folds at 64 bits — the x64 processes the preview targets — so its arithmetic is double arithmetic
+    // under the NFloat label.
+    private static FoldOutcome ComputeNFloat(SyntaxKind kind, double l, double r) => kind switch
+    {
+        SyntaxKind.AddExpression => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.NFloat, l + r)),
+        SyntaxKind.SubtractExpression => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.NFloat, l - r)),
+        SyntaxKind.MultiplyExpression => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.NFloat, l * r)),
+        SyntaxKind.DivideExpression => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.NFloat, l / r)),
+        SyntaxKind.ModuloExpression => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.NFloat, l % r)),
+        _ => FoldOutcome.Error(OperandTypeCode, "Bitwise operators do not apply to floating-point operands."),
+    };
+
     private static FoldOutcome ComputeSingle(SyntaxKind kind, float l, float r) => kind switch
     {
         SyntaxKind.AddExpression => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, l + r)),
@@ -500,6 +578,8 @@ public static partial class ExpressionEvaluator
         return kind switch
         {
             NumericKind.Decimal => (decimal)box,
+            NumericKind.Half => (decimal)(double)(Half)box,
+            NumericKind.NFloat => (decimal)(double)box,
             NumericKind.Single => (decimal)(float)box,
             NumericKind.Double => (decimal)(double)box,
             _ => (decimal)ToBigInteger(kind, box),
@@ -516,9 +596,12 @@ public static partial class ExpressionEvaluator
         bool result;
         switch (target)
         {
+            case NumericKind.Half:
+            case NumericKind.NFloat:
             case NumericKind.Single:
             case NumericKind.Double:
-                // Native IEEE comparisons: every comparison with NaN is false except '!='.
+                // Native IEEE comparisons: every comparison with NaN is false except '!='. Every narrower
+                // IEEE kind widens to double exactly, so one double comparison serves them all.
                 var dl = ToDoubleValue(NumericKindOf(left), BoxOf(left));
                 var dr = ToDoubleValue(NumericKindOf(right), BoxOf(right));
                 result = kind switch
@@ -574,6 +657,10 @@ public static partial class ExpressionEvaluator
             case SyntaxKind.UnaryMinusExpression:
                 switch (numericKind)
                 {
+                    case NumericKind.Half:
+                        return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Half, -(Half)box));
+                    case NumericKind.NFloat:
+                        return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.NFloat, -(double)box));
                     case NumericKind.Single:
                         return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, -(float)box));
                     case NumericKind.Double:
@@ -609,7 +696,8 @@ public static partial class ExpressionEvaluator
                 }
 
             case SyntaxKind.BitwiseNotExpression:
-                if (numericKind is NumericKind.Single or NumericKind.Double or NumericKind.Decimal)
+                if (numericKind is NumericKind.Half or NumericKind.NFloat or NumericKind.Single
+                    or NumericKind.Double or NumericKind.Decimal)
                 {
                     return FoldOutcome.Error(OperandTypeCode, "Bitwise complement requires an integral operand.");
                 }
@@ -664,6 +752,12 @@ public static partial class ExpressionEvaluator
         {
             switch (target)
             {
+                case NumericKind.Half:
+                    // IEEE narrowing never throws: an out-of-range value becomes infinity, exactly as binary16
+                    // defines.
+                    return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Half, ToHalfValue(sourceKind, box)));
+                case NumericKind.NFloat:
+                    return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.NFloat, ToDoubleValue(sourceKind, box)));
                 case NumericKind.Single:
                     return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, ToSingleValue(sourceKind, box)));
                 case NumericKind.Double:
@@ -699,9 +793,11 @@ public static partial class ExpressionEvaluator
     {
         switch (kind)
         {
+            case NumericKind.Half:
+            case NumericKind.NFloat:
             case NumericKind.Single:
             case NumericKind.Double:
-                var value = kind == NumericKind.Single ? (float)box : (double)box;
+                var value = ToDoubleValue(kind, box);
                 if (double.IsNaN(value) || double.IsInfinity(value))
                 {
                     throw new OverflowException(
@@ -802,6 +898,13 @@ public static partial class ExpressionEvaluator
                     return true;
                 }
 
+                if (text is "System.Runtime.InteropServices.NFloat" or "Runtime.InteropServices.NFloat"
+                    or "InteropServices.NFloat")
+                {
+                    numericKind = NumericKind.NFloat;
+                    return true;
+                }
+
                 return text.StartsWith("System.", StringComparison.Ordinal) &&
                     TryMapCastTypeName(text["System.".Length..], ref target, ref numericKind);
             default:
@@ -818,6 +921,12 @@ public static partial class ExpressionEvaluator
                 return true;
             case "nuint" or "UIntPtr":
                 numericKind = NumericKind.UIntPtr;
+                return true;
+            case "Half":
+                numericKind = NumericKind.Half;
+                return true;
+            case "NFloat":
+                numericKind = NumericKind.NFloat;
                 return true;
             case "Int128":
                 numericKind = NumericKind.Int128;
@@ -1351,9 +1460,10 @@ public static partial class ExpressionEvaluator
 
     private static FoldOutcome DispatchNumericTypeStatic(NumericKind kind, string member)
     {
-        // 'nint.Size' / 'IntPtr.Size' answers 8, an Int32: the evaluator folds native ints at 64 bits, matching
-        // the x64 processes the preview targets, and the visible kind states the assumption.
-        if (kind is NumericKind.IntPtr or NumericKind.UIntPtr && member == "Size")
+        // 'nint.Size' / 'IntPtr.Size' / 'NFloat.Size' answers 8, an Int32: the evaluator folds the native-sized
+        // kinds at 64 bits, matching the x64 processes the preview targets, and the visible kind states the
+        // assumption.
+        if (kind is NumericKind.IntPtr or NumericKind.UIntPtr or NumericKind.NFloat && member == "Size")
         {
             return FoldOutcome.Folded(Operand.FromInt32(8));
         }
@@ -1384,8 +1494,37 @@ public static partial class ExpressionEvaluator
             (NumericKind.UIntPtr, "Zero") => 0UL,
             (NumericKind.Int128, "MaxValue") => Int128.MaxValue,
             (NumericKind.Int128, "MinValue") => Int128.MinValue,
+            (NumericKind.Int128, "One") => Int128.One,
+            (NumericKind.Int128, "Zero") => Int128.Zero,
+            (NumericKind.Int128, "NegativeOne") => Int128.NegativeOne,
             (NumericKind.UInt128, "MaxValue") => UInt128.MaxValue,
             (NumericKind.UInt128, "MinValue") => UInt128.MinValue,
+            (NumericKind.UInt128, "One") => UInt128.One,
+            (NumericKind.UInt128, "Zero") => UInt128.Zero,
+            (NumericKind.Half, "MaxValue") => Half.MaxValue,
+            (NumericKind.Half, "MinValue") => Half.MinValue,
+            (NumericKind.Half, "Epsilon") => Half.Epsilon,
+            (NumericKind.Half, "NaN") => Half.NaN,
+            (NumericKind.Half, "PositiveInfinity") => Half.PositiveInfinity,
+            (NumericKind.Half, "NegativeInfinity") => Half.NegativeInfinity,
+            (NumericKind.Half, "NegativeZero") => Half.NegativeZero,
+            (NumericKind.Half, "One") => Half.One,
+            (NumericKind.Half, "Zero") => Half.Zero,
+            (NumericKind.Half, "NegativeOne") => Half.NegativeOne,
+            (NumericKind.Half, "E") => Half.E,
+            (NumericKind.Half, "Pi") => Half.Pi,
+            (NumericKind.Half, "Tau") => Half.Tau,
+            // NFloat folds at 64 bits, so its constants are double's, boxed under the NFloat label.
+            (NumericKind.NFloat, "MaxValue") => double.MaxValue,
+            (NumericKind.NFloat, "MinValue") => double.MinValue,
+            (NumericKind.NFloat, "Epsilon") => double.Epsilon,
+            (NumericKind.NFloat, "NaN") => double.NaN,
+            (NumericKind.NFloat, "PositiveInfinity") => double.PositiveInfinity,
+            (NumericKind.NFloat, "NegativeInfinity") => double.NegativeInfinity,
+            (NumericKind.NFloat, "NegativeZero") => double.NegativeZero,
+            (NumericKind.NFloat, "E") => double.E,
+            (NumericKind.NFloat, "Pi") => double.Pi,
+            (NumericKind.NFloat, "Tau") => double.Tau,
             (NumericKind.Single, "MaxValue") => float.MaxValue,
             (NumericKind.Single, "MinValue") => float.MinValue,
             (NumericKind.Single, "Epsilon") => float.Epsilon,
@@ -1395,6 +1534,7 @@ public static partial class ExpressionEvaluator
             (NumericKind.Single, "Pi") => float.Pi,
             (NumericKind.Single, "E") => float.E,
             (NumericKind.Single, "Tau") => float.Tau,
+            (NumericKind.Single, "NegativeZero") => float.NegativeZero,
             (NumericKind.Double, "MaxValue") => double.MaxValue,
             (NumericKind.Double, "MinValue") => double.MinValue,
             (NumericKind.Double, "Epsilon") => double.Epsilon,
@@ -1404,6 +1544,7 @@ public static partial class ExpressionEvaluator
             (NumericKind.Double, "Pi") => double.Pi,
             (NumericKind.Double, "E") => double.E,
             (NumericKind.Double, "Tau") => double.Tau,
+            (NumericKind.Double, "NegativeZero") => double.NegativeZero,
             (NumericKind.Decimal, "MaxValue") => decimal.MaxValue,
             (NumericKind.Decimal, "MinValue") => decimal.MinValue,
             (NumericKind.Decimal, "Zero") => decimal.Zero,
@@ -1576,6 +1717,13 @@ public static partial class ExpressionEvaluator
         var box = BoxOf(operand);
         switch (kind)
         {
+            case NumericKind.Half:
+                // No Math overload accepts Half: C# provides no implicit conversion out of binary16.
+                return FoldOutcome.Error(
+                    OperandTypeCode, "No Math overload accepts Half; convert the operand explicitly.");
+            case NumericKind.NFloat:
+                // An NFloat argument selects the double overload through its implicit widening, as C# does.
+                return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Double, Math.Abs((double)box)));
             case NumericKind.Single:
                 return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, Math.Abs((float)box)));
             case NumericKind.Double:
@@ -1610,6 +1758,9 @@ public static partial class ExpressionEvaluator
         return kind switch
         {
             // Math.Sign(NaN) throws ArithmeticException in running code; the caller maps it to a typed stop.
+            NumericKind.Half => FoldOutcome.Error(
+                OperandTypeCode, "No Math overload accepts Half; convert the operand explicitly."),
+            NumericKind.NFloat => FoldOutcome.Folded(Operand.FromInt32(Math.Sign((double)box))),
             NumericKind.Single => FoldOutcome.Folded(Operand.FromInt32(Math.Sign((float)box))),
             NumericKind.Double => FoldOutcome.Folded(Operand.FromInt32(Math.Sign((double)box))),
             NumericKind.Decimal => FoldOutcome.Folded(Operand.FromInt32(Math.Sign((decimal)box))),
@@ -1626,6 +1777,16 @@ public static partial class ExpressionEvaluator
 
         switch (target)
         {
+            case NumericKind.Half:
+                return FoldOutcome.Error(
+                    OperandTypeCode, "No Math overload accepts Half; convert the operands explicitly.");
+            case NumericKind.NFloat:
+                // NFloat arguments select the double overload through their implicit widening, as C# does.
+                var nl = ToDoubleValue(NumericKindOf(left), BoxOf(left));
+                var nr = ToDoubleValue(NumericKindOf(right), BoxOf(right));
+                return FoldOutcome.Folded(Operand.FromNumeric(
+                    NumericKind.Double,
+                    wantMin ? Math.Min(nl, nr) : Math.Max(nl, nr)));
             case NumericKind.Single:
                 var fl = ToSingleValue(NumericKindOf(left), BoxOf(left));
                 var fr = ToSingleValue(NumericKindOf(right), BoxOf(right));
@@ -1660,33 +1821,213 @@ public static partial class ExpressionEvaluator
             return DispatchBigInteger(name, arguments);
         }
 
-        if (kind is NumericKind.Single or NumericKind.Double &&
-            arguments is [{ } single] && TryArgDouble(single, out var value))
+        // 'T.Parse(text)' folds under the invariant culture for every fixed-size kind, mirroring the modeled
+        // BigInteger.Parse; no answer ever depends on the analysis machine's regional settings.
+        if (name == "Parse" && arguments is [{ Kind: OperandKind.String } text] && text.String is { } digits)
         {
-            var probe = kind == NumericKind.Single ? ToSingleValue(NumericKindOf(single), BoxOf(single)) : 0f;
-            bool? result = (kind, name) switch
+            return ParseNumeric(kind, digits);
+        }
+
+        if (kind == NumericKind.Decimal)
+        {
+            return DispatchDecimalStatic(name, arguments);
+        }
+
+        if (kind is NumericKind.Half or NumericKind.NFloat or NumericKind.Single or NumericKind.Double &&
+            arguments is [{ } probeOperand])
+        {
+            // Each predicate computes at its own kind's precision: normality and subnormality differ per width.
+            // Half admits only a Half argument, exactly as C# provides no implicit conversion into binary16;
+            // the wider kinds accept the double-convertible domain, as their parameters do.
+            double? admittedValue = kind == NumericKind.Half
+                ? NumericKindOf(probeOperand) == NumericKind.Half
+                    ? (double)(Half)BoxOf(probeOperand)
+                    : null
+                : TryArgDouble(probeOperand, out var wide) ? wide : null;
+            if (admittedValue is { } probeValue)
             {
-                (NumericKind.Double, "IsNaN") => double.IsNaN(value),
-                (NumericKind.Double, "IsInfinity") => double.IsInfinity(value),
-                (NumericKind.Double, "IsPositiveInfinity") => double.IsPositiveInfinity(value),
-                (NumericKind.Double, "IsNegativeInfinity") => double.IsNegativeInfinity(value),
-                (NumericKind.Double, "IsFinite") => double.IsFinite(value),
-                (NumericKind.Double, "IsNegative") => double.IsNegative(value),
-                (NumericKind.Single, "IsNaN") => float.IsNaN(probe),
-                (NumericKind.Single, "IsInfinity") => float.IsInfinity(probe),
-                (NumericKind.Single, "IsPositiveInfinity") => float.IsPositiveInfinity(probe),
-                (NumericKind.Single, "IsNegativeInfinity") => float.IsNegativeInfinity(probe),
-                (NumericKind.Single, "IsFinite") => float.IsFinite(probe),
-                (NumericKind.Single, "IsNegative") => float.IsNegative(probe),
-                _ => null,
-            };
-            if (result is { } predicate)
-            {
-                return FoldOutcome.Folded(Operand.FromBoolean(predicate));
+                bool? result = kind switch
+                {
+                    NumericKind.Half => HalfPredicate(name, (Half)probeValue),
+                    NumericKind.Single => SinglePredicate(
+                        name, ToSingleValue(NumericKindOf(probeOperand), BoxOf(probeOperand))),
+                    _ => DoublePredicate(name, probeValue),
+                };
+                if (result is { } predicate)
+                {
+                    return FoldOutcome.Folded(Operand.FromBoolean(predicate));
+                }
             }
         }
 
         return MemberUnsupported(name);
+    }
+
+    private static bool? DoublePredicate(string name, double value) => name switch
+    {
+        "IsNaN" => double.IsNaN(value),
+        "IsInfinity" => double.IsInfinity(value),
+        "IsPositiveInfinity" => double.IsPositiveInfinity(value),
+        "IsNegativeInfinity" => double.IsNegativeInfinity(value),
+        "IsFinite" => double.IsFinite(value),
+        "IsNegative" => double.IsNegative(value),
+        "IsPositive" => double.IsPositive(value),
+        "IsNormal" => double.IsNormal(value),
+        "IsSubnormal" => double.IsSubnormal(value),
+        "IsInteger" => double.IsInteger(value),
+        "IsEvenInteger" => double.IsEvenInteger(value),
+        "IsOddInteger" => double.IsOddInteger(value),
+        "IsRealNumber" => double.IsRealNumber(value),
+        _ => null,
+    };
+
+    private static bool? SinglePredicate(string name, float value) => name switch
+    {
+        "IsNaN" => float.IsNaN(value),
+        "IsInfinity" => float.IsInfinity(value),
+        "IsPositiveInfinity" => float.IsPositiveInfinity(value),
+        "IsNegativeInfinity" => float.IsNegativeInfinity(value),
+        "IsFinite" => float.IsFinite(value),
+        "IsNegative" => float.IsNegative(value),
+        "IsPositive" => float.IsPositive(value),
+        "IsNormal" => float.IsNormal(value),
+        "IsSubnormal" => float.IsSubnormal(value),
+        "IsInteger" => float.IsInteger(value),
+        "IsEvenInteger" => float.IsEvenInteger(value),
+        "IsOddInteger" => float.IsOddInteger(value),
+        "IsRealNumber" => float.IsRealNumber(value),
+        _ => null,
+    };
+
+    private static bool? HalfPredicate(string name, Half value) => name switch
+    {
+        "IsNaN" => Half.IsNaN(value),
+        "IsInfinity" => Half.IsInfinity(value),
+        "IsPositiveInfinity" => Half.IsPositiveInfinity(value),
+        "IsNegativeInfinity" => Half.IsNegativeInfinity(value),
+        "IsFinite" => Half.IsFinite(value),
+        "IsNegative" => Half.IsNegative(value),
+        "IsPositive" => Half.IsPositive(value),
+        "IsNormal" => Half.IsNormal(value),
+        "IsSubnormal" => Half.IsSubnormal(value),
+        "IsInteger" => Half.IsInteger(value),
+        "IsEvenInteger" => Half.IsEvenInteger(value),
+        "IsOddInteger" => Half.IsOddInteger(value),
+        "IsRealNumber" => Half.IsRealNumber(value),
+        _ => null,
+    };
+
+    /// <summary>
+    /// The <c>decimal</c> type statics over implicitly decimal-convertible operands — the integrals and decimal
+    /// itself, exactly the parameters the BCL overloads take.
+    /// </summary>
+    private static FoldOutcome DispatchDecimalStatic(string name, List<Operand> arguments)
+    {
+        try
+        {
+            switch (name, arguments)
+            {
+                case ("Round", [{ } single]) when TryArgDecimal(single, out var rounded):
+                    return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Decimal, decimal.Round(rounded)));
+                case ("Round", [{ } value, { } digits])
+                    when TryArgDecimal(value, out var toRound) && TryImplicitInt32(digits, out var places):
+                    return FoldOutcome.Folded(Operand.FromNumeric(
+                        NumericKind.Decimal, decimal.Round(toRound, places)));
+                case ("Truncate", [{ } operand]) when TryArgDecimal(operand, out var toTruncate):
+                    return FoldOutcome.Folded(Operand.FromNumeric(
+                        NumericKind.Decimal, decimal.Truncate(toTruncate)));
+                case ("Ceiling", [{ } operand]) when TryArgDecimal(operand, out var toCeil):
+                    return FoldOutcome.Folded(Operand.FromNumeric(
+                        NumericKind.Decimal, decimal.Ceiling(toCeil)));
+                case ("Floor", [{ } operand]) when TryArgDecimal(operand, out var toFloor):
+                    return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Decimal, decimal.Floor(toFloor)));
+                case ("Negate", [{ } operand]) when TryArgDecimal(operand, out var toNegate):
+                    return FoldOutcome.Folded(Operand.FromNumeric(
+                        NumericKind.Decimal, decimal.Negate(toNegate)));
+                case ("Add", [{ } left, { } right])
+                    when TryArgDecimal(left, out var addLeft) && TryArgDecimal(right, out var addRight):
+                    return FoldOutcome.Folded(Operand.FromNumeric(
+                        NumericKind.Decimal, decimal.Add(addLeft, addRight)));
+                case ("Subtract", [{ } left, { } right])
+                    when TryArgDecimal(left, out var subLeft) && TryArgDecimal(right, out var subRight):
+                    return FoldOutcome.Folded(Operand.FromNumeric(
+                        NumericKind.Decimal, decimal.Subtract(subLeft, subRight)));
+                case ("Multiply", [{ } left, { } right])
+                    when TryArgDecimal(left, out var mulLeft) && TryArgDecimal(right, out var mulRight):
+                    return FoldOutcome.Folded(Operand.FromNumeric(
+                        NumericKind.Decimal, decimal.Multiply(mulLeft, mulRight)));
+                case ("Divide", [{ } left, { } right])
+                    when TryArgDecimal(left, out var divLeft) && TryArgDecimal(right, out var divRight):
+                    return FoldOutcome.Folded(Operand.FromNumeric(
+                        NumericKind.Decimal, decimal.Divide(divLeft, divRight)));
+                case ("Remainder", [{ } left, { } right])
+                    when TryArgDecimal(left, out var remLeft) && TryArgDecimal(right, out var remRight):
+                    return FoldOutcome.Folded(Operand.FromNumeric(
+                        NumericKind.Decimal, decimal.Remainder(remLeft, remRight)));
+                case ("Compare", [{ } left, { } right])
+                    when TryArgDecimal(left, out var cmpLeft) && TryArgDecimal(right, out var cmpRight):
+                    return FoldOutcome.Folded(Operand.FromInt32(decimal.Compare(cmpLeft, cmpRight)));
+                default:
+                    return MemberUnsupported($"decimal.{name}");
+            }
+        }
+        catch (ArithmeticException exception)
+        {
+            return FoldOutcome.Error(exception.GetType().FullName!, exception.Message);
+        }
+    }
+
+    private static bool TryArgDecimal(Operand operand, out decimal value)
+    {
+        // Mirrors the implicit conversions to decimal: the integrals and decimal itself; the IEEE kinds and the
+        // arbitrary-width integers need an explicit conversion, exactly as the BCL overloads require.
+        value = 0m;
+        if (!operand.IsNumeric)
+        {
+            return false;
+        }
+
+        var kind = NumericKindOf(operand);
+        if (kind is NumericKind.Half or NumericKind.NFloat or NumericKind.Single or NumericKind.Double
+            or NumericKind.BigInteger or NumericKind.Int128 or NumericKind.UInt128)
+        {
+            return false;
+        }
+
+        value = ToDecimalValue(operand);
+        return true;
+    }
+
+    private static FoldOutcome ParseNumeric(NumericKind kind, string text)
+    {
+        try
+        {
+            object value = kind switch
+            {
+                NumericKind.SByte => sbyte.Parse(text, CultureInfo.InvariantCulture),
+                NumericKind.Byte => byte.Parse(text, CultureInfo.InvariantCulture),
+                NumericKind.Int16 => short.Parse(text, CultureInfo.InvariantCulture),
+                NumericKind.UInt16 => ushort.Parse(text, CultureInfo.InvariantCulture),
+                NumericKind.Int32 => int.Parse(text, CultureInfo.InvariantCulture),
+                NumericKind.UInt32 => uint.Parse(text, CultureInfo.InvariantCulture),
+                NumericKind.Int64 => long.Parse(text, CultureInfo.InvariantCulture),
+                NumericKind.UInt64 => ulong.Parse(text, CultureInfo.InvariantCulture),
+                NumericKind.IntPtr => (long)nint.Parse(text, CultureInfo.InvariantCulture),
+                NumericKind.UIntPtr => (ulong)nuint.Parse(text, CultureInfo.InvariantCulture),
+                NumericKind.Int128 => Int128.Parse(text, CultureInfo.InvariantCulture),
+                NumericKind.UInt128 => UInt128.Parse(text, CultureInfo.InvariantCulture),
+                NumericKind.Half => Half.Parse(text, CultureInfo.InvariantCulture),
+                NumericKind.NFloat => double.Parse(text, CultureInfo.InvariantCulture),
+                NumericKind.Single => float.Parse(text, CultureInfo.InvariantCulture),
+                NumericKind.Double => double.Parse(text, CultureInfo.InvariantCulture),
+                _ => decimal.Parse(text, CultureInfo.InvariantCulture),
+            };
+            return FoldOutcome.Folded(Operand.FromNumeric(kind, value));
+        }
+        catch (Exception exception) when (exception is FormatException or OverflowException)
+        {
+            return FoldOutcome.Error(exception.GetType().FullName!, exception.Message);
+        }
     }
 
     private static FoldOutcome DispatchBigInteger(string name, List<Operand> arguments)
