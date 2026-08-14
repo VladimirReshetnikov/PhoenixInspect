@@ -9,7 +9,7 @@ namespace PhoenixInspect.Tests;
 /// dispositions, and the not-constant dispositions that keep every other expression on its existing evaluation
 /// path. Literal-field resolution needs a dump session and is proven by the integration lane.
 /// </summary>
-public sealed class ExpressionEvaluatorEvaluatorTests
+public sealed class ExpressionEvaluatorTests
 {
     /// <summary>Proves exact checked Int32 folding across the admitted operator set.</summary>
     /// <param name="expression">The constant expression to fold.</param>
