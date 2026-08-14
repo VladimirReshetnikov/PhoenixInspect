@@ -132,19 +132,28 @@ public static partial class ConstantExpressionEvaluator
 
     // ---- Creation expressions ---------------------------------------------------------------------------------------
 
+    /// <summary>The greatest rectangular array rank one creation admits, a deterministic bound.</summary>
+    private const int MaximumArrayRank = 8;
+
     /// <summary>
     /// Folds every supported explicit array creation: an initializer, a constant size with C#'s zero-fill
-    /// semantics, both together (the counts must agree, as C# requires), and a typed empty array. A creation
-    /// whose element type the evaluator does not model stays not-constant, and multi-dimensional or jagged
-    /// shapes are typed stops.
+    /// semantics, both together (the counts must agree, as C# requires), a typed empty array, and the
+    /// rectangular forms 'new T[m,n]' and 'new T[,]{{…},{…}}'. A creation whose element type the evaluator
+    /// does not model stays not-constant, and a jagged creation is a typed stop.
     /// </summary>
     private static FoldOutcome FoldArrayCreation(ArrayCreationExpressionSyntax creation, FoldContext context)
     {
-        if (creation.Type.RankSpecifiers.Count != 1 || creation.Type.RankSpecifiers[0].Sizes.Count != 1)
+        if (creation.Type.RankSpecifiers.Count != 1)
         {
             return FoldOutcome.Error(
                 OperandTypeCode,
-                "Only single-rank, single-dimension array creation is modeled.");
+                "Jagged array creation is not modeled; a collection expression such as [[1, 2], [3, 4]] builds "
+                + "a sequence of sequences.");
+        }
+
+        if (creation.Type.RankSpecifiers[0].Sizes.Count > 1)
+        {
+            return FoldRectangularArrayCreation(creation, context);
         }
 
         var elementKnown = TryResolveElementType(creation.Type.ElementType, context, out var element, out var error);
@@ -241,6 +250,219 @@ public static partial class ConstantExpressionEvaluator
 
         // 'new T[n]' zero-fills: that is C#'s defined semantics, not a fabricated value.
         return CreateSequence(element.Payload([.. Enumerable.Repeat(element.DefaultElement, fillLength)]));
+    }
+
+    /// <summary>
+    /// Folds a rectangular array creation: 'new int[,]{{1,2},{3,4}}' infers its dimensions from the nested
+    /// initializer, 'new int[2,3]' zero-fills, and both together must agree, as C# requires. Items are stored
+    /// flat in row-major order — the order .NET enumerates a rectangular array in — so the whole sequence
+    /// surface applies unchanged and Length stays the total element count.
+    /// </summary>
+    private static FoldOutcome FoldRectangularArrayCreation(
+        ArrayCreationExpressionSyntax creation,
+        FoldContext context)
+    {
+        var sizes = creation.Type.RankSpecifiers[0].Sizes;
+        var rank = sizes.Count;
+        if (rank > MaximumArrayRank)
+        {
+            return FoldOutcome.Error(
+                OperandTypeCode,
+                $"An array rank beyond the deterministic bound of "
+                + $"{MaximumArrayRank.ToString(CultureInfo.InvariantCulture)} is not modeled.");
+        }
+
+        var elementKnown = TryResolveElementType(creation.Type.ElementType, context, out var element, out var error);
+        if (error is not null)
+        {
+            return error.Value;
+        }
+
+        if (!elementKnown)
+        {
+            return FoldOutcome.NotArithmetic();
+        }
+
+        var declaredSizes = new int[rank];
+        var haveSizes = false;
+        var haveOmitted = false;
+        for (var dimension = 0; dimension < rank; dimension++)
+        {
+            if (sizes[dimension] is OmittedArraySizeExpressionSyntax)
+            {
+                haveOmitted = true;
+                continue;
+            }
+
+            haveSizes = true;
+            var size = Fold(sizes[dimension], context);
+            if (size.Disposition != FoldDisposition.Folded)
+            {
+                return size;
+            }
+
+            if (!TryImplicitInt32(size.Operand, out var length))
+            {
+                return FoldOutcome.Error(OperandTypeCode, "An array dimension length must be an Int32 constant.");
+            }
+
+            if (length < 0)
+            {
+                return FoldOutcome.Error("System.OverflowException", "An array length cannot be negative.");
+            }
+
+            declaredSizes[dimension] = length;
+        }
+
+        if (haveSizes && haveOmitted)
+        {
+            return FoldOutcome.Error(
+                OperandTypeCode,
+                "Every dimension length must be given, or every one omitted, as C# requires.");
+        }
+
+        if (creation.Initializer is { } initializer)
+        {
+            var initialized = FoldRectangularInitializer(initializer, rank, element, context, out var dimensions);
+            if (initialized.Disposition != FoldDisposition.Folded)
+            {
+                return initialized;
+            }
+
+            if (haveSizes && !dimensions.SequenceEqual(declaredSizes))
+            {
+                return FoldOutcome.Error(
+                    OperandTypeCode,
+                    "The declared dimension lengths must equal the initializer's shape, as C# requires.");
+            }
+
+            return CreateSequence(PayloadOf(initialized.Operand).WithShape(dimensions, lowerBounds: default));
+        }
+
+        if (!haveSizes)
+        {
+            return FoldOutcome.Error(
+                OperandTypeCode,
+                "A rectangular array creation needs dimension lengths or an initializer.");
+        }
+
+        return CreateRectangularZeroFilled(element, [.. declaredSizes], lowerBounds: default);
+    }
+
+    /// <summary>
+    /// Folds one rank-deep nested initializer into a flat row-major sequence of the declared element type,
+    /// requiring the uniform shape C# requires, and reports the inferred dimension lengths.
+    /// </summary>
+    private static FoldOutcome FoldRectangularInitializer(
+        InitializerExpressionSyntax initializer,
+        int rank,
+        ElementDescriptor element,
+        FoldContext context,
+        out ImmutableArray<int> dimensions)
+    {
+        var lengths = new int[rank];
+        var seen = new bool[rank];
+        var items = ImmutableArray.CreateBuilder<Operand>();
+        dimensions = default;
+        if (Walk(initializer, 0) is { } failure)
+        {
+            return failure;
+        }
+
+        dimensions = [.. lengths];
+        var flat = items.ToImmutable();
+        if (element.Kind == OperandKind.Null || flat.Length == 0)
+        {
+            // An object[,] initializer keeps per-element domains, and an empty shape needs no inference.
+            return CreateSequence(element.Payload(flat));
+        }
+
+        var inferred = CreateInferredSequence(flat);
+        if (inferred.Disposition != FoldDisposition.Folded)
+        {
+            return inferred;
+        }
+
+        return ConvertSequenceToElement(inferred.Operand, element);
+
+        FoldOutcome? Walk(InitializerExpressionSyntax level, int depth)
+        {
+            if (!seen[depth])
+            {
+                lengths[depth] = level.Expressions.Count;
+                seen[depth] = true;
+            }
+            else if (lengths[depth] != level.Expressions.Count)
+            {
+                return FoldOutcome.Error(
+                    OperandTypeCode,
+                    "A rectangular initializer must be uniform: every sub-initializer at one depth needs the "
+                    + "same length, as C# requires.");
+            }
+
+            foreach (var expression in level.Expressions)
+            {
+                if (depth == rank - 1)
+                {
+                    if (expression is InitializerExpressionSyntax)
+                    {
+                        return FoldOutcome.Error(
+                            OperandTypeCode,
+                            "The initializer nests deeper than the declared rank.");
+                    }
+
+                    var folded = Fold(expression, context);
+                    if (folded.Disposition != FoldDisposition.Folded)
+                    {
+                        return folded;
+                    }
+
+                    items.Add(folded.Operand);
+                }
+                else if (expression is InitializerExpressionSyntax nested)
+                {
+                    if (Walk(nested, depth + 1) is { } nestedFailure)
+                    {
+                        return nestedFailure;
+                    }
+                }
+                else
+                {
+                    return FoldOutcome.Error(
+                        OperandTypeCode,
+                        "Each element at this depth must be a nested { … } initializer, matching the declared "
+                        + "rank.");
+                }
+            }
+
+            return null;
+        }
+    }
+
+    /// <summary>Builds a zero-filled rectangular array under the product bound.</summary>
+    private static FoldOutcome CreateRectangularZeroFilled(
+        ElementDescriptor element,
+        ImmutableArray<int> lengths,
+        ImmutableArray<int> lowerBounds)
+    {
+        long total = 1;
+        foreach (var length in lengths)
+        {
+            total *= length;
+            if (total > MaximumSequenceLength)
+            {
+                return FoldOutcome.Error(
+                    SequenceBoundCode,
+                    $"The array would hold {total.ToString(CultureInfo.InvariantCulture)} elements, beyond the "
+                    + $"deterministic bound of {MaximumSequenceLength.ToString(CultureInfo.InvariantCulture)}.");
+            }
+        }
+
+        var payload = element.Payload([.. Enumerable.Repeat(element.DefaultElement, (int)total)]);
+        return CreateSequence(
+            lengths.Length == 1 && (lowerBounds.IsDefaultOrEmpty || lowerBounds[0] == 0)
+                ? payload
+                : payload.WithShape(lengths, lowerBounds));
     }
 
     /// <summary>Converts an inferred sequence to a declared element type, when a conversion exists.</summary>
@@ -395,9 +617,191 @@ public static partial class ConstantExpressionEvaluator
                     MemberUnsupportedCode,
                     $"Array.{name} takes a lambda; write it with a lambda literal so it routes through the "
                     + "expression-lambda surface.");
+            case "CreateInstance":
+                return FoldArrayCreateInstance(arguments);
             default:
                 return MemberUnsupported($"Array.{name}");
         }
+    }
+
+    /// <summary>
+    /// Folds <see cref="Array.CreateInstance(Type, int[])"/> in its modeled shapes: a type plus one or more
+    /// Int32 lengths, a type plus a lengths sequence, or a type plus lengths and lower bounds sequences. The
+    /// result zero-fills with the element type's C# default, exactly as the runtime does; non-zero lower bounds
+    /// are honored by element access and the bound-reporting members.
+    /// </summary>
+    private static FoldOutcome FoldArrayCreateInstance(List<Operand> arguments)
+    {
+        if (arguments.Count < 2 || arguments[0].Kind != OperandKind.Type)
+        {
+            return FoldOutcome.Error(
+                MemberUnsupportedCode,
+                "Array.CreateInstance takes typeof(T) and dimension lengths, with optional lower bounds.");
+        }
+
+        var type = (TypeRef)arguments[0].Box!;
+        if (!TryElementDescriptorOfType(type, out var element))
+        {
+            return FoldOutcome.Error(
+                OperandTypeCode,
+                $"'{type.CSharpName}' is not a modeled array element type.");
+        }
+
+        ImmutableArray<int> lengths;
+        var lowerBounds = ImmutableArray<int>.Empty;
+        if (arguments is [_, { Kind: OperandKind.Sequence } lengthSequence])
+        {
+            if (!TryReadInt32Sequence(lengthSequence, out lengths))
+            {
+                return FoldOutcome.Error(OperandTypeCode, "The lengths must be an Int32 sequence.");
+            }
+        }
+        else if (arguments is
+            [_, { Kind: OperandKind.Sequence } lengthsPart, { Kind: OperandKind.Sequence } boundsPart])
+        {
+            if (!TryReadInt32Sequence(lengthsPart, out lengths) ||
+                !TryReadInt32Sequence(boundsPart, out lowerBounds))
+            {
+                return FoldOutcome.Error(
+                    OperandTypeCode, "The lengths and lower bounds must be Int32 sequences.");
+            }
+
+            if (lengths.Length != lowerBounds.Length)
+            {
+                return FoldOutcome.Error(
+                    "System.ArgumentException",
+                    "The lengths and lower bounds must have the same rank.");
+            }
+        }
+        else
+        {
+            var direct = ImmutableArray.CreateBuilder<int>(arguments.Count - 1);
+            foreach (var argument in arguments.Skip(1))
+            {
+                if (!TryImplicitInt32(argument, out var length))
+                {
+                    return FoldOutcome.Error(
+                        MemberUnsupportedCode,
+                        "Array.CreateInstance takes typeof(T) and dimension lengths, with optional lower "
+                        + "bounds.");
+                }
+
+                direct.Add(length);
+            }
+
+            lengths = direct.MoveToImmutable();
+        }
+
+        if (lengths.IsEmpty)
+        {
+            return FoldOutcome.Error("System.ArgumentException", "At least one dimension length is required.");
+        }
+
+        if (lengths.Length > MaximumArrayRank)
+        {
+            return FoldOutcome.Error(
+                OperandTypeCode,
+                $"An array rank beyond the deterministic bound of "
+                + $"{MaximumArrayRank.ToString(CultureInfo.InvariantCulture)} is not modeled.");
+        }
+
+        foreach (var length in lengths)
+        {
+            if (length < 0)
+            {
+                return FoldOutcome.Error(
+                    "System.ArgumentOutOfRangeException", "A dimension length cannot be negative.");
+            }
+        }
+
+        // All-zero bounds are the ordinary shape; only genuinely offset arrays carry their bounds.
+        if (lowerBounds.All(static bound => bound == 0))
+        {
+            lowerBounds = [];
+        }
+
+        return CreateRectangularZeroFilled(element, lengths, lowerBounds);
+    }
+
+    private static bool TryReadInt32Sequence(Operand sequence, out ImmutableArray<int> values)
+    {
+        var items = PayloadOf(sequence).Items;
+        var read = ImmutableArray.CreateBuilder<int>(items.Length);
+        foreach (var item in items)
+        {
+            if (!TryImplicitInt32(item, out var value))
+            {
+                values = default;
+                return false;
+            }
+
+            read.Add(value);
+        }
+
+        values = read.MoveToImmutable();
+        return true;
+    }
+
+    /// <summary>Maps a resolved <c>typeof(...)</c> reference to an array element descriptor, when modeled.</summary>
+    private static bool TryElementDescriptorOfType(TypeRef type, out ElementDescriptor descriptor)
+    {
+        descriptor = default;
+        if (type.IsArray || type.IsGenericDefinition || type.IsConstructedGeneric || type.IsInterfaceType)
+        {
+            return false;
+        }
+
+        if (type is { IsEnum: true, Shape: { } shape })
+        {
+            descriptor = new ElementDescriptor(
+                OperandKind.Enum, shape.Underlying, default, default, shape, shape.ShortName);
+            return true;
+        }
+
+        switch (type.Name)
+        {
+            case "Object":
+                descriptor = new ElementDescriptor(OperandKind.Null, default, default, default, null, "Object");
+                return true;
+            case "String":
+                descriptor = new ElementDescriptor(OperandKind.String, default, default, default, null, "String");
+                return true;
+            case "Char":
+                descriptor = new ElementDescriptor(OperandKind.Char, default, default, default, null, "Char");
+                return true;
+            case "Boolean":
+                descriptor = new ElementDescriptor(
+                    OperandKind.Boolean, default, default, default, null, "Boolean");
+                return true;
+        }
+
+        if (Enum.TryParse<NumericKind>(type.Name, out var numeric))
+        {
+            descriptor = new ElementDescriptor(
+                numeric == NumericKind.Int32 ? OperandKind.Int32 : OperandKind.Numeric,
+                numeric,
+                default,
+                default,
+                null,
+                numeric.ToString());
+            return true;
+        }
+
+        if (Enum.TryParse<TemporalKind>(type.Name, out var temporal))
+        {
+            descriptor = new ElementDescriptor(
+                OperandKind.Temporal, default, temporal, default, null, temporal.ToString());
+            return true;
+        }
+
+        if (Enum.TryParse<BclValueKind>(type.Name, out var value))
+        {
+            descriptor = new ElementDescriptor(
+                OperandKind.BclValue, default, default, value, null, value.ToString());
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>Faithful <see cref="Array.BinarySearch(Array, object)"/> over the comparable element domains.</summary>

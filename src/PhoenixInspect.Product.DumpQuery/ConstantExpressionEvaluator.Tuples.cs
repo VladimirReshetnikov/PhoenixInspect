@@ -208,7 +208,7 @@ public static partial class ConstantExpressionEvaluator
             : operand.EnumTypeFullName ?? "Enum",
         OperandKind.Temporal => operand.TemporalKind.ToString(),
         OperandKind.BclValue => operand.BclValueKind.ToString(),
-        OperandKind.Sequence => PayloadOf(operand).DisplayName + "[]",
+        OperandKind.Sequence => PayloadOf(operand).DisplayName + PayloadOf(operand).TypeSuffix,
         OperandKind.Tuple => TupleTypeName(operand),
         OperandKind.Anonymous => AnonymousTypeName(operand),
         OperandKind.Grouping => "IGrouping",

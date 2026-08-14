@@ -315,9 +315,9 @@ public static class ExpressionCompletionService
             ],
             ["Array"] =
             [
-                "BinarySearch", "Clear", "ConstrainedCopy", "ConvertAll", "Copy", "Empty", "Exists", "Fill",
-                "Find", "FindAll", "FindIndex", "FindLast", "FindLastIndex", "IndexOf", "LastIndexOf", "MaxLength",
-                "Resize", "Reverse", "SetValue", "Sort", "TrueForAll",
+                "BinarySearch", "Clear", "ConstrainedCopy", "ConvertAll", "Copy", "CreateInstance", "Empty",
+                "Exists", "Fill", "Find", "FindAll", "FindIndex", "FindLast", "FindLastIndex", "IndexOf",
+                "LastIndexOf", "MaxLength", "Resize", "Reverse", "SetValue", "Sort", "TrueForAll",
             ],
             ["DateTime"] =
             ["MaxValue", "MinValue", "Now", "Parse", "ParseExact", "Today", "TryParse", "UnixEpoch", "UtcNow"],

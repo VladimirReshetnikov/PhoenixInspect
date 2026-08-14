@@ -1665,7 +1665,7 @@ public static partial class ConstantExpressionEvaluator
                 var payload = PayloadOf(operand);
                 kind = ConstantValueKind.Sequence;
                 int32 = payload.Items.Length;
-                valueTypeName = payload.DisplayName + "[]";
+                valueTypeName = payload.DisplayName + payload.TypeSuffix;
                 valueText = RenderSequence(payload);
                 underlying = valueTypeName;
                 break;
@@ -2458,7 +2458,7 @@ public static partial class ConstantExpressionEvaluator
             (OperandKind.Sequence, "LongLength") => FoldOutcome.Folded(Operand.FromNumeric(
                 NumericKind.Int64,
                 (long)PayloadOf(receiver).Items.Length)),
-            (OperandKind.Sequence, "Rank") => FoldOutcome.Folded(Operand.FromInt32(1)),
+            (OperandKind.Sequence, "Rank") => FoldOutcome.Folded(Operand.FromInt32(PayloadOf(receiver).Rank)),
             (OperandKind.Temporal, var temporalProperty) =>
                 DispatchTemporalProperty(receiver, temporalProperty),
             (OperandKind.BclValue, var valueProperty) =>

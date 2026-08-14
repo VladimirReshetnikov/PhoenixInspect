@@ -39,13 +39,17 @@ public static partial class ConstantExpressionEvaluator
             OperandKind elementKind,
             NumericKind elementNumeric,
             string displayName,
-            SequenceOrdering? ordering = null)
+            SequenceOrdering? ordering = null,
+            ImmutableArray<int> dimensions = default,
+            ImmutableArray<int> lowerBounds = default)
         {
             Items = items;
             ElementKind = elementKind;
             ElementNumeric = elementNumeric;
             DisplayName = displayName;
             Ordering = ordering;
+            Dimensions = dimensions.IsDefault ? [] : dimensions;
+            LowerBounds = lowerBounds.IsDefault ? [] : lowerBounds;
         }
 
         internal ImmutableArray<Operand> Items { get; }
@@ -59,9 +63,36 @@ public static partial class ConstantExpressionEvaluator
         /// <summary>Gets the ordering evidence, present only on the direct result of an OrderBy-family sort.</summary>
         internal SequenceOrdering? Ordering { get; }
 
-        // Any other operation drops the ordering evidence: its items no longer align with the key vectors.
+        /// <summary>
+        /// Gets the rectangular dimension lengths, empty for an ordinary one-dimensional sequence. Items stay a
+        /// flat row-major list either way, exactly the order .NET enumerates a rectangular array in, so the whole
+        /// sequence surface applies unchanged and Length stays the total element count.
+        /// </summary>
+        internal ImmutableArray<int> Dimensions { get; }
+
+        /// <summary>Gets the per-dimension lower bounds, empty when every bound is zero.</summary>
+        internal ImmutableArray<int> LowerBounds { get; }
+
+        internal int Rank => Dimensions.IsEmpty ? 1 : Dimensions.Length;
+
+        internal int LengthOf(int dimension) =>
+            Dimensions.IsEmpty ? Items.Length : Dimensions[dimension];
+
+        internal int LowerBoundOf(int dimension) =>
+            LowerBounds.IsEmpty ? 0 : LowerBounds[dimension];
+
+        /// <summary>Gets the C#-style bracket suffix of the sequence's type: <c>[]</c>, <c>[,]</c>, …</summary>
+        internal string TypeSuffix =>
+            Dimensions.IsEmpty ? "[]" : "[" + new string(',', Dimensions.Length - 1) + "]";
+
+        // Any other operation drops the ordering evidence and the rectangular shape: its items no longer align
+        // with the key vectors, and a derived sequence enumerates flat, exactly as LINQ over a .NET array does.
         internal SequencePayload With(ImmutableArray<Operand> items) =>
             new(items, ElementKind, ElementNumeric, DisplayName);
+
+        /// <summary>Reshapes this payload as a rectangular array; the items are already flat row-major.</summary>
+        internal SequencePayload WithShape(ImmutableArray<int> dimensions, ImmutableArray<int> lowerBounds) =>
+            new(Items, ElementKind, ElementNumeric, DisplayName, ordering: null, dimensions, lowerBounds);
     }
 
     private static SequencePayload PayloadOf(Operand operand) => (SequencePayload)operand.Box!;
@@ -258,9 +289,9 @@ public static partial class ConstantExpressionEvaluator
         FoldContext context)
     {
         var payload = PayloadOf(receiver);
-        if (elementAccess.ArgumentList.Arguments.Count != 1)
+        if (!payload.Dimensions.IsEmpty || elementAccess.ArgumentList.Arguments.Count != 1)
         {
-            return FoldOutcome.Error(OperandTypeCode, "Array element access takes one index or range.");
+            return FoldRectangularElementAccess(payload, elementAccess, context);
         }
 
         var argument = elementAccess.ArgumentList.Arguments[0].Expression;
@@ -309,6 +340,106 @@ public static partial class ConstantExpressionEvaluator
         }
 
         return FoldOutcome.Folded(payload.Items[position]);
+    }
+
+    private static FoldOutcome DimensionOutOfRange(SequencePayload payload) => FoldOutcome.Error(
+        "System.IndexOutOfRangeException",
+        $"This array has rank {payload.Rank.ToString(CultureInfo.InvariantCulture)}; dimensions 0 through "
+        + $"{(payload.Rank - 1).ToString(CultureInfo.InvariantCulture)} exist.");
+
+    /// <summary>Faithful <see cref="Array.GetValue(int[])"/> over a rectangular array's indices.</summary>
+    private static FoldOutcome RectangularGetValue(SequencePayload payload, List<Operand> arguments)
+    {
+        var rank = payload.Rank;
+        if (arguments.Count != rank)
+        {
+            return FoldOutcome.Error(
+                OperandTypeCode,
+                $"This array has rank {rank.ToString(CultureInfo.InvariantCulture)}; GetValue takes "
+                + $"{rank.ToString(CultureInfo.InvariantCulture)} index(es).");
+        }
+
+        var offset = 0;
+        for (var dimension = 0; dimension < rank; dimension++)
+        {
+            if (!TryImplicitInt32(arguments[dimension], out var index))
+            {
+                return FoldOutcome.Error(OperandTypeCode, "An array index must be an Int32 constant.");
+            }
+
+            var lower = payload.LowerBoundOf(dimension);
+            var length = payload.LengthOf(dimension);
+            if (index < lower || index >= lower + length)
+            {
+                return FoldOutcome.Error(
+                    "System.IndexOutOfRangeException",
+                    $"Index {index.ToString(CultureInfo.InvariantCulture)} is outside dimension "
+                    + $"{dimension.ToString(CultureInfo.InvariantCulture)} with bounds "
+                    + $"[{lower.ToString(CultureInfo.InvariantCulture)}.."
+                    + $"{(lower + length - 1).ToString(CultureInfo.InvariantCulture)}].");
+            }
+
+            offset = (offset * length) + (index - lower);
+        }
+
+        return FoldOutcome.Folded(payload.Items[offset]);
+    }
+
+    /// <summary>
+    /// Element access over a rectangular array: one index per dimension, each honoring its dimension's lower
+    /// bound, flattened row-major. Ranges apply only to one-dimensional arrays, exactly as C# defines.
+    /// </summary>
+    private static FoldOutcome FoldRectangularElementAccess(
+        SequencePayload payload,
+        ElementAccessExpressionSyntax elementAccess,
+        FoldContext context)
+    {
+        var rank = payload.Rank;
+        if (elementAccess.ArgumentList.Arguments.Count != rank)
+        {
+            return FoldOutcome.Error(
+                OperandTypeCode,
+                $"This array has rank {rank.ToString(CultureInfo.InvariantCulture)}; element access takes "
+                + $"{rank.ToString(CultureInfo.InvariantCulture)} index(es).");
+        }
+
+        var offset = 0;
+        for (var dimension = 0; dimension < rank; dimension++)
+        {
+            var argument = elementAccess.ArgumentList.Arguments[dimension].Expression;
+            if (argument is RangeExpressionSyntax)
+            {
+                return FoldOutcome.Error(
+                    OperandTypeCode, "Range access applies to one-dimensional arrays only.");
+            }
+
+            var folded = Fold(argument, context);
+            if (folded.Disposition != FoldDisposition.Folded)
+            {
+                return folded;
+            }
+
+            if (!TryImplicitInt32(folded.Operand, out var index))
+            {
+                return FoldOutcome.Error(OperandTypeCode, "An array index must be an Int32 constant.");
+            }
+
+            var lower = payload.LowerBoundOf(dimension);
+            var length = payload.LengthOf(dimension);
+            if (index < lower || index >= lower + length)
+            {
+                return FoldOutcome.Error(
+                    "System.IndexOutOfRangeException",
+                    $"Index {index.ToString(CultureInfo.InvariantCulture)} is outside dimension "
+                    + $"{dimension.ToString(CultureInfo.InvariantCulture)} with bounds "
+                    + $"[{lower.ToString(CultureInfo.InvariantCulture)}.."
+                    + $"{(lower + length - 1).ToString(CultureInfo.InvariantCulture)}].");
+            }
+
+            offset = (offset * length) + (index - lower);
+        }
+
+        return FoldOutcome.Folded(payload.Items[offset]);
     }
 
     // ---- The lambda-free Enumerable surface -------------------------------------------------------------------------
@@ -371,6 +502,8 @@ public static partial class ConstantExpressionEvaluator
                         "System.InvalidOperationException",
                         "Sequence contains more than one element."),
                 };
+            case "GetValue" when !payload.Dimensions.IsEmpty || arguments.Count > 1:
+                return RectangularGetValue(payload, arguments);
             case "GetValue" when arguments is [{ } valueAt] && TryImplicitInt32(valueAt, out var valueIndex):
                 return valueIndex >= 0 && valueIndex < items.Length
                     ? FoldOutcome.Folded(items[valueIndex])
@@ -380,25 +513,20 @@ public static partial class ConstantExpressionEvaluator
                         + $"length {items.Length.ToString(CultureInfo.InvariantCulture)}.");
             case "GetLength" when arguments is [{ } lengthDimension] &&
                 TryImplicitInt32(lengthDimension, out var lengthOf):
-                return lengthOf == 0
-                    ? FoldOutcome.Folded(Operand.FromInt32(items.Length))
-                    : FoldOutcome.Error(
-                        "System.IndexOutOfRangeException",
-                        "A virtual sequence is one-dimensional; only dimension 0 exists.");
+                return lengthOf >= 0 && lengthOf < payload.Rank
+                    ? FoldOutcome.Folded(Operand.FromInt32(payload.LengthOf(lengthOf)))
+                    : DimensionOutOfRange(payload);
             case "GetLowerBound" when arguments is [{ } lowerDimension] &&
                 TryImplicitInt32(lowerDimension, out var lowerOf):
-                return lowerOf == 0
-                    ? FoldOutcome.Folded(Operand.FromInt32(0))
-                    : FoldOutcome.Error(
-                        "System.IndexOutOfRangeException",
-                        "A virtual sequence is one-dimensional; only dimension 0 exists.");
+                return lowerOf >= 0 && lowerOf < payload.Rank
+                    ? FoldOutcome.Folded(Operand.FromInt32(payload.LowerBoundOf(lowerOf)))
+                    : DimensionOutOfRange(payload);
             case "GetUpperBound" when arguments is [{ } upperDimension] &&
                 TryImplicitInt32(upperDimension, out var upperOf):
-                return upperOf == 0
-                    ? FoldOutcome.Folded(Operand.FromInt32(items.Length - 1))
-                    : FoldOutcome.Error(
-                        "System.IndexOutOfRangeException",
-                        "A virtual sequence is one-dimensional; only dimension 0 exists.");
+                return upperOf >= 0 && upperOf < payload.Rank
+                    ? FoldOutcome.Folded(
+                        Operand.FromInt32(payload.LowerBoundOf(upperOf) + payload.LengthOf(upperOf) - 1))
+                    : DimensionOutOfRange(payload);
             case "ElementAt" when arguments is [{ } at] && TryImplicitInt32(at, out var index):
                 return index >= 0 && index < items.Length
                     ? FoldOutcome.Folded(items[index])
@@ -962,8 +1090,39 @@ public static partial class ConstantExpressionEvaluator
 
     private const int MaximumRenderedElements = 32;
 
+    /// <summary>Renders a rectangular array with its nested brace shape, row-major.</summary>
+    private static string RenderRectangular(SequencePayload payload)
+    {
+        var offset = 0;
+        return Render(0);
+
+        string Render(int dimension)
+        {
+            if (dimension == payload.Dimensions.Length)
+            {
+                return RenderElement(payload.Items[offset++]);
+            }
+
+            var length = payload.Dimensions[dimension];
+            var parts = new List<string>(length);
+            for (var index = 0; index < length; index++)
+            {
+                parts.Add(Render(dimension + 1));
+            }
+
+            return parts.Count == 0 ? "{ }" : "{ " + string.Join(", ", parts) + " }";
+        }
+    }
+
     private static string RenderSequence(SequencePayload payload)
     {
+        // A rectangular array of display-friendly size renders with its nested shape; a larger one falls back
+        // to the flat, capped rendering below.
+        if (payload.Dimensions.Length > 1 && payload.Items.Length <= MaximumRenderedElements)
+        {
+            return RenderRectangular(payload);
+        }
+
         if (payload.Items.Length == 0)
         {
             return "{ }";
