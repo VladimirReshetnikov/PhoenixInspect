@@ -113,6 +113,30 @@ public sealed class ImmediateVariableStore
             !string.Equals(declaredType, "dynamic", StringComparison.Ordinal) &&
             !TypeMatchesValue(declaredType, evaluation))
         {
+            // A numeric declaration converts a numeric initializer exactly as the cast it spells would:
+            // 'nint x = 5;' folds '(nint)(5)', with C#'s checked conversion semantics deciding the outcome.
+            if (IsNumericTypeName(declaredType) &&
+                evaluation.Kind is ExpressionValueKind.Int32 or ExpressionValueKind.Numeric)
+            {
+                var converted = evaluateExpression($"({declaredType})({initializer})");
+                if (converted.Status == ExpressionEvaluationStatus.Exact &&
+                    converted.TryProjectStoredValue(out var convertedStored) &&
+                    convertedStored is not null &&
+                    TypeMatchesValue(declaredType, converted))
+                {
+                    var convertedTypeName = converted.StoredValueTypeName ?? "value";
+                    variables[name!] = new StoredVariable(convertedStored, convertedTypeName);
+                    message = $"{name} = {converted.ValueText ?? converted.Expression}  // {convertedTypeName}";
+                    return true;
+                }
+
+                if (converted.DiagnosticMessage is { } conversionDiagnostic)
+                {
+                    message = $"'{name}' was not assigned: {conversionDiagnostic}";
+                    return false;
+                }
+            }
+
             message = $"'{name}' declared '{declaredType}' cannot hold a {valueTypeName} value.";
             return false;
         }
@@ -135,24 +159,7 @@ public sealed class ImmediateVariableStore
             elementType = elementType[..^2];
         }
 
-        var normalized = elementType switch
-        {
-            "int" => "Int32",
-            "uint" => "UInt32",
-            "long" => "Int64",
-            "ulong" => "UInt64",
-            "short" => "Int16",
-            "ushort" => "UInt16",
-            "byte" => "Byte",
-            "sbyte" => "SByte",
-            "double" => "Double",
-            "float" => "Single",
-            "decimal" => "Decimal",
-            "bool" => "Boolean",
-            "char" => "Char",
-            "string" => "String",
-            _ => elementType,
-        };
+        var normalized = NormalizeTypeKeyword(elementType);
         var trimmed = normalized.Contains('.', StringComparison.Ordinal)
             ? normalized[(normalized.LastIndexOf('.') + 1)..]
             : normalized;
@@ -164,6 +171,48 @@ public sealed class ImmediateVariableStore
                 StringComparison.Ordinal) ||
             (evaluation.Kind == ExpressionValueKind.EnumMember && arraySuffix.Length == 0 &&
                 string.Equals(normalized, evaluation.EnumTypeFullName, StringComparison.Ordinal));
+    }
+
+    /// <summary>Maps a C# type keyword to its BCL short name; other spellings pass through unchanged.</summary>
+    private static string NormalizeTypeKeyword(string typeName) => typeName switch
+    {
+        "int" => "Int32",
+        "uint" => "UInt32",
+        "long" => "Int64",
+        "ulong" => "UInt64",
+        "short" => "Int16",
+        "ushort" => "UInt16",
+        "byte" => "Byte",
+        "sbyte" => "SByte",
+        "nint" => "IntPtr",
+        "nuint" => "UIntPtr",
+        "double" => "Double",
+        "float" => "Single",
+        "decimal" => "Decimal",
+        "bool" => "Boolean",
+        "char" => "Char",
+        "string" => "String",
+        _ => typeName,
+    };
+
+    private static readonly ImmutableHashSet<string> NumericTypeNames = ImmutableHashSet.Create(
+        StringComparer.Ordinal,
+        "SByte", "Byte", "Int16", "UInt16", "Int32", "UInt32", "Int64", "UInt64", "IntPtr", "UIntPtr",
+        "Int128", "UInt128", "BigInteger", "Single", "Double", "Decimal");
+
+    /// <summary>Gets whether a declared type names a numeric domain the cast-conversion fallback covers.</summary>
+    private static bool IsNumericTypeName(string declaredType)
+    {
+        if (declaredType.EndsWith("[]", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var normalized = NormalizeTypeKeyword(declaredType);
+        var trimmed = normalized.Contains('.', StringComparison.Ordinal)
+            ? normalized[(normalized.LastIndexOf('.') + 1)..]
+            : normalized;
+        return NumericTypeNames.Contains(trimmed);
     }
 
     private static bool TryParse(

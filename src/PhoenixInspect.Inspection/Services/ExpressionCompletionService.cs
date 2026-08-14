@@ -270,8 +270,8 @@ public static class ExpressionCompletionService
     private static readonly ImmutableArray<string> Keywords =
     [
         "and", "bool", "byte", "char", "checked", "decimal", "default", "double", "dynamic", "false", "float",
-        "global", "int", "is", "long", "nameof", "new", "not", "null", "object", "or", "sbyte", "short",
-        "sizeof", "string", "switch", "true", "typeof", "uint", "ulong", "unchecked", "ushort", "when",
+        "global", "int", "is", "long", "nameof", "new", "nint", "not", "nuint", "null", "object", "or", "sbyte",
+        "short", "sizeof", "string", "switch", "true", "typeof", "uint", "ulong", "unchecked", "ushort", "when",
     ];
 
     // Statement keywords complete only at the start of a line, and only in editors that admit statements: the
@@ -288,10 +288,11 @@ public static class ExpressionCompletionService
         "DateTime", "DateTimeKind", "DateTimeOffset", "DayOfWeek", "DBNull", "Delegate", "Dictionary", "Encoding",
         "Enum", "Enumerable",
         "Func", "Guid", "ICollection", "IComparable", "IDictionary", "IEnumerable", "IEquatable", "IList",
-        "Int128", "IReadOnlyCollection", "IReadOnlyDictionary", "IReadOnlyList", "KeyValuePair", "List", "Math",
+        "Int128", "IntPtr", "IReadOnlyCollection", "IReadOnlyDictionary", "IReadOnlyList", "KeyValuePair", "List",
+        "Math",
         "MemberTypes", "MulticastDelegate", "Nullable", "Object", "Predicate", "Regex", "RegexOptions", "Rune",
         "String", "StringComparison", "StringSplitOptions", "TimeOnly", "TimeSpan", "TypeCode", "UInt128",
-        "UnicodeCategory", "ValueType", "Version",
+        "UIntPtr", "UnicodeCategory", "ValueType", "Version",
     ];
 
     // Members mirror the evaluator's dispatch tables; a member that is a deliberate typed stop (Now, NewGuid,
@@ -377,6 +378,10 @@ public static class ExpressionCompletionService
             ["uint"] = ["MaxValue", "MinValue"],
             ["long"] = ["MaxValue", "MinValue"],
             ["ulong"] = ["MaxValue", "MinValue"],
+            ["nint"] = ["MaxValue", "MinValue", "Size", "Zero"],
+            ["nuint"] = ["MaxValue", "MinValue", "Size", "Zero"],
+            ["IntPtr"] = ["MaxValue", "MinValue", "Size", "Zero"],
+            ["UIntPtr"] = ["MaxValue", "MinValue", "Size", "Zero"],
             ["short"] = ["MaxValue", "MinValue"],
             ["ushort"] = ["MaxValue", "MinValue"],
             ["byte"] = ["MaxValue", "MinValue"],
@@ -834,6 +839,22 @@ public static class ExpressionCompletionService
             ["long.MinValue"] = "Int64",
             ["ulong.MaxValue"] = "UInt64",
             ["ulong.MinValue"] = "UInt64",
+            ["nint.MaxValue"] = "IntPtr",
+            ["nint.MinValue"] = "IntPtr",
+            ["nint.Size"] = "Int32",
+            ["nint.Zero"] = "IntPtr",
+            ["nuint.MaxValue"] = "UIntPtr",
+            ["nuint.MinValue"] = "UIntPtr",
+            ["nuint.Size"] = "Int32",
+            ["nuint.Zero"] = "UIntPtr",
+            ["IntPtr.MaxValue"] = "IntPtr",
+            ["IntPtr.MinValue"] = "IntPtr",
+            ["IntPtr.Size"] = "Int32",
+            ["IntPtr.Zero"] = "IntPtr",
+            ["UIntPtr.MaxValue"] = "UIntPtr",
+            ["UIntPtr.MinValue"] = "UIntPtr",
+            ["UIntPtr.Size"] = "Int32",
+            ["UIntPtr.Zero"] = "UIntPtr",
             ["short.MaxValue"] = "Int16",
             ["short.MinValue"] = "Int16",
             ["ushort.MaxValue"] = "UInt16",

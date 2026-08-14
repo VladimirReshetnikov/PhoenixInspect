@@ -262,6 +262,35 @@ public sealed class ImmediateVariableTests
         Assert.False(ImmediateVariableStore.IsStatement("Math.Max(1, 2)"));
     }
 
+    /// <summary>Native-int declarations convert their numeric initializers exactly as the spelled cast would.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Native_int_declarations_convert_and_compose()
+    {
+        var store = new ImmediateVariableStore();
+
+        // The declaration folds '(nint)(5)', so the stored value carries the native kind.
+        Assert.True(Apply(store, "nint x = 5;", out var declared));
+        Assert.Contains("IntPtr", declared, StringComparison.Ordinal);
+        Assert.Equal(
+            "15",
+            ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                "x * 3", localVariables: store.LocalNameResolver).Value);
+
+        Assert.True(Apply(store, "nuint u = 7;", out var unsignedDeclared));
+        Assert.Contains("UIntPtr", unsignedDeclared, StringComparison.Ordinal);
+
+        // Ordinary numeric declarations gain the same conversion; a non-numeric mismatch keeps its refusal.
+        Assert.True(Apply(store, "long wide = 5;", out var widened));
+        Assert.Contains("Int64", widened, StringComparison.Ordinal);
+        Assert.False(Apply(store, "nint bad = \"text\";", out var mismatch));
+        Assert.Contains("cannot hold", mismatch, StringComparison.Ordinal);
+
+        // A narrowing conversion that overflows keeps C#'s checked refusal.
+        Assert.False(Apply(store, "byte tiny = 70000;", out var overflow));
+        Assert.Contains("not assigned", overflow, StringComparison.Ordinal);
+    }
+
     /// <summary>A dynamic declaration admits any value, rebinding late over the stored runtime kind.</summary>
     [Fact]
     [Trait("Category", "Fast")]

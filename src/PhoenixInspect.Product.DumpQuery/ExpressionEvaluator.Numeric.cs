@@ -1351,6 +1351,13 @@ public static partial class ExpressionEvaluator
 
     private static FoldOutcome DispatchNumericTypeStatic(NumericKind kind, string member)
     {
+        // 'nint.Size' / 'IntPtr.Size' answers 8, an Int32: the evaluator folds native ints at 64 bits, matching
+        // the x64 processes the preview targets, and the visible kind states the assumption.
+        if (kind is NumericKind.IntPtr or NumericKind.UIntPtr && member == "Size")
+        {
+            return FoldOutcome.Folded(Operand.FromInt32(8));
+        }
+
         object? value = (kind, member) switch
         {
             (NumericKind.SByte, "MaxValue") => sbyte.MaxValue,
@@ -1371,8 +1378,10 @@ public static partial class ExpressionEvaluator
             (NumericKind.UInt64, "MinValue") => ulong.MinValue,
             (NumericKind.IntPtr, "MaxValue") => (long)nint.MaxValue,
             (NumericKind.IntPtr, "MinValue") => (long)nint.MinValue,
+            (NumericKind.IntPtr, "Zero") => 0L,
             (NumericKind.UIntPtr, "MaxValue") => (ulong)nuint.MaxValue,
             (NumericKind.UIntPtr, "MinValue") => (ulong)nuint.MinValue,
+            (NumericKind.UIntPtr, "Zero") => 0UL,
             (NumericKind.Int128, "MaxValue") => Int128.MaxValue,
             (NumericKind.Int128, "MinValue") => Int128.MinValue,
             (NumericKind.UInt128, "MaxValue") => UInt128.MaxValue,
