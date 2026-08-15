@@ -208,7 +208,7 @@ public static partial class ExpressionEvaluator
             : operand.EnumTypeFullName ?? "Enum",
         OperandKind.Temporal => operand.TemporalKind.ToString(),
         OperandKind.BclValue => operand.BclValueKind.ToString(),
-        OperandKind.Sequence => PayloadOf(operand).DisplayName + PayloadOf(operand).TypeSuffix,
+        OperandKind.Sequence => PayloadOf(operand).DisplayTypeName,
         OperandKind.Tuple => TupleTypeName(operand),
         OperandKind.Anonymous => AnonymousTypeName(operand),
         OperandKind.Grouping => "IGrouping",

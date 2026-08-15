@@ -92,6 +92,26 @@ public static partial class ExpressionEvaluator
                 GenericVariance.Out]),
         new("System.Predicate`1", "Predicate`1", "System", "Predicate", 1, false, false, [GenericVariance.In]),
         new("System.Comparison`1", "Comparison`1", "System", "Comparison", 1, false, false, [GenericVariance.In]),
+        new("System.Collections.Immutable.ImmutableArray`1", "ImmutableArray`1", "System.Collections.Immutable",
+            "ImmutableArray", 1, false, true, [GenericVariance.Invariant]),
+        new("System.Collections.Immutable.ImmutableList`1", "ImmutableList`1", "System.Collections.Immutable",
+            "ImmutableList", 1, false, false, [GenericVariance.Invariant]),
+        new("System.Collections.Immutable.ImmutableHashSet`1", "ImmutableHashSet`1", "System.Collections.Immutable",
+            "ImmutableHashSet", 1, false, false, [GenericVariance.Invariant]),
+        new("System.Collections.Immutable.ImmutableSortedSet`1", "ImmutableSortedSet`1",
+            "System.Collections.Immutable", "ImmutableSortedSet", 1, false, false, [GenericVariance.Invariant]),
+        new("System.Collections.Immutable.ImmutableQueue`1", "ImmutableQueue`1", "System.Collections.Immutable",
+            "ImmutableQueue", 1, false, false, [GenericVariance.Invariant]),
+        new("System.Collections.Immutable.ImmutableStack`1", "ImmutableStack`1", "System.Collections.Immutable",
+            "ImmutableStack", 1, false, false, [GenericVariance.Invariant]),
+        new("System.Collections.Immutable.IImmutableList`1", "IImmutableList`1", "System.Collections.Immutable",
+            "IImmutableList", 1, true, false, [GenericVariance.Invariant]),
+        new("System.Collections.Immutable.IImmutableSet`1", "IImmutableSet`1", "System.Collections.Immutable",
+            "IImmutableSet", 1, true, false, [GenericVariance.Invariant]),
+        new("System.Collections.Immutable.IImmutableQueue`1", "IImmutableQueue`1", "System.Collections.Immutable",
+            "IImmutableQueue", 1, true, false, [GenericVariance.Invariant]),
+        new("System.Collections.Immutable.IImmutableStack`1", "IImmutableStack`1", "System.Collections.Immutable",
+            "IImmutableStack", 1, true, false, [GenericVariance.Invariant]),
     ];
 
     /// <summary>
@@ -473,6 +493,23 @@ public static partial class ExpressionEvaluator
                     yield return MakeConstructed(
                         FindGenericDef("IReadOnlyDictionary", 2, null)!, source.TypeArguments);
                     break;
+                case "ImmutableArray" or "ImmutableList":
+                    yield return MakeConstructed(FindGenericDef("IImmutableList", 1, null)!, source.TypeArguments);
+                    yield return MakeConstructed(FindGenericDef("IReadOnlyList", 1, null)!, source.TypeArguments);
+                    break;
+                case "ImmutableHashSet" or "ImmutableSortedSet":
+                    yield return MakeConstructed(FindGenericDef("IImmutableSet", 1, null)!, source.TypeArguments);
+                    yield return MakeConstructed(
+                        FindGenericDef("IReadOnlyCollection", 1, null)!, source.TypeArguments);
+                    break;
+                case "ImmutableQueue":
+                    yield return MakeConstructed(FindGenericDef("IImmutableQueue", 1, null)!, source.TypeArguments);
+                    yield return MakeConstructed(FindGenericDef("IEnumerable", 1, null)!, source.TypeArguments);
+                    break;
+                case "ImmutableStack":
+                    yield return MakeConstructed(FindGenericDef("IImmutableStack", 1, null)!, source.TypeArguments);
+                    yield return MakeConstructed(FindGenericDef("IEnumerable", 1, null)!, source.TypeArguments);
+                    break;
                 default:
                     break;
             }
@@ -531,6 +568,15 @@ public static partial class ExpressionEvaluator
                 yield return MakeConstructed(
                     FindGenericDef("IReadOnlyCollection", 1, null)!,
                     [MakeConstructed(FindGenericDef("KeyValuePair", 2, null)!, args)]);
+                break;
+            case "IImmutableList":
+                yield return MakeConstructed(FindGenericDef("IReadOnlyList", 1, null)!, args);
+                break;
+            case "IImmutableSet":
+                yield return MakeConstructed(FindGenericDef("IReadOnlyCollection", 1, null)!, args);
+                break;
+            case "IImmutableQueue" or "IImmutableStack":
+                yield return MakeConstructed(FindGenericDef("IEnumerable", 1, null)!, args);
                 break;
             default:
                 break;
@@ -607,7 +653,17 @@ public static partial class ExpressionEvaluator
                         payload.ElementNumeric.ToString(), CSharpNameOfNumeric(payload.ElementNumeric)),
                     _ => payload.Items.Length > 0 ? TryDescribeRuntimeType(payload.Items[0]) : null,
                 };
-                return element?.MakeArray();
+                if (element is null)
+                {
+                    return null;
+                }
+
+                // An immutable collection reports its constructed generic; a plain sequence reports T[].
+                return payload.Collection == SequenceCollectionKind.Array
+                    ? element.MakeArray()
+                    : FindGenericDef(payload.Collection.ToString(), 1, null) is { } immutableDef
+                        ? MakeConstructed(immutableDef, [element])
+                        : null;
             default:
                 return null;
         }

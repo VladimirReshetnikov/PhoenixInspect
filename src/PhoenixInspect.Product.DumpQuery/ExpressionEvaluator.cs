@@ -1407,7 +1407,20 @@ public static partial class ExpressionEvaluator
 
     private static FoldOutcome MaterializeSequenceResolution(OperandResolution resolution)
     {
-        var (elementKind, elementNumeric) = resolution.ElementTypeName switch
+        // A stored immutable collection spells its identity — 'ImmutableList<Int32>' — around the element name;
+        // peel the identity off first so the element domain resolves exactly as a plain array's does.
+        var collection = SequenceCollectionKind.Array;
+        var storedElementName = resolution.ElementTypeName;
+        if (storedElementName is { } spelled && spelled.EndsWith('>') &&
+            spelled.IndexOf('<', StringComparison.Ordinal) is var open and > 0 &&
+            Enum.TryParse<SequenceCollectionKind>(spelled[..open], out var parsedCollection) &&
+            parsedCollection != SequenceCollectionKind.Array)
+        {
+            collection = parsedCollection;
+            storedElementName = spelled[(open + 1)..^1];
+        }
+
+        var (elementKind, elementNumeric) = storedElementName switch
         {
             "Int32" => (OperandKind.Int32, NumericKind.Int32),
             "Int64" => (OperandKind.Numeric, NumericKind.Int64),
@@ -1458,7 +1471,8 @@ public static partial class ExpressionEvaluator
             items.ToImmutable(),
             elementKind,
             elementNumeric,
-            resolution.ElementTypeName ?? "String"));
+            storedElementName ?? "String",
+            collection: collection));
     }
 
     /// <summary>
@@ -1665,7 +1679,7 @@ public static partial class ExpressionEvaluator
                 var payload = PayloadOf(operand);
                 kind = ExpressionValueKind.Sequence;
                 int32 = payload.Items.Length;
-                valueTypeName = payload.DisplayName + payload.TypeSuffix;
+                valueTypeName = payload.DisplayTypeName;
                 valueText = RenderSequence(payload);
                 underlying = valueTypeName;
                 break;
@@ -1787,7 +1801,13 @@ public static partial class ExpressionEvaluator
                     elements.Add(element);
                 }
 
-                return OperandResolution.FromSequence(elements.ToImmutable(), payload.DisplayName);
+                // An immutable collection stores its full spelling — 'ImmutableList<Int32>' — so the identity
+                // survives the round trip; a plain array stores the bare element name, unchanged.
+                return OperandResolution.FromSequence(
+                    elements.ToImmutable(),
+                    payload.Collection == SequenceCollectionKind.Array
+                        ? payload.DisplayName
+                        : payload.DisplayTypeName);
             default:
                 return null;
         }
@@ -2284,6 +2304,15 @@ public static partial class ExpressionEvaluator
 
         if (receiver.Operand.Kind == OperandKind.Sequence)
         {
+            // Only the kinds whose BCL type declares an indexer index: a hash set, queue, or stack does not.
+            var sequenceCollection = PayloadOf(receiver.Operand).Collection;
+            if (!HasIndexer(sequenceCollection))
+            {
+                return FoldOutcome.Error(
+                    OperandTypeCode,
+                    $"{sequenceCollection} has no indexer; enumerate it or use Peek where the type defines one.");
+            }
+
             return FoldSequenceElementAccess(receiver.Operand, elementAccess, context);
         }
 
@@ -2414,6 +2443,13 @@ public static partial class ExpressionEvaluator
         // field stays not-folded.
         if (!leftmostBound && TryReadTypeReceiver(memberAccess.Expression, out var typeReceiver))
         {
+            // The immutable collections' 'Empty' resolves its written element type, which needs the context.
+            if (typeReceiver.Category == TypeReceiverCategory.ImmutableCollection &&
+                member.Identifier.ValueText == "Empty")
+            {
+                return DispatchImmutableEmpty(typeReceiver, context);
+            }
+
             return DispatchTypeStatic(typeReceiver, member.Identifier.ValueText);
         }
 
@@ -2456,12 +2492,7 @@ public static partial class ExpressionEvaluator
         (receiver.Kind, member) switch
         {
             (OperandKind.String, "Length") => FoldOutcome.Folded(Operand.FromInt32(receiver.String!.Length)),
-            (OperandKind.Sequence, "Length") => FoldOutcome.Folded(Operand.FromInt32(
-                PayloadOf(receiver).Items.Length)),
-            (OperandKind.Sequence, "LongLength") => FoldOutcome.Folded(Operand.FromNumeric(
-                NumericKind.Int64,
-                (long)PayloadOf(receiver).Items.Length)),
-            (OperandKind.Sequence, "Rank") => FoldOutcome.Folded(Operand.FromInt32(PayloadOf(receiver).Rank)),
+            (OperandKind.Sequence, var sequenceMember) => DispatchSequenceProperty(receiver, sequenceMember),
             (OperandKind.Temporal, var temporalProperty) =>
                 DispatchTemporalProperty(receiver, temporalProperty),
             (OperandKind.BclValue, var valueProperty) =>
@@ -2568,7 +2599,7 @@ public static partial class ExpressionEvaluator
         if (typeArguments.Count > 0 &&
             !(TryReadTypeReceiver(receiverExpression, out var genericReceiver) &&
                 genericReceiver.Category is TypeReceiverCategory.SystemEnum or TypeReceiverCategory.SystemArray
-                    or TypeReceiverCategory.Activator))
+                    or TypeReceiverCategory.Activator or TypeReceiverCategory.ImmutableCollection))
         {
             return FoldOutcome.NotArithmetic();
         }
@@ -2686,6 +2717,8 @@ public static partial class ExpressionEvaluator
                 return DispatchCharUnicodeInfo(name, arguments);
             case TypeReceiverCategory.SystemConvert:
                 return DispatchConvert(name, arguments);
+            case TypeReceiverCategory.ImmutableCollection:
+                return DispatchImmutableFactory(typeReceiver, name, typeArguments, arguments, context);
             default:
                 return DispatchNumericTypeMethod(typeReceiver.Numeric, name, arguments);
         }

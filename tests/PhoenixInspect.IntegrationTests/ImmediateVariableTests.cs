@@ -367,6 +367,52 @@ public sealed class ImmediateVariableTests
         Assert.Contains("not assigned", overflowed, StringComparison.Ordinal);
     }
 
+    /// <summary>Immutable collections store as variables, keep their identity, and stay persistent.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Immutable_collections_store_and_stay_persistent()
+    {
+        var store = new ImmediateVariableStore();
+
+        Assert.True(Apply(store, "var xs = ImmutableList.Create(1, 2);", out var declared));
+        Assert.Contains("ImmutableList<Int32>", declared, StringComparison.Ordinal);
+        Assert.Contains("{ 1, 2 }", declared, StringComparison.Ordinal);
+
+        // The stored value keeps its identity: Count answers, and a mutator yields a new collection while
+        // the variable itself stays unchanged — the persistence the type is named for.
+        Assert.Equal(
+            "2",
+            ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                "xs.Count", localVariables: store.LocalNameResolver).Value);
+        Assert.Contains(
+            "{ 1, 2, 3 }",
+            ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                "xs.Add(3)", localVariables: store.LocalNameResolver).Value,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "{ 1, 2 }",
+            ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                "xs", localVariables: store.LocalNameResolver).Value,
+            StringComparison.Ordinal);
+
+        // The stored value round-trips its runtime identity through 'is'.
+        Assert.Equal(
+            "true",
+            ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                "xs is ImmutableList<int>", localVariables: store.LocalNameResolver).Value);
+
+        // A reassignment composes with the previous value; a declared type checks the collection spelling.
+        Assert.True(Apply(store, "xs = xs.Add(9);", out _));
+        Assert.Equal(
+            "3",
+            ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                "xs.Count", localVariables: store.LocalNameResolver).Value);
+        Assert.True(Apply(store, "ImmutableArray<int> a = ImmutableArray.Create(1);", out var typed));
+        Assert.Contains("ImmutableArray<Int32>", typed, StringComparison.Ordinal);
+        Assert.False(Apply(store, "ImmutableList<int> bad = ImmutableArray.Create(1);", out var mismatch));
+        Assert.Contains("cannot hold", mismatch, StringComparison.Ordinal);
+    }
+
     private static bool Apply(ImmediateVariableStore store, string line, out string message) =>
         store.TryApply(
             line,

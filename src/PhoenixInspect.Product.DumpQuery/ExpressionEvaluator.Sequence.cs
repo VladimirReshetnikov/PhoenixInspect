@@ -31,6 +31,22 @@ public static partial class ExpressionEvaluator
         ImmutableArray<ImmutableArray<Operand>> KeysPerItem,
         ImmutableArray<bool> Descending);
 
+    /// <summary>
+    /// The collection identity a sequence carries. An ordinary array is the default; the immutable collections
+    /// keep their real type identity while sharing the whole sequence surface, exactly as they share
+    /// IEnumerable in running code.
+    /// </summary>
+    private enum SequenceCollectionKind
+    {
+        Array,
+        ImmutableArray,
+        ImmutableList,
+        ImmutableHashSet,
+        ImmutableSortedSet,
+        ImmutableQueue,
+        ImmutableStack,
+    }
+
     /// <summary>Describes the element domain of one sequence, so defaults and displays stay typed.</summary>
     private sealed class SequencePayload
     {
@@ -41,7 +57,8 @@ public static partial class ExpressionEvaluator
             string displayName,
             SequenceOrdering? ordering = null,
             ImmutableArray<int> dimensions = default,
-            ImmutableArray<int> lowerBounds = default)
+            ImmutableArray<int> lowerBounds = default,
+            SequenceCollectionKind collection = SequenceCollectionKind.Array)
         {
             Items = items;
             ElementKind = elementKind;
@@ -50,6 +67,7 @@ public static partial class ExpressionEvaluator
             Ordering = ordering;
             Dimensions = dimensions.IsDefault ? [] : dimensions;
             LowerBounds = lowerBounds.IsDefault ? [] : lowerBounds;
+            Collection = collection;
         }
 
         internal ImmutableArray<Operand> Items { get; }
@@ -73,6 +91,9 @@ public static partial class ExpressionEvaluator
         /// <summary>Gets the per-dimension lower bounds, empty when every bound is zero.</summary>
         internal ImmutableArray<int> LowerBounds { get; }
 
+        /// <summary>Gets the collection identity; an ordinary array unless an immutable factory set one.</summary>
+        internal SequenceCollectionKind Collection { get; }
+
         internal int Rank => Dimensions.IsEmpty ? 1 : Dimensions.Length;
 
         internal int LengthOf(int dimension) =>
@@ -85,10 +106,20 @@ public static partial class ExpressionEvaluator
         internal string TypeSuffix =>
             Dimensions.IsEmpty ? "[]" : "[" + new string(',', Dimensions.Length - 1) + "]";
 
-        // Any other operation drops the ordering evidence and the rectangular shape: its items no longer align
-        // with the key vectors, and a derived sequence enumerates flat, exactly as LINQ over a .NET array does.
+        /// <summary>Gets the full C#-style type spelling: <c>Int32[]</c>, or <c>ImmutableList&lt;Int32&gt;</c>.</summary>
+        internal string DisplayTypeName => Collection == SequenceCollectionKind.Array
+            ? DisplayName + TypeSuffix
+            : $"{Collection}<{DisplayName}>";
+
+        // Any other operation drops the ordering evidence, the rectangular shape, and the collection identity:
+        // its items no longer align with the key vectors, and a derived sequence enumerates flat, exactly as
+        // LINQ over a .NET collection yields a plain IEnumerable.
         internal SequencePayload With(ImmutableArray<Operand> items) =>
             new(items, ElementKind, ElementNumeric, DisplayName);
+
+        /// <summary>Rebuilds this payload's items while keeping (or setting) a collection identity.</summary>
+        internal SequencePayload WithCollection(ImmutableArray<Operand> items, SequenceCollectionKind collection) =>
+            new(items, ElementKind, ElementNumeric, DisplayName, collection: collection);
 
         /// <summary>Reshapes this payload as a rectangular array; the items are already flat row-major.</summary>
         internal SequencePayload WithShape(ImmutableArray<int> dimensions, ImmutableArray<int> lowerBounds) =>
@@ -447,6 +478,18 @@ public static partial class ExpressionEvaluator
     private static FoldOutcome DispatchSequence(Operand receiver, string name, List<Operand> arguments)
     {
         var payload = PayloadOf(receiver);
+
+        // An immutable collection answers its persistent operations first; anything else falls through to the
+        // shared sequence surface, exactly as the BCL types answer LINQ through IEnumerable.
+        if (payload.Collection != SequenceCollectionKind.Array)
+        {
+            var immutable = DispatchImmutableInstance(receiver, payload, name, arguments);
+            if (immutable.Disposition != FoldDisposition.NotArithmetic)
+            {
+                return immutable;
+            }
+        }
+
         var items = payload.Items;
         switch (name)
         {
@@ -578,8 +621,19 @@ public static partial class ExpressionEvaluator
                 return SequenceAverage(payload);
             case "ToArray" when arguments.Count == 0:
             case "ToList" when arguments.Count == 0:
-                // A virtual sequence is already materialized and immutable, so both are the identity.
-                return FoldOutcome.Folded(receiver);
+                // A virtual sequence is already materialized and immutable, so both are the identity; an
+                // immutable receiver sheds its collection identity, exactly as ToArray yields a plain array.
+                return payload.Collection == SequenceCollectionKind.Array
+                    ? FoldOutcome.Folded(receiver)
+                    : CreateSequence(payload.With(items));
+            case "ToImmutableArray" when arguments.Count == 0:
+                return NormalizeImmutable(payload, items, SequenceCollectionKind.ImmutableArray);
+            case "ToImmutableList" when arguments.Count == 0:
+                return NormalizeImmutable(payload, items, SequenceCollectionKind.ImmutableList);
+            case "ToImmutableHashSet" when arguments.Count == 0:
+                return NormalizeImmutable(payload, items, SequenceCollectionKind.ImmutableHashSet);
+            case "ToImmutableSortedSet" when arguments.Count == 0:
+                return NormalizeImmutable(payload, items, SequenceCollectionKind.ImmutableSortedSet);
             default:
                 return MemberUnsupported(name);
         }

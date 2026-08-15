@@ -161,6 +161,36 @@ public sealed class ImmediateVariableStore
 
     private static bool TypeMatchesValue(string declaredType, ExpressionEvaluation evaluation)
     {
+        // A generic spelling — 'ImmutableArray<int>' — normalizes per type argument, so the C# keywords and the
+        // stored BCL names agree: 'ImmutableArray<int>' accepts an ImmutableArray<Int32> value.
+        if (TrySplitGenericSpelling(declaredType, out var genericName, out var genericArguments))
+        {
+            // A delegate's stored name already spells C# keywords — 'Func<int, int>' — so the plain
+            // space-insensitive comparison wins first; the BCL-name normalization then covers the collections.
+            if (string.Equals(
+                declaredType.Replace(" ", string.Empty, StringComparison.Ordinal),
+                evaluation.StoredValueTypeName?.Replace(" ", string.Empty, StringComparison.Ordinal),
+                StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            var normalizedArguments = genericArguments.Select(static argument =>
+            {
+                var normalized = NormalizeTypeKeyword(argument.Trim());
+                return normalized.Contains('.', StringComparison.Ordinal)
+                    ? normalized[(normalized.LastIndexOf('.') + 1)..]
+                    : normalized;
+            });
+            var trimmedName = genericName.Contains('.', StringComparison.Ordinal)
+                ? genericName[(genericName.LastIndexOf('.') + 1)..]
+                : genericName;
+            return string.Equals(
+                $"{trimmedName}<{string.Join(",", normalizedArguments)}>",
+                evaluation.StoredValueTypeName?.Replace(" ", string.Empty, StringComparison.Ordinal),
+                StringComparison.Ordinal);
+        }
+
         // The declared type is matched by its C# keyword or its BCL short or full name against the folded kind, so
         // 'int', 'Int32', and 'System.Int32' all accept an Int32 value while 'int x = "s"' is refused. An array
         // type normalizes elementwise, so 'byte[]' accepts a Byte[] sequence.
@@ -184,6 +214,44 @@ public sealed class ImmediateVariableStore
                 StringComparison.Ordinal) ||
             (evaluation.Kind == ExpressionValueKind.EnumMember && arraySuffix.Length == 0 &&
                 string.Equals(normalized, evaluation.EnumTypeFullName, StringComparison.Ordinal));
+    }
+
+    /// <summary>Splits a generic spelling into its name and top-level type arguments; false otherwise.</summary>
+    private static bool TrySplitGenericSpelling(
+        string typeName,
+        out string name,
+        out List<string> arguments)
+    {
+        name = string.Empty;
+        arguments = [];
+        var open = typeName.IndexOf('<', StringComparison.Ordinal);
+        if (open <= 0 || !typeName.EndsWith('>'))
+        {
+            return false;
+        }
+
+        name = typeName[..open];
+        var depth = 0;
+        var start = open + 1;
+        for (var position = open + 1; position < typeName.Length - 1; position++)
+        {
+            switch (typeName[position])
+            {
+                case '<':
+                    depth++;
+                    break;
+                case '>':
+                    depth--;
+                    break;
+                case ',' when depth == 0:
+                    arguments.Add(typeName[start..position]);
+                    start = position + 1;
+                    break;
+            }
+        }
+
+        arguments.Add(typeName[start..^1]);
+        return true;
     }
 
     /// <summary>Maps a C# type keyword to its BCL short name; other spellings pass through unchanged.</summary>

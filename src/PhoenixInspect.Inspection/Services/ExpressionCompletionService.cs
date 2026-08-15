@@ -288,7 +288,8 @@ public static class ExpressionCompletionService
         "DateTime", "DateTimeKind", "DateTimeOffset", "DayOfWeek", "DBNull", "Delegate", "Dictionary", "Encoding",
         "Enum", "Enumerable",
         "Func", "Guid", "Half", "ICollection", "IComparable", "IDictionary", "IEnumerable", "IEquatable",
-        "IList", "Int128", "IntPtr", "IReadOnlyCollection", "IReadOnlyDictionary", "IReadOnlyList",
+        "IList", "ImmutableArray", "ImmutableHashSet", "ImmutableList", "ImmutableQueue", "ImmutableSortedSet",
+        "ImmutableStack", "Int128", "IntPtr", "IReadOnlyCollection", "IReadOnlyDictionary", "IReadOnlyList",
         "KeyValuePair", "List", "Math", "MathF", "NFloat",
         "MemberTypes", "MulticastDelegate", "Nullable", "Object", "Predicate", "Regex", "RegexOptions", "Rune",
         "String", "StringComparison", "StringSplitOptions", "TimeOnly", "TimeSpan", "TypeCode", "UInt128",
@@ -317,6 +318,12 @@ public static class ExpressionCompletionService
                 "Truncate",
             ],
             ["Enumerable"] = ["Empty", "Range", "Repeat"],
+            ["ImmutableArray"] = ["Create", "CreateRange", "Empty"],
+            ["ImmutableList"] = ["Create", "CreateRange", "Empty"],
+            ["ImmutableHashSet"] = ["Create", "CreateRange", "Empty"],
+            ["ImmutableSortedSet"] = ["Create", "CreateRange", "Empty"],
+            ["ImmutableQueue"] = ["Create", "CreateRange", "Empty"],
+            ["ImmutableStack"] = ["Create", "CreateRange", "Empty"],
             ["Enum"] =
             [
                 "GetName", "GetNames", "GetUnderlyingType", "GetValues", "IsDefined", "Parse", "ToObject",
@@ -492,6 +499,8 @@ public static class ExpressionCompletionService
     // Sequence member results are parametric in the element type; these tokens stand for it in the template.
     private const string ElementResult = "@element";
     private const string SequenceResult = "@sequence";
+    private const string SelfResult = "@self";
+    private const string ImmutableResultPrefix = "@immutable:";
 
     private static readonly InstanceSurface SequenceSurfaceTemplate = new(
         [("Length", "Int32"), ("LongLength", "Int64"), ("Rank", "Int32")],
@@ -511,11 +520,108 @@ public static class ExpressionCompletionService
             ("SingleOrDefault", ElementResult), ("Skip", SequenceResult), ("SkipLast", SequenceResult),
             ("SkipWhile", SequenceResult), ("Sum", "Double"), ("Take", SequenceResult),
             ("TakeLast", SequenceResult), ("TakeWhile", SequenceResult), ("ThenBy", SequenceResult),
-            ("ThenByDescending", SequenceResult), ("ToArray", SequenceResult), ("ToList", SequenceResult),
+            ("ThenByDescending", SequenceResult), ("ToArray", SequenceResult),
+            ("ToImmutableArray", ImmutableResultPrefix + "ImmutableArray"),
+            ("ToImmutableHashSet", ImmutableResultPrefix + "ImmutableHashSet"),
+            ("ToImmutableList", ImmutableResultPrefix + "ImmutableList"),
+            ("ToImmutableSortedSet", ImmutableResultPrefix + "ImmutableSortedSet"),
+            ("ToList", SequenceResult),
             ("Union", SequenceResult), ("Where", SequenceResult),
         ]);
 
     private static readonly ImmutableArray<CompletionItem> SequenceInstanceMembers = SequenceSurfaceTemplate.Items;
+
+    // The per-kind immutable-collection surfaces: the persistent operations each BCL type declares, with
+    // '@self' standing for the receiver's own collection type. The shared sequence surface answers the rest.
+    private static readonly ImmutableDictionary<string, InstanceSurface> ImmutableCollectionSurfaces =
+        new Dictionary<string, InstanceSurface>(StringComparer.Ordinal)
+        {
+            ["ImmutableArray"] = new(
+                [
+                    ("IsDefault", "Boolean"), ("IsDefaultOrEmpty", "Boolean"), ("IsEmpty", "Boolean"),
+                    ("Length", "Int32"),
+                ],
+                [
+                    ("Add", SelfResult), ("AddRange", SelfResult), ("Clear", SelfResult), ("IndexOf", "Int32"),
+                    ("Insert", SelfResult), ("InsertRange", SelfResult), ("LastIndexOf", "Int32"),
+                    ("Remove", SelfResult), ("RemoveAt", SelfResult), ("RemoveRange", SelfResult),
+                    ("SetItem", SelfResult),
+                ]),
+            ["ImmutableList"] = new(
+                [("Count", "Int32"), ("IsEmpty", "Boolean")],
+                [
+                    ("Add", SelfResult), ("AddRange", SelfResult), ("Clear", SelfResult), ("IndexOf", "Int32"),
+                    ("Insert", SelfResult), ("InsertRange", SelfResult), ("LastIndexOf", "Int32"),
+                    ("Remove", SelfResult), ("RemoveAt", SelfResult), ("RemoveRange", SelfResult),
+                    ("Reverse", SelfResult), ("SetItem", SelfResult), ("Sort", SelfResult),
+                ]),
+            ["ImmutableHashSet"] = new(
+                [("Count", "Int32"), ("IsEmpty", "Boolean")],
+                [
+                    ("Add", SelfResult), ("Clear", SelfResult), ("Except", SelfResult),
+                    ("Intersect", SelfResult), ("IsProperSubsetOf", "Boolean"),
+                    ("IsProperSupersetOf", "Boolean"), ("IsSubsetOf", "Boolean"), ("IsSupersetOf", "Boolean"),
+                    ("Overlaps", "Boolean"), ("Remove", SelfResult), ("SetEquals", "Boolean"),
+                    ("SymmetricExcept", SelfResult), ("Union", SelfResult),
+                ]),
+            ["ImmutableSortedSet"] = new(
+                [("Count", "Int32"), ("IsEmpty", "Boolean"), ("Max", ElementResult), ("Min", ElementResult)],
+                [
+                    ("Add", SelfResult), ("Clear", SelfResult), ("Except", SelfResult), ("IndexOf", "Int32"),
+                    ("Intersect", SelfResult), ("IsProperSubsetOf", "Boolean"),
+                    ("IsProperSupersetOf", "Boolean"), ("IsSubsetOf", "Boolean"), ("IsSupersetOf", "Boolean"),
+                    ("Overlaps", "Boolean"), ("Remove", SelfResult), ("SetEquals", "Boolean"),
+                    ("SymmetricExcept", SelfResult), ("Union", SelfResult),
+                ]),
+            ["ImmutableQueue"] = new(
+                [("IsEmpty", "Boolean")],
+                [
+                    ("Clear", SelfResult), ("Dequeue", SelfResult), ("Enqueue", SelfResult),
+                    ("Peek", ElementResult),
+                ]),
+            ["ImmutableStack"] = new(
+                [("IsEmpty", "Boolean")],
+                [("Clear", SelfResult), ("Peek", ElementResult), ("Pop", SelfResult), ("Push", SelfResult)]),
+        }.ToImmutableDictionary(StringComparer.Ordinal);
+
+    // The sequence members only a real array answers; an immutable collection does not complete them.
+    private static readonly ImmutableHashSet<string> ArrayOnlySequenceMembers = ImmutableHashSet.Create(
+        StringComparer.Ordinal,
+        "Length", "LongLength", "Rank", "GetLength", "GetLowerBound", "GetUpperBound", "GetValue");
+
+    /// <summary>Splits an immutable-collection spelling — 'ImmutableList&lt;Int32&gt;' — into kind and element.</summary>
+    private static bool TrySplitImmutableTypeName(string typeName, out string kindName, out string elementType)
+    {
+        kindName = string.Empty;
+        elementType = string.Empty;
+        var open = typeName.IndexOf('<', StringComparison.Ordinal);
+        if (open <= 0 || !typeName.EndsWith('>'))
+        {
+            return false;
+        }
+
+        var name = typeName[..open];
+        if (!ImmutableCollectionSurfaces.ContainsKey(name))
+        {
+            return false;
+        }
+
+        kindName = name;
+        elementType = typeName[(open + 1)..^1];
+        return true;
+    }
+
+    /// <summary>The completion items of one immutable collection: its own surface plus the shared sequence one.</summary>
+    private static ImmutableArray<CompletionItem> ImmutableInstanceItems(string kindName)
+    {
+        var surface = ImmutableCollectionSurfaces[kindName];
+        return
+        [
+            .. surface.Items,
+            .. SequenceSurfaceTemplate.Items.Where(item =>
+                !surface.Members.ContainsKey(item.Text) && !ArrayOnlySequenceMembers.Contains(item.Text)),
+        ];
+    }
 
     private static readonly InstanceSurface DelegateSurface = new(
         [("HasSingleTarget", "Boolean"), ("Method", "MethodInfo"), ("Target", null)],
@@ -815,6 +921,8 @@ public static class ExpressionCompletionService
     {
         ElementResult => elementType,
         SequenceResult => elementType + "[]",
+        { } immutable when immutable.StartsWith(ImmutableResultPrefix, StringComparison.Ordinal) =>
+            $"{immutable[ImmutableResultPrefix.Length..]}<{elementType}>",
         _ => resultType,
     };
 
@@ -836,6 +944,11 @@ public static class ExpressionCompletionService
         if (typeName.EndsWith("[]", StringComparison.Ordinal))
         {
             return SequenceInstanceMembers;
+        }
+
+        if (TrySplitImmutableTypeName(typeName, out var immutableKind, out _))
+        {
+            return ImmutableInstanceItems(immutableKind);
         }
 
         if (IsDelegateTypeName(typeName))
@@ -1029,6 +1142,23 @@ public static class ExpressionCompletionService
                 : null;
         }
 
+        if (TrySplitImmutableTypeName(receiverType, out var immutableKind, out var immutableElement))
+        {
+            if (ImmutableCollectionSurfaces[immutableKind].Members.TryGetValue(member, out var kindMember)
+                && kindMember.IsMethod == invoked)
+            {
+                return kindMember.ResultType == SelfResult
+                    ? receiverType
+                    : ResolveSequenceToken(kindMember.ResultType, immutableElement);
+            }
+
+            return SequenceSurfaceTemplate.Members.TryGetValue(member, out var shared)
+                && shared.IsMethod == invoked
+                && !ArrayOnlySequenceMembers.Contains(member)
+                ? ResolveSequenceToken(shared.ResultType, immutableElement)
+                : null;
+        }
+
         var key = IsDelegateTypeName(receiverType) ? "Delegate"
             : receiverType.Contains('.', StringComparison.Ordinal) ? "Int32"
             : receiverType;
@@ -1043,6 +1173,10 @@ public static class ExpressionCompletionService
     private static string? ApplyIndexResult(string receiverType) => receiverType switch
     {
         _ when receiverType.EndsWith("[]", StringComparison.Ordinal) => receiverType[..^2],
+        _ when TrySplitImmutableTypeName(receiverType, out var immutableKind, out var immutableElement) =>
+            immutableKind is "ImmutableArray" or "ImmutableList" or "ImmutableSortedSet"
+                ? immutableElement
+                : null,
         "String" => "Char",
         "MatchCollection" => "Match",
         "GroupCollection" => "Group",
@@ -1232,6 +1366,15 @@ public static class ExpressionCompletionService
                 && sequenceMember.IsMethod;
         }
 
+        if (TrySplitImmutableTypeName(receiverType, out var immutableKind, out _))
+        {
+            return (ImmutableCollectionSurfaces[immutableKind].Members.TryGetValue(member, out var kindMember)
+                    && kindMember.IsMethod)
+                || (SequenceSurfaceTemplate.Members.TryGetValue(member, out var shared)
+                    && shared.IsMethod
+                    && !ArrayOnlySequenceMembers.Contains(member));
+        }
+
         var key = IsDelegateTypeName(receiverType) ? "Delegate"
             : receiverType.Contains('.', StringComparison.Ordinal) ? "Int32"
             : receiverType;
@@ -1258,6 +1401,13 @@ public static class ExpressionCompletionService
             AddSignatures(candidates, typeof(Array), methodName, BindingFlags.Public | BindingFlags.Instance, 0);
             AddSignatures(candidates, typeof(Enumerable), methodName, BindingFlags.Public | BindingFlags.Static, 1);
             AddSignatures(candidates, typeof(Array), methodName, BindingFlags.Public | BindingFlags.Static, 1);
+        }
+        else if (!isStatic && TrySplitImmutableTypeName(typeName, out var immutableKind, out _)
+            && ImmutableOpenTypeFor(immutableKind) is { } immutableOpenType)
+        {
+            AddSignatures(
+                candidates, immutableOpenType, methodName, BindingFlags.Public | BindingFlags.Instance, 0);
+            AddSignatures(candidates, typeof(Enumerable), methodName, BindingFlags.Public | BindingFlags.Static, 1);
         }
         else
         {
@@ -1368,6 +1518,18 @@ public static class ExpressionCompletionService
         };
     }
 
+    /// <summary>The open generic runtime type of one immutable collection kind, for signature reflection.</summary>
+    private static Type? ImmutableOpenTypeFor(string kindName) => kindName switch
+    {
+        "ImmutableArray" => typeof(System.Collections.Immutable.ImmutableArray<>),
+        "ImmutableList" => typeof(System.Collections.Immutable.ImmutableList<>),
+        "ImmutableHashSet" => typeof(System.Collections.Immutable.ImmutableHashSet<>),
+        "ImmutableSortedSet" => typeof(System.Collections.Immutable.ImmutableSortedSet<>),
+        "ImmutableQueue" => typeof(System.Collections.Immutable.ImmutableQueue<>),
+        "ImmutableStack" => typeof(System.Collections.Immutable.ImmutableStack<>),
+        _ => null,
+    };
+
     private static Type? RuntimeTypeFor(string name) => name switch
     {
         "String" or "string" => typeof(string),
@@ -1419,6 +1581,12 @@ public static class ExpressionCompletionService
         "DBNull" => typeof(DBNull),
         "Math" => typeof(Math),
         "MathF" => typeof(MathF),
+        "ImmutableArray" => typeof(System.Collections.Immutable.ImmutableArray),
+        "ImmutableList" => typeof(System.Collections.Immutable.ImmutableList),
+        "ImmutableHashSet" => typeof(System.Collections.Immutable.ImmutableHashSet),
+        "ImmutableSortedSet" => typeof(System.Collections.Immutable.ImmutableSortedSet),
+        "ImmutableQueue" => typeof(System.Collections.Immutable.ImmutableQueue),
+        "ImmutableStack" => typeof(System.Collections.Immutable.ImmutableStack),
         "Array" => typeof(Array),
         "Convert" => typeof(Convert),
         "Activator" => typeof(Activator),

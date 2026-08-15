@@ -412,7 +412,8 @@ public static partial class ExpressionEvaluator
             "typeof is supported for the evaluator's value domains — primitives, string, char, bool, the date "
             + "and time kinds, Guid, Version — for enum types, including enums declared in dump modules, for "
             + "single-rank arrays, and for the modeled generic types (Nullable<T>, List<T>, Dictionary<K,V>, "
-            + "KeyValuePair<K,V>, and the generic collection interfaces), open or constructed.");
+            + "KeyValuePair<K,V>, the immutable collections, and the generic collection interfaces), open or "
+            + "constructed.");
     }
 
     private static bool TryResolveTypeRef(

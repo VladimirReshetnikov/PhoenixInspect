@@ -62,6 +62,45 @@ public sealed class ExpressionCompletionTests
         Assert.Empty(ExpressionCompletionService.Complete(SampleCatalog, "", 0).Items);
     }
 
+    /// <summary>Immutable collections complete: receivers, factories, and stored-variable surfaces.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Immutable_collections_complete()
+    {
+        var receivers = ExpressionCompletionService.Complete(CompletionCatalog.Empty, "Immutable", 9);
+        Assert.Contains(receivers.Items, static item => item.Text == "ImmutableArray");
+        Assert.Contains(receivers.Items, static item => item.Text == "ImmutableSortedSet");
+
+        var factory = ExpressionCompletionService.Complete(CompletionCatalog.Empty, "ImmutableArray.", 15);
+        Assert.Equal(
+            ["Create", "CreateRange", "Empty"],
+            factory.Items.Select(static item => item.Text).ToArray());
+
+        // A stored ImmutableList completes its own surface plus the shared sequence one, without the
+        // array-only members; a stored ImmutableArray keeps Length and has no Count property.
+        var list = ExpressionCompletionService.InstanceMembersForStoredType("ImmutableList<Int32>");
+        Assert.Contains(list, static item => item.Text == "Add");
+        Assert.Contains(list, static item => item is { Text: "Count", Detail: "property" });
+        Assert.Contains(list, static item => item.Text == "Where");
+        Assert.DoesNotContain(list, static item => item.Text == "Length");
+
+        var array = ExpressionCompletionService.InstanceMembersForStoredType("ImmutableArray<Int32>");
+        Assert.Contains(array, static item => item is { Text: "Length", Detail: "property" });
+        Assert.DoesNotContain(array, static item => item is { Text: "Count", Detail: "property" });
+
+        // Chains keep their type through the persistent operations: xs.Add(3). completes the list surface.
+        var locals = new CompletionContext
+        {
+            Locals = [new CompletionItem("xs", CompletionItemKind.Local, "ImmutableList<Int32>")],
+        };
+        var chained = ExpressionCompletionService.Complete(
+            CompletionCatalog.Empty, "xs.Add(3).", 10, locals);
+        Assert.Contains(chained.Items, static item => item.Text == "Add");
+        var indexed = ExpressionCompletionService.Complete(
+            CompletionCatalog.Empty, "xs[0].", 6, locals);
+        Assert.Contains(indexed.Items, static item => item.Text == "CompareTo");
+    }
+
     /// <summary>Proves member completion after a dot follows the receiver.</summary>
     [Fact]
     public void Members_complete_after_a_dot()

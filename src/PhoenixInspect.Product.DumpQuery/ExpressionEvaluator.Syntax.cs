@@ -141,7 +141,7 @@ public static partial class ExpressionEvaluator
             return value;
         }
 
-        var matched = MatchRuntimeType(value.Operand, type);
+        var matched = MatchRuntimeType(value.Operand, type, context);
         if (matched.Disposition == FoldDisposition.NotArithmetic)
         {
             // 'x is Name' with an unmodeled name: C# admits a constant here, so a name that folds to a value
@@ -170,7 +170,10 @@ public static partial class ExpressionEvaluator
             {
                 Keyword.RawKind: (int)SyntaxKind.ObjectKeyword or (int)SyntaxKind.StringKeyword,
             } ||
-            type is IdentifierNameSyntax { Identifier.ValueText: "dynamic" or "Object" or "String" };
+            type is IdentifierNameSyntax { Identifier.ValueText: "dynamic" or "Object" or "String" } ||
+            (type is GenericNameSyntax genericTarget &&
+                TryMapImmutableCollectionName(genericTarget.Identifier.ValueText, out var asCollection) &&
+                asCollection != SequenceCollectionKind.ImmutableArray);
         if (!referenceTarget && type is not NullableTypeSyntax)
         {
             return FoldOutcome.Error(
@@ -187,7 +190,7 @@ public static partial class ExpressionEvaluator
     /// types, and the known enums. A nullable target tests as its underlying type — null carries no runtime
     /// type, so <c>(int?)null is int?</c> is false in running C# as well.
     /// </summary>
-    private static FoldOutcome MatchRuntimeType(Operand value, TypeSyntax type)
+    private static FoldOutcome MatchRuntimeType(Operand value, TypeSyntax type, FoldContext context)
     {
         var test = type is NullableTypeSyntax nullableType ? nullableType.ElementType : type;
         if (test is PredefinedTypeSyntax { Keyword.RawKind: (int)SyntaxKind.ObjectKeyword }
@@ -231,6 +234,15 @@ public static partial class ExpressionEvaluator
             {
                 return FoldOutcome.Folded(Operand.FromBoolean(matches));
             }
+        }
+
+        // A generic or array test resolves through the typeof universe and answers with the runtime's exact
+        // assignability relation, so 'xs is ImmutableArray<int>' and 'xs is IEnumerable<int>' both answer.
+        if (test is GenericNameSyntax or ArrayTypeSyntax &&
+            TryResolveTypeRef(test, context, out var testRef, out _) && testRef is not null &&
+            TryDescribeRuntimeType(value) is { } runtimeRef)
+        {
+            return FoldOutcome.Folded(Operand.FromBoolean(IsAssignableBetween(testRef, runtimeRef)));
         }
 
         if (test is IdentifierNameSyntax or QualifiedNameSyntax)
@@ -386,7 +398,7 @@ public static partial class ExpressionEvaluator
             case DiscardPatternSyntax:
                 return FoldOutcome.Folded(Operand.FromBoolean(true));
             case TypePatternSyntax typePattern:
-                return MatchRuntimeType(value, typePattern.Type);
+                return MatchRuntimeType(value, typePattern.Type, context);
             default:
                 return FoldOutcome.Error(
                     PatternUnsupportedCode,

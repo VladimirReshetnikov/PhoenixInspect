@@ -1140,6 +1140,7 @@ public static partial class ExpressionEvaluator
         SystemDelegate,
         CharUnicodeInfo,
         SystemConvert,
+        ImmutableCollection,
     }
 
     private readonly record struct TypeReceiver(
@@ -1147,7 +1148,9 @@ public static partial class ExpressionEvaluator
         NumericKind Numeric,
         string? EnumTypeFullName = null,
         TemporalKind Temporal = default,
-        BclValueKind Value = default);
+        BclValueKind Value = default,
+        SequenceCollectionKind Collection = default,
+        TypeSyntax? GenericElement = null);
 
     /// <summary>
     /// The small closed set of BCL argument enums recognized without dump metadata, so comparison and split
@@ -1278,6 +1281,15 @@ public static partial class ExpressionEvaluator
 
             case IdentifierNameSyntax identifier:
                 return TryMapReceiverName(identifier.Identifier.ValueText, out receiver);
+            case GenericNameSyntax { TypeArgumentList.Arguments: [{ } genericElement] } generic
+                when TryMapImmutableCollectionName(generic.Identifier.ValueText, out var genericCollection):
+                // 'ImmutableArray<int>' as a receiver carries its written element type, so 'Empty' knows it.
+                receiver = new TypeReceiver(
+                    TypeReceiverCategory.ImmutableCollection,
+                    default,
+                    Collection: genericCollection,
+                    GenericElement: genericElement);
+                return true;
             case MemberAccessExpressionSyntax
             {
                 RawKind: (int)SyntaxKind.SimpleMemberAccessExpression,
@@ -1313,8 +1325,10 @@ public static partial class ExpressionEvaluator
                 return true;
             case MemberAccessExpressionSyntax dotted
                 when TryReadQualifiedName(dotted, out var dottedParts, out var dottedAlias) && dottedAlias is null:
-                // The System.Text types resolve by their full dotted spelling, mirroring the shortcuts above.
-                switch (string.Join('.', dottedParts))
+                // The System.Text and System.Collections.Immutable types resolve by their full dotted spelling,
+                // mirroring the shortcuts above.
+                var dottedName = string.Join('.', dottedParts);
+                switch (dottedName)
                 {
                     case "System.Text.Encoding":
                         receiver = new TypeReceiver(
@@ -1328,6 +1342,16 @@ public static partial class ExpressionEvaluator
                         receiver = new TypeReceiver(TypeReceiverCategory.KnownEnum, default, RegexOptionsFullName);
                         return true;
                     default:
+                        const string immutableNamespace = "System.Collections.Immutable.";
+                        if (dottedName.StartsWith(immutableNamespace, StringComparison.Ordinal) &&
+                            TryMapImmutableCollectionName(
+                                dottedName[immutableNamespace.Length..], out var dottedCollection))
+                        {
+                            receiver = new TypeReceiver(
+                                TypeReceiverCategory.ImmutableCollection, default, Collection: dottedCollection);
+                            return true;
+                        }
+
                         return false;
                 }
 
@@ -1352,6 +1376,10 @@ public static partial class ExpressionEvaluator
                 return true;
             case "MathF":
                 receiver = new TypeReceiver(TypeReceiverCategory.MathF, default);
+                return true;
+            case { } immutableName when TryMapImmutableCollectionName(immutableName, out var immutableKind):
+                receiver = new TypeReceiver(
+                    TypeReceiverCategory.ImmutableCollection, default, Collection: immutableKind);
                 return true;
             case "Enumerable":
                 receiver = new TypeReceiver(TypeReceiverCategory.Enumerable, default);
@@ -1498,6 +1526,9 @@ public static partial class ExpressionEvaluator
                 return MemberUnsupported($"CharUnicodeInfo.{member}");
             case TypeReceiverCategory.SystemConvert:
                 return DispatchConvertStaticProperty(member);
+            case TypeReceiverCategory.ImmutableCollection:
+                // 'Empty' resolves through the caller that holds a fold context; everything else is a stop.
+                return MemberUnsupported($"{receiver.Collection}.{member}");
             default:
                 return DispatchNumericTypeStatic(receiver.Numeric, member);
         }
