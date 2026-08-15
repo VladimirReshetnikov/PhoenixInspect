@@ -90,6 +90,37 @@ public static partial class ExpressionEvaluator
             return ConvertToDelegate(delegateType!, single.Expression, context);
         }
 
+        // 'new KeyValuePair<K, V>(key, value)' constructs the pair value the immutable dictionaries carry.
+        if (creation.Type is GenericNameSyntax
+            {
+                Identifier.ValueText: "KeyValuePair",
+                TypeArgumentList.Arguments.Count: 2,
+            })
+        {
+            if (creation.ArgumentList?.Arguments is not
+                [{ NameColon: null } keyArgument, { NameColon: null } valueArgument] ||
+                keyArgument.RefKindKeyword != default || valueArgument.RefKindKeyword != default)
+            {
+                return FoldOutcome.Error(
+                    OperandTypeCode, "'new KeyValuePair<K, V>(…)' takes exactly a key and a value.");
+            }
+
+            var pairKey = Fold(keyArgument.Expression, context);
+            if (pairKey.Disposition != FoldDisposition.Folded)
+            {
+                return pairKey;
+            }
+
+            var pairValue = Fold(valueArgument.Expression, context);
+            if (pairValue.Disposition != FoldDisposition.Folded)
+            {
+                return pairValue;
+            }
+
+            return FoldOutcome.Folded(Operand.FromKeyValuePair(
+                new KeyValuePairPayload(pairKey.Operand, pairValue.Operand)));
+        }
+
         if (!TryReadTemporalTypeName(creation.Type, out var kind))
         {
             return FoldBclValueCreation(creation, context);

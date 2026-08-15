@@ -212,6 +212,7 @@ public static partial class ExpressionEvaluator
         OperandKind.Tuple => TupleTypeName(operand),
         OperandKind.Anonymous => AnonymousTypeName(operand),
         OperandKind.Grouping => "IGrouping",
+        OperandKind.KeyValuePair => KeyValuePairTypeName(PayloadOfPair(operand)),
         OperandKind.Type => "Type",
         _ => string.Empty,
     };
@@ -268,6 +269,9 @@ public static partial class ExpressionEvaluator
                     ChildOf("Key", grouping.Key),
                     .. ChildrenOf(Operand.FromSequence(grouping.Items)),
                 ];
+            case OperandKind.KeyValuePair:
+                var pair = PayloadOfPair(operand);
+                return [ChildOf("Key", pair.Key), ChildOf("Value", pair.Value)];
             case OperandKind.BclValue when IsRegexCollection(operand.BclValueKind):
                 return ChildrenOf(Operand.FromSequence(MaterializeRegexCollection(operand)));
             default:

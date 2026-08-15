@@ -112,6 +112,15 @@ public static partial class ExpressionEvaluator
             "IImmutableQueue", 1, true, false, [GenericVariance.Invariant]),
         new("System.Collections.Immutable.IImmutableStack`1", "IImmutableStack`1", "System.Collections.Immutable",
             "IImmutableStack", 1, true, false, [GenericVariance.Invariant]),
+        new("System.Collections.Immutable.ImmutableDictionary`2", "ImmutableDictionary`2",
+            "System.Collections.Immutable", "ImmutableDictionary", 2, false, false,
+            [GenericVariance.Invariant, GenericVariance.Invariant]),
+        new("System.Collections.Immutable.ImmutableSortedDictionary`2", "ImmutableSortedDictionary`2",
+            "System.Collections.Immutable", "ImmutableSortedDictionary", 2, false, false,
+            [GenericVariance.Invariant, GenericVariance.Invariant]),
+        new("System.Collections.Immutable.IImmutableDictionary`2", "IImmutableDictionary`2",
+            "System.Collections.Immutable", "IImmutableDictionary", 2, true, false,
+            [GenericVariance.Invariant, GenericVariance.Invariant]),
     ];
 
     /// <summary>
@@ -510,6 +519,12 @@ public static partial class ExpressionEvaluator
                     yield return MakeConstructed(FindGenericDef("IImmutableStack", 1, null)!, source.TypeArguments);
                     yield return MakeConstructed(FindGenericDef("IEnumerable", 1, null)!, source.TypeArguments);
                     break;
+                case "ImmutableDictionary" or "ImmutableSortedDictionary":
+                    yield return MakeConstructed(
+                        FindGenericDef("IImmutableDictionary", 2, null)!, source.TypeArguments);
+                    yield return MakeConstructed(
+                        FindGenericDef("IReadOnlyDictionary", 2, null)!, source.TypeArguments);
+                    break;
                 default:
                     break;
             }
@@ -578,6 +593,11 @@ public static partial class ExpressionEvaluator
             case "IImmutableQueue" or "IImmutableStack":
                 yield return MakeConstructed(FindGenericDef("IEnumerable", 1, null)!, args);
                 break;
+            case "IImmutableDictionary":
+                yield return MakeConstructed(
+                    FindGenericDef("IReadOnlyCollection", 1, null)!,
+                    [MakeConstructed(FindGenericDef("KeyValuePair", 2, null)!, args)]);
+                break;
             default:
                 break;
         }
@@ -642,6 +662,12 @@ public static partial class ExpressionEvaluator
                     shortName,
                     IsEnum: true,
                     Shape: null);
+            case OperandKind.KeyValuePair:
+                var pairPayload = PayloadOfPair(operand);
+                return TryDescribeRuntimeType(pairPayload.Key) is { } keyRef &&
+                    TryDescribeRuntimeType(pairPayload.Value) is { } pairValueRef
+                    ? MakeConstructed(FindGenericDef("KeyValuePair", 2, null)!, [keyRef, pairValueRef])
+                    : null;
             case OperandKind.Sequence:
                 var payload = PayloadOf(operand);
                 var element = payload.ElementKind switch
@@ -656,6 +682,15 @@ public static partial class ExpressionEvaluator
                 if (element is null)
                 {
                     return null;
+                }
+
+                // A dictionary reports its two-argument construction from its pair element's identity.
+                if (IsDictionaryCollection(payload.Collection))
+                {
+                    return element is { Definition.ShortDisplay: "KeyValuePair", TypeArguments.Length: 2 }
+                        ? MakeConstructed(
+                            FindGenericDef(payload.Collection.ToString(), 2, null)!, element.TypeArguments)
+                        : null;
                 }
 
                 // An immutable collection reports its constructed generic; a plain sequence reports T[].

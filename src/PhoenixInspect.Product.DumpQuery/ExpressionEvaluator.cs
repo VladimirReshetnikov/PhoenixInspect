@@ -1418,6 +1418,12 @@ public static partial class ExpressionEvaluator
         {
             collection = parsedCollection;
             storedElementName = spelled[(open + 1)..^1];
+
+            // A dictionary spells its two arguments; its element domain is the pair those arguments name.
+            if (IsDictionaryCollection(parsedCollection))
+            {
+                storedElementName = $"KeyValuePair<{storedElementName}>";
+            }
         }
 
         var (elementKind, elementNumeric) = storedElementName switch
@@ -1435,6 +1441,8 @@ public static partial class ExpressionEvaluator
                 (OperandKind.Numeric, numeric),
             { } temporalName when Enum.TryParse<TemporalKind>(temporalName, out _) =>
                 (OperandKind.Temporal, default),
+            { } pairName when pairName.StartsWith("KeyValuePair<", StringComparison.Ordinal) =>
+                (OperandKind.KeyValuePair, default),
             { } valueName when Enum.TryParse<BclValueKind>(valueName, out _) =>
                 (OperandKind.BclValue, default),
             _ => (OperandKind.String, default(NumericKind)),
@@ -1497,6 +1505,9 @@ public static partial class ExpressionEvaluator
                     when domain == "Delegate" && box is DelegatePayload storedDelegate:
                     return FoldOutcome.Folded(Operand.FromDelegate(storedDelegate));
                 case OperandResolutionKind.BclValue
+                    when domain == "KeyValuePair" && box is KeyValuePairPayload storedPair:
+                    return FoldOutcome.Folded(Operand.FromKeyValuePair(storedPair));
+                case OperandResolutionKind.BclValue
                     when Enum.TryParse<BclValueKind>(domain, out var valueKind):
                     return FoldOutcome.Folded(Operand.FromBclValue(valueKind, box));
             }
@@ -1524,6 +1535,7 @@ public static partial class ExpressionEvaluator
         Anonymous,
         Grouping,
         Delegate,
+        KeyValuePair,
     }
 
     private readonly record struct Operand(
@@ -1573,6 +1585,9 @@ public static partial class ExpressionEvaluator
 
         internal static Operand FromGrouping(GroupingPayload payload) =>
             new(OperandKind.Grouping, 0, false, '\0', null, null, null, default, payload);
+
+        internal static Operand FromKeyValuePair(KeyValuePairPayload payload) =>
+            new(OperandKind.KeyValuePair, 0, false, '\0', null, null, null, default, payload);
 
         internal long EnumBits => Box is long bits ? bits : Int32;
 
@@ -1702,6 +1717,12 @@ public static partial class ExpressionEvaluator
                 valueText = RenderGrouping(operand);
                 underlying = valueTypeName;
                 break;
+            case OperandKind.KeyValuePair:
+                kind = ExpressionValueKind.BclValue;
+                valueTypeName = KeyValuePairTypeName(PayloadOfPair(operand));
+                valueText = RenderKeyValuePair(PayloadOfPair(operand));
+                underlying = valueTypeName;
+                break;
             case OperandKind.Temporal:
                 kind = ExpressionValueKind.Temporal;
                 valueTypeName = operand.TemporalKind.ToString();
@@ -1788,6 +1809,8 @@ public static partial class ExpressionEvaluator
             case OperandKind.Delegate:
                 // The delegate payload rides the same boxed carrier under its own domain sentinel.
                 return OperandResolution.FromBclValue("Delegate", operand.Box!);
+            case OperandKind.KeyValuePair:
+                return OperandResolution.FromBclValue("KeyValuePair", operand.Box!);
             case OperandKind.Sequence:
                 var payload = PayloadOf(operand);
                 var elements = ImmutableArray.CreateBuilder<OperandResolution>(payload.Items.Length);
@@ -1832,6 +1855,7 @@ public static partial class ExpressionEvaluator
             item.TemporalKind.ToString(), item.Box!),
         OperandKind.BclValue => OperandResolution.FromBclValue(item.BclValueKind.ToString(), item.Box!),
         OperandKind.Delegate => OperandResolution.FromBclValue("Delegate", item.Box!),
+        OperandKind.KeyValuePair => OperandResolution.FromBclValue("KeyValuePair", item.Box!),
         _ => null,
     };
 
@@ -2304,8 +2328,14 @@ public static partial class ExpressionEvaluator
 
         if (receiver.Operand.Kind == OperandKind.Sequence)
         {
-            // Only the kinds whose BCL type declares an indexer index: a hash set, queue, or stack does not.
+            // A dictionary indexes by key; the positional kinds index by offset; a hash set, queue, or stack
+            // has no indexer at all, exactly as its BCL type declares none.
             var sequenceCollection = PayloadOf(receiver.Operand).Collection;
+            if (IsDictionaryCollection(sequenceCollection))
+            {
+                return FoldDictionaryLookup(receiver.Operand, elementAccess, context);
+            }
+
             if (!HasIndexer(sequenceCollection))
             {
                 return FoldOutcome.Error(
@@ -2509,6 +2539,8 @@ public static partial class ExpressionEvaluator
                 DispatchDelegateProperty(receiver, delegateMember),
             (OperandKind.Numeric, var numericMember) =>
                 DispatchNumericInstanceProperty(receiver, numericMember),
+            (OperandKind.KeyValuePair, "Key") => FoldOutcome.Folded(PayloadOfPair(receiver).Key),
+            (OperandKind.KeyValuePair, "Value") => FoldOutcome.Folded(PayloadOfPair(receiver).Value),
             _ => FoldOutcome.NotArithmetic(),
         };
 
@@ -2599,7 +2631,8 @@ public static partial class ExpressionEvaluator
         if (typeArguments.Count > 0 &&
             !(TryReadTypeReceiver(receiverExpression, out var genericReceiver) &&
                 genericReceiver.Category is TypeReceiverCategory.SystemEnum or TypeReceiverCategory.SystemArray
-                    or TypeReceiverCategory.Activator or TypeReceiverCategory.ImmutableCollection))
+                    or TypeReceiverCategory.Activator or TypeReceiverCategory.ImmutableCollection
+                    or TypeReceiverCategory.KeyValuePairFactory))
         {
             return FoldOutcome.NotArithmetic();
         }
@@ -2717,8 +2750,14 @@ public static partial class ExpressionEvaluator
                 return DispatchCharUnicodeInfo(name, arguments);
             case TypeReceiverCategory.SystemConvert:
                 return DispatchConvert(name, arguments);
+            case TypeReceiverCategory.ImmutableCollection when IsDictionaryCollection(typeReceiver.Collection):
+                return DispatchImmutableDictionaryFactory(typeReceiver, name, typeArguments, arguments, context);
             case TypeReceiverCategory.ImmutableCollection:
                 return DispatchImmutableFactory(typeReceiver, name, typeArguments, arguments, context);
+            case TypeReceiverCategory.KeyValuePairFactory:
+                return name == "Create" && arguments is [{ } pairKey, { } pairValue]
+                    ? FoldOutcome.Folded(Operand.FromKeyValuePair(new KeyValuePairPayload(pairKey, pairValue)))
+                    : MemberUnsupported($"KeyValuePair.{name}");
             default:
                 return DispatchNumericTypeMethod(typeReceiver.Numeric, name, arguments);
         }

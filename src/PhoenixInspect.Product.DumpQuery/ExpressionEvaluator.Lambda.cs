@@ -201,7 +201,8 @@ public static partial class ExpressionEvaluator
                 "Lambda operators need an array-like sequence receiver; a string becomes one via ToCharArray().");
         }
 
-        if (name is "SelectMany" or "GroupBy" or "Join" or "GroupJoin" or "ThenBy" or "ThenByDescending")
+        if (name is "SelectMany" or "GroupBy" or "Join" or "GroupJoin" or "ThenBy" or "ThenByDescending"
+            or "ToImmutableDictionary" or "ToImmutableSortedDictionary")
         {
             return DispatchMultiLambdaOperator(sourcePayload, name, operatorArguments, context);
         }

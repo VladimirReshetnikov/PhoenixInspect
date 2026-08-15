@@ -75,6 +75,15 @@ public static partial class ExpressionEvaluator
                 return SequenceThenBy(payload, ascendingKey, descending: false, context);
             case "ThenByDescending" when arguments is [var descendingKey]:
                 return SequenceThenBy(payload, descendingKey, descending: true, context);
+            case "ToImmutableDictionary" or "ToImmutableSortedDictionary" when arguments.Count is 1 or 2:
+                return SequenceToImmutableDictionary(
+                    payload,
+                    name == "ToImmutableDictionary"
+                        ? SequenceCollectionKind.ImmutableDictionary
+                        : SequenceCollectionKind.ImmutableSortedDictionary,
+                    arguments[0],
+                    arguments.Count == 2 ? arguments[1] : null,
+                    context);
             default:
                 return FoldOutcome.Error(
                     LambdaUnsupportedCode,

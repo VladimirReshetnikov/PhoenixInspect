@@ -1141,6 +1141,7 @@ public static partial class ExpressionEvaluator
         CharUnicodeInfo,
         SystemConvert,
         ImmutableCollection,
+        KeyValuePairFactory,
     }
 
     private readonly record struct TypeReceiver(
@@ -1150,7 +1151,8 @@ public static partial class ExpressionEvaluator
         TemporalKind Temporal = default,
         BclValueKind Value = default,
         SequenceCollectionKind Collection = default,
-        TypeSyntax? GenericElement = null);
+        TypeSyntax? GenericElement = null,
+        TypeSyntax? GenericValue = null);
 
     /// <summary>
     /// The small closed set of BCL argument enums recognized without dump metadata, so comparison and split
@@ -1282,13 +1284,24 @@ public static partial class ExpressionEvaluator
             case IdentifierNameSyntax identifier:
                 return TryMapReceiverName(identifier.Identifier.ValueText, out receiver);
             case GenericNameSyntax { TypeArgumentList.Arguments: [{ } genericElement] } generic
-                when TryMapImmutableCollectionName(generic.Identifier.ValueText, out var genericCollection):
+                when TryMapImmutableCollectionName(generic.Identifier.ValueText, out var genericCollection) &&
+                    !IsDictionaryCollection(genericCollection):
                 // 'ImmutableArray<int>' as a receiver carries its written element type, so 'Empty' knows it.
                 receiver = new TypeReceiver(
                     TypeReceiverCategory.ImmutableCollection,
                     default,
                     Collection: genericCollection,
                     GenericElement: genericElement);
+                return true;
+            case GenericNameSyntax { TypeArgumentList.Arguments: [{ } dictionaryKey, { } dictionaryValue] } paired
+                when TryMapImmutableCollectionName(paired.Identifier.ValueText, out var pairedCollection) &&
+                    IsDictionaryCollection(pairedCollection):
+                receiver = new TypeReceiver(
+                    TypeReceiverCategory.ImmutableCollection,
+                    default,
+                    Collection: pairedCollection,
+                    GenericElement: dictionaryKey,
+                    GenericValue: dictionaryValue);
                 return true;
             case MemberAccessExpressionSyntax
             {
@@ -1376,6 +1389,9 @@ public static partial class ExpressionEvaluator
                 return true;
             case "MathF":
                 receiver = new TypeReceiver(TypeReceiverCategory.MathF, default);
+                return true;
+            case "KeyValuePair":
+                receiver = new TypeReceiver(TypeReceiverCategory.KeyValuePairFactory, default);
                 return true;
             case { } immutableName when TryMapImmutableCollectionName(immutableName, out var immutableKind):
                 receiver = new TypeReceiver(
@@ -1529,6 +1545,8 @@ public static partial class ExpressionEvaluator
             case TypeReceiverCategory.ImmutableCollection:
                 // 'Empty' resolves through the caller that holds a fold context; everything else is a stop.
                 return MemberUnsupported($"{receiver.Collection}.{member}");
+            case TypeReceiverCategory.KeyValuePairFactory:
+                return MemberUnsupported($"KeyValuePair.{member}");
             default:
                 return DispatchNumericTypeStatic(receiver.Numeric, member);
         }

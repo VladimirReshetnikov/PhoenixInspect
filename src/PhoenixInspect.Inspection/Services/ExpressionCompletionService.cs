@@ -288,7 +288,8 @@ public static class ExpressionCompletionService
         "DateTime", "DateTimeKind", "DateTimeOffset", "DayOfWeek", "DBNull", "Delegate", "Dictionary", "Encoding",
         "Enum", "Enumerable",
         "Func", "Guid", "Half", "ICollection", "IComparable", "IDictionary", "IEnumerable", "IEquatable",
-        "IList", "ImmutableArray", "ImmutableHashSet", "ImmutableList", "ImmutableQueue", "ImmutableSortedSet",
+        "IList", "ImmutableArray", "ImmutableDictionary", "ImmutableHashSet", "ImmutableList", "ImmutableQueue",
+        "ImmutableSortedDictionary", "ImmutableSortedSet",
         "ImmutableStack", "Int128", "IntPtr", "IReadOnlyCollection", "IReadOnlyDictionary", "IReadOnlyList",
         "KeyValuePair", "List", "Math", "MathF", "NFloat",
         "MemberTypes", "MulticastDelegate", "Nullable", "Object", "Predicate", "Regex", "RegexOptions", "Rune",
@@ -324,6 +325,9 @@ public static class ExpressionCompletionService
             ["ImmutableSortedSet"] = ["Create", "CreateRange", "Empty"],
             ["ImmutableQueue"] = ["Create", "CreateRange", "Empty"],
             ["ImmutableStack"] = ["Create", "CreateRange", "Empty"],
+            ["ImmutableDictionary"] = ["Create", "CreateRange", "Empty"],
+            ["ImmutableSortedDictionary"] = ["Create", "CreateRange", "Empty"],
+            ["KeyValuePair"] = ["Create"],
             ["Enum"] =
             [
                 "GetName", "GetNames", "GetUnderlyingType", "GetValues", "IsDefined", "Parse", "ToObject",
@@ -501,6 +505,8 @@ public static class ExpressionCompletionService
     private const string SequenceResult = "@sequence";
     private const string SelfResult = "@self";
     private const string ImmutableResultPrefix = "@immutable:";
+    private const string KeysResult = "@keys";
+    private const string ValuesResult = "@values";
 
     private static readonly InstanceSurface SequenceSurfaceTemplate = new(
         [("Length", "Int32"), ("LongLength", "Int64"), ("Rank", "Int32")],
@@ -522,8 +528,9 @@ public static class ExpressionCompletionService
             ("TakeLast", SequenceResult), ("TakeWhile", SequenceResult), ("ThenBy", SequenceResult),
             ("ThenByDescending", SequenceResult), ("ToArray", SequenceResult),
             ("ToImmutableArray", ImmutableResultPrefix + "ImmutableArray"),
-            ("ToImmutableHashSet", ImmutableResultPrefix + "ImmutableHashSet"),
+            ("ToImmutableDictionary", null), ("ToImmutableHashSet", ImmutableResultPrefix + "ImmutableHashSet"),
             ("ToImmutableList", ImmutableResultPrefix + "ImmutableList"),
+            ("ToImmutableSortedDictionary", null),
             ("ToImmutableSortedSet", ImmutableResultPrefix + "ImmutableSortedSet"),
             ("ToList", SequenceResult),
             ("Union", SequenceResult), ("Where", SequenceResult),
@@ -582,6 +589,20 @@ public static class ExpressionCompletionService
             ["ImmutableStack"] = new(
                 [("IsEmpty", "Boolean")],
                 [("Clear", SelfResult), ("Peek", ElementResult), ("Pop", SelfResult), ("Push", SelfResult)]),
+            ["ImmutableDictionary"] = new(
+                [("Count", "Int32"), ("IsEmpty", "Boolean"), (
+                    "Keys", KeysResult), ("Values", ValuesResult)],
+                [
+                    ("Add", SelfResult), ("Clear", SelfResult), ("ContainsKey", "Boolean"),
+                    ("ContainsValue", "Boolean"), ("Remove", SelfResult), ("SetItem", SelfResult),
+                ]),
+            ["ImmutableSortedDictionary"] = new(
+                [("Count", "Int32"), ("IsEmpty", "Boolean"), (
+                    "Keys", KeysResult), ("Values", ValuesResult)],
+                [
+                    ("Add", SelfResult), ("Clear", SelfResult), ("ContainsKey", "Boolean"),
+                    ("ContainsValue", "Boolean"), ("Remove", SelfResult), ("SetItem", SelfResult),
+                ]),
         }.ToImmutableDictionary(StringComparer.Ordinal);
 
     // The sequence members only a real array answers; an immutable collection does not complete them.
@@ -609,6 +630,41 @@ public static class ExpressionCompletionService
         kindName = name;
         elementType = typeName[(open + 1)..^1];
         return true;
+    }
+
+    /// <summary>Splits a <c>KeyValuePair&lt;K, V&gt;</c> spelling into its argument text; false otherwise.</summary>
+    private static bool TrySplitKeyValuePairTypeName(string typeName, out string pairArguments)
+    {
+        pairArguments = string.Empty;
+        if (!typeName.StartsWith("KeyValuePair<", StringComparison.Ordinal) || !typeName.EndsWith('>'))
+        {
+            return false;
+        }
+
+        pairArguments = typeName["KeyValuePair<".Length..^1];
+        return true;
+    }
+
+    /// <summary>Splits a pair's argument text — <c>Int32, String</c> — at its top-level comma.</summary>
+    private static (string Key, string Value) SplitPairArguments(string pairArguments)
+    {
+        var depth = 0;
+        for (var position = 0; position < pairArguments.Length; position++)
+        {
+            switch (pairArguments[position])
+            {
+                case '<':
+                    depth++;
+                    break;
+                case '>':
+                    depth--;
+                    break;
+                case ',' when depth == 0:
+                    return (pairArguments[..position].Trim(), pairArguments[(position + 1)..].Trim());
+            }
+        }
+
+        return (pairArguments.Trim(), pairArguments.Trim());
     }
 
     /// <summary>The completion items of one immutable collection: its own surface plus the shared sequence one.</summary>
@@ -951,6 +1007,16 @@ public static class ExpressionCompletionService
             return ImmutableInstanceItems(immutableKind);
         }
 
+        if (TrySplitKeyValuePairTypeName(typeName, out _))
+        {
+            return
+            [
+                new CompletionItem("Key", CompletionItemKind.Member, "property"),
+                new CompletionItem("Value", CompletionItemKind.Member, "property"),
+                new CompletionItem("GetType", CompletionItemKind.Member, "method"),
+            ];
+        }
+
         if (IsDelegateTypeName(typeName))
         {
             return DelegateInstanceMembers;
@@ -1144,19 +1210,37 @@ public static class ExpressionCompletionService
 
         if (TrySplitImmutableTypeName(receiverType, out var immutableKind, out var immutableElement))
         {
+            // A dictionary's shared-surface element is its pair; its own surface adds the key/value splits.
+            var isDictionary = immutableKind is "ImmutableDictionary" or "ImmutableSortedDictionary";
+            var elementToken = isDictionary ? $"KeyValuePair<{immutableElement}>" : immutableElement;
             if (ImmutableCollectionSurfaces[immutableKind].Members.TryGetValue(member, out var kindMember)
                 && kindMember.IsMethod == invoked)
             {
-                return kindMember.ResultType == SelfResult
-                    ? receiverType
-                    : ResolveSequenceToken(kindMember.ResultType, immutableElement);
+                return kindMember.ResultType switch
+                {
+                    SelfResult => receiverType,
+                    KeysResult => SplitPairArguments(immutableElement).Key + "[]",
+                    ValuesResult => SplitPairArguments(immutableElement).Value + "[]",
+                    _ => ResolveSequenceToken(kindMember.ResultType, elementToken),
+                };
             }
 
             return SequenceSurfaceTemplate.Members.TryGetValue(member, out var shared)
                 && shared.IsMethod == invoked
                 && !ArrayOnlySequenceMembers.Contains(member)
-                ? ResolveSequenceToken(shared.ResultType, immutableElement)
+                ? ResolveSequenceToken(shared.ResultType, elementToken)
                 : null;
+        }
+
+        if (TrySplitKeyValuePairTypeName(receiverType, out var pairArguments))
+        {
+            return (member, invoked) switch
+            {
+                ("Key", false) => SplitPairArguments(pairArguments).Key,
+                ("Value", false) => SplitPairArguments(pairArguments).Value,
+                ("GetType", true) => "Type",
+                _ => null,
+            };
         }
 
         var key = IsDelegateTypeName(receiverType) ? "Delegate"
@@ -1174,9 +1258,13 @@ public static class ExpressionCompletionService
     {
         _ when receiverType.EndsWith("[]", StringComparison.Ordinal) => receiverType[..^2],
         _ when TrySplitImmutableTypeName(receiverType, out var immutableKind, out var immutableElement) =>
-            immutableKind is "ImmutableArray" or "ImmutableList" or "ImmutableSortedSet"
-                ? immutableElement
-                : null,
+            immutableKind switch
+            {
+                "ImmutableArray" or "ImmutableList" or "ImmutableSortedSet" => immutableElement,
+                "ImmutableDictionary" or "ImmutableSortedDictionary" =>
+                    SplitPairArguments(immutableElement).Value,
+                _ => null,
+            },
         "String" => "Char",
         "MatchCollection" => "Match",
         "GroupCollection" => "Group",
@@ -1527,6 +1615,8 @@ public static class ExpressionCompletionService
         "ImmutableSortedSet" => typeof(System.Collections.Immutable.ImmutableSortedSet<>),
         "ImmutableQueue" => typeof(System.Collections.Immutable.ImmutableQueue<>),
         "ImmutableStack" => typeof(System.Collections.Immutable.ImmutableStack<>),
+        "ImmutableDictionary" => typeof(System.Collections.Immutable.ImmutableDictionary<,>),
+        "ImmutableSortedDictionary" => typeof(System.Collections.Immutable.ImmutableSortedDictionary<,>),
         _ => null,
     };
 
@@ -1587,6 +1677,9 @@ public static class ExpressionCompletionService
         "ImmutableSortedSet" => typeof(System.Collections.Immutable.ImmutableSortedSet),
         "ImmutableQueue" => typeof(System.Collections.Immutable.ImmutableQueue),
         "ImmutableStack" => typeof(System.Collections.Immutable.ImmutableStack),
+        "ImmutableDictionary" => typeof(System.Collections.Immutable.ImmutableDictionary),
+        "ImmutableSortedDictionary" => typeof(System.Collections.Immutable.ImmutableSortedDictionary),
+        "KeyValuePair" => typeof(System.Collections.Generic.KeyValuePair),
         "Array" => typeof(Array),
         "Convert" => typeof(Convert),
         "Activator" => typeof(Activator),

@@ -411,6 +411,35 @@ public sealed class ImmediateVariableTests
         Assert.Contains("ImmutableArray<Int32>", typed, StringComparison.Ordinal);
         Assert.False(Apply(store, "ImmutableList<int> bad = ImmutableArray.Create(1);", out var mismatch));
         Assert.Contains("cannot hold", mismatch, StringComparison.Ordinal);
+
+        // A dictionary stores with its two-argument identity, and lookup composes with the stored value.
+        Assert.True(Apply(
+            store, "var d = new[] { 1, 2 }.ToImmutableDictionary(x => x, x => x * 10);", out var dictionary));
+        Assert.Contains("ImmutableDictionary<Int32, Int32>", dictionary, StringComparison.Ordinal);
+        Assert.Equal(
+            "20",
+            ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                "d[2]", localVariables: store.LocalNameResolver).Value);
+        Assert.Contains(
+            "{ [1, 10], [2, 20], [3, 30] }",
+            ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                "d.Add(3, 30)", localVariables: store.LocalNameResolver).Value,
+            StringComparison.Ordinal);
+        Assert.Equal(
+            "2",
+            ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                "d.Count", localVariables: store.LocalNameResolver).Value);
+
+        // The stored dictionary keeps its pair element domain, so runtime type tests answer after the
+        // round trip — the regression a live smoke once caught.
+        Assert.Equal(
+            "true",
+            ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                "d is IImmutableDictionary<int, int>", localVariables: store.LocalNameResolver).Value);
+        Assert.Equal(
+            "10",
+            ExpressionEvaluationService.EvaluateWithoutSnapshot(
+                "d.First().Value", localVariables: store.LocalNameResolver).Value);
     }
 
     private static bool Apply(ImmediateVariableStore store, string line, out string message) =>

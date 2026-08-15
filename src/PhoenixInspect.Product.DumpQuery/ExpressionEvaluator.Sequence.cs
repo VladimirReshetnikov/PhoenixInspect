@@ -45,6 +45,8 @@ public static partial class ExpressionEvaluator
         ImmutableSortedSet,
         ImmutableQueue,
         ImmutableStack,
+        ImmutableDictionary,
+        ImmutableSortedDictionary,
     }
 
     /// <summary>Describes the element domain of one sequence, so defaults and displays stay typed.</summary>
@@ -107,9 +109,15 @@ public static partial class ExpressionEvaluator
             Dimensions.IsEmpty ? "[]" : "[" + new string(',', Dimensions.Length - 1) + "]";
 
         /// <summary>Gets the full C#-style type spelling: <c>Int32[]</c>, or <c>ImmutableList&lt;Int32&gt;</c>.</summary>
-        internal string DisplayTypeName => Collection == SequenceCollectionKind.Array
-            ? DisplayName + TypeSuffix
-            : $"{Collection}<{DisplayName}>";
+        internal string DisplayTypeName => Collection switch
+        {
+            SequenceCollectionKind.Array => DisplayName + TypeSuffix,
+            // A dictionary's element display is 'KeyValuePair<K, V>'; the dictionary spells 'Kind<K, V>'.
+            SequenceCollectionKind.ImmutableDictionary or SequenceCollectionKind.ImmutableSortedDictionary
+                when DisplayName.StartsWith("KeyValuePair<", StringComparison.Ordinal) =>
+                $"{Collection}<{DisplayName["KeyValuePair<".Length..]}",
+            _ => $"{Collection}<{DisplayName}>",
+        };
 
         // Any other operation drops the ordering evidence, the rectangular shape, and the collection identity:
         // its items no longer align with the key vectors, and a derived sequence enumerates flat, exactly as
@@ -240,6 +248,12 @@ public static partial class ExpressionEvaluator
         if (items.All(static item => item.Kind == OperandKind.Tuple))
         {
             return CreateSequence(new SequencePayload(items, OperandKind.Tuple, default, TupleTypeName(items[0])));
+        }
+
+        if (items.All(static item => item.Kind == OperandKind.KeyValuePair))
+        {
+            return CreateSequence(new SequencePayload(
+                items, OperandKind.KeyValuePair, default, KeyValuePairTypeName(PayloadOfPair(items[0]))));
         }
 
         if (items.All(static item => item.Kind == OperandKind.Anonymous))
@@ -634,6 +648,28 @@ public static partial class ExpressionEvaluator
                 return NormalizeImmutable(payload, items, SequenceCollectionKind.ImmutableHashSet);
             case "ToImmutableSortedSet" when arguments.Count == 0:
                 return NormalizeImmutable(payload, items, SequenceCollectionKind.ImmutableSortedSet);
+            case "ToImmutableDictionary" or "ToImmutableSortedDictionary" when arguments.Count == 0:
+                // The pair-sequence overload; the key/value-selector overloads route through the lambda surface.
+                foreach (var item in items)
+                {
+                    if (item.Kind != OperandKind.KeyValuePair)
+                    {
+                        return FoldOutcome.Error(
+                            OperandTypeCode,
+                            $"'{name}()' without selectors takes a sequence of KeyValuePair elements.");
+                    }
+                }
+
+                return CreateImmutableDictionary(
+                    name == "ToImmutableDictionary"
+                        ? SequenceCollectionKind.ImmutableDictionary
+                        : SequenceCollectionKind.ImmutableSortedDictionary,
+                    items,
+                    payload.DisplayName.StartsWith("KeyValuePair<", StringComparison.Ordinal)
+                        ? payload.DisplayName
+                        : items.Length > 0
+                            ? KeyValuePairTypeName(PayloadOfPair(items[0]))
+                            : "KeyValuePair<Object, Object>");
             default:
                 return MemberUnsupported(name);
         }
@@ -657,8 +693,8 @@ public static partial class ExpressionEvaluator
             "0"),
         // Anonymous types, groupings, and nested sequences are reference-shaped; their default is null. A tuple's
         // true default would be a zeroed tuple, but with no elements observed there is no shape to zero.
-        OperandKind.Tuple or OperandKind.Anonymous or OperandKind.Grouping or OperandKind.Sequence =>
-            Operand.Null(),
+        OperandKind.Tuple or OperandKind.Anonymous or OperandKind.Grouping or OperandKind.Sequence
+            or OperandKind.KeyValuePair => Operand.Null(),
         _ => Operand.FromInt32(0),
     };
 
@@ -698,6 +734,17 @@ public static partial class ExpressionEvaluator
         if (left.Kind == OperandKind.Anonymous && right.Kind == OperandKind.Anonymous)
         {
             return AnonymousEquals(left, right);
+        }
+
+        if (left.Kind == OperandKind.KeyValuePair && right.Kind == OperandKind.KeyValuePair)
+        {
+            var keysEqual = OperandsEqual(PayloadOfPair(left).Key, PayloadOfPair(right).Key);
+            if (keysEqual.Disposition != FoldDisposition.Folded || !keysEqual.Operand.Boolean)
+            {
+                return keysEqual;
+            }
+
+            return OperandsEqual(PayloadOfPair(left).Value, PayloadOfPair(right).Value);
         }
 
         if (TryCompareTemporal(left, right, out var temporalComparison))
@@ -1223,6 +1270,7 @@ public static partial class ExpressionEvaluator
         OperandKind.Anonymous => RenderAnonymous(item),
         OperandKind.Grouping => RenderGrouping(item),
         OperandKind.Sequence => RenderSequence(PayloadOf(item)),
+        OperandKind.KeyValuePair => RenderKeyValuePair(PayloadOfPair(item)),
         _ => FormatNumeric(NumericKindOf(item), BoxOf(item)),
     };
 }

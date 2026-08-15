@@ -38,6 +38,12 @@ public static partial class ExpressionEvaluator
             case "ImmutableStack":
                 kind = SequenceCollectionKind.ImmutableStack;
                 return true;
+            case "ImmutableDictionary":
+                kind = SequenceCollectionKind.ImmutableDictionary;
+                return true;
+            case "ImmutableSortedDictionary":
+                kind = SequenceCollectionKind.ImmutableSortedDictionary;
+                return true;
             default:
                 kind = default;
                 return false;
@@ -95,6 +101,36 @@ public static partial class ExpressionEvaluator
     /// </summary>
     private static FoldOutcome DispatchImmutableEmpty(TypeReceiver receiver, FoldContext context)
     {
+        if (IsDictionaryCollection(receiver.Collection))
+        {
+            if (receiver.GenericElement is not { } keyType || receiver.GenericValue is not { } valueSyntax)
+            {
+                return FoldOutcome.Error(
+                    OperandTypeCode,
+                    $"'{receiver.Collection}.Empty' needs its type arguments: write "
+                    + $"'{receiver.Collection}<TKey, TValue>.Empty'.");
+            }
+
+            if (!TryResolveElementType(keyType, context, out var keyDescriptor, out var keyError))
+            {
+                return keyError ?? FoldOutcome.Error(
+                    OperandTypeCode,
+                    "The key type is outside the evaluator's modeled element domains.");
+            }
+
+            if (!TryResolveElementType(valueSyntax, context, out var valueDescriptor, out var valueError))
+            {
+                return valueError ?? FoldOutcome.Error(
+                    OperandTypeCode,
+                    "The value type is outside the evaluator's modeled element domains.");
+            }
+
+            return CreateImmutableDictionary(
+                receiver.Collection,
+                [],
+                $"KeyValuePair<{keyDescriptor.DisplayName}, {valueDescriptor.DisplayName}>");
+        }
+
         if (receiver.GenericElement is not { } elementType)
         {
             return FoldOutcome.Error(
@@ -238,6 +274,11 @@ public static partial class ExpressionEvaluator
         List<Operand> arguments)
     {
         var kind = payload.Collection;
+        if (IsDictionaryCollection(kind))
+        {
+            return DispatchImmutableDictionaryInstance(receiver, payload, name, arguments);
+        }
+
         var items = payload.Items;
         var listLike = kind is SequenceCollectionKind.ImmutableArray or SequenceCollectionKind.ImmutableList;
         switch (name, arguments)
@@ -379,6 +420,11 @@ public static partial class ExpressionEvaluator
     private static FoldOutcome DispatchImmutableProperty(SequencePayload payload, string member)
     {
         var kind = payload.Collection;
+        if (IsDictionaryCollection(kind))
+        {
+            return DispatchImmutableDictionaryProperty(payload, member);
+        }
+
         switch (member)
         {
             case "Length" when kind == SequenceCollectionKind.ImmutableArray:
